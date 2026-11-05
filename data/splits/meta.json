@@ -1,0 +1,7 @@
+{
+  "seed": 2529,
+  "source_split": "test",
+  "n_source": 8052,
+  "n_dev": 100,
+  "n_test": 100
+}

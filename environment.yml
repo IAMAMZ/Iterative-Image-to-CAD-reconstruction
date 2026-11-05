@@ -1,0 +1,14 @@
+name: image-to-cad
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - cadquery
+  - trimesh
+  - numpy
+  - scipy
+  - networkx
+  - pillow
+  - pip
+  - pip:
+      - pyrender

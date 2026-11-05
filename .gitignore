@@ -1,0 +1,5 @@
+# raw dataset and 3D/CAD source files stay local, never committed
+data/raw/
+data/cad_json_200/
+data/meshes_hidden/
+.venv/
