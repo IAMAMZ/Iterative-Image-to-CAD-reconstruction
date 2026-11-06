@@ -4,3 +4,6 @@ data/cad_json_200/
 data/meshes_hidden/
 .venv/
 out/
+__pycache__/
+*.pyc
+.pytest_cache/

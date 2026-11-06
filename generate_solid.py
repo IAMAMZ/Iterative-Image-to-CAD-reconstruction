@@ -20,6 +20,10 @@ from cq_render import CQRenderer, to_trimesh
 from rig import load_rig, normalize, render_rig
 
 
+class InvalidSolid(ValueError):
+    """The program ran, but what it built is not a usable solid."""
+
+
 def load_solid(program: Path) -> cq.Shape:
     """Execute the program and return its `result` as a single cq.Shape."""
     ns = runpy.run_path(str(program), run_name="__cad__")
@@ -37,22 +41,25 @@ def load_solid(program: Path) -> cq.Shape:
 
 
 def check_solid(shape: cq.Shape) -> dict:
-    """Basic validity stats; raises if the shape is not a usable solid."""
+    """Basic validity stats; raises InvalidSolid if the shape is not a usable solid."""
     solids = shape.Solids()
+    if not solids:  # check first: an empty result has no bounding box either
+        raise InvalidSolid("shape contains no solids")
+    if not shape.isValid():
+        raise InvalidSolid("shape is not valid (e.g. self-intersecting geometry)")
     bb = shape.BoundingBox()
-    info = {
-        "valid": shape.isValid(),
+    volume = shape.Volume()
+    # "positive" relative to the part's size, so float noise like 1e-14 doesn't count
+    if volume <= 1e-9 * bb.DiagonalLength ** 3:
+        raise InvalidSolid(f"shape has (near) zero volume: {volume:g}")
+    return {
+        "valid": True,
         "n_solids": len(solids),
         "n_faces": len(shape.Faces()),
-        "volume": shape.Volume(),
+        "volume": volume,
         "bbox_min": [bb.xmin, bb.ymin, bb.zmin],
         "bbox_max": [bb.xmax, bb.ymax, bb.zmax],
     }
-    if not solids:
-        raise ValueError("shape contains no solids")
-    if info["volume"] <= 0:
-        raise ValueError(f"non-positive volume {info['volume']}")
-    return info
 
 
 def depth_preview(depth: np.ndarray) -> np.ndarray:

@@ -23,6 +23,14 @@ uv run python generate_solid.py examples/flange.py
 
 Pictures and files appear in `out/flange/`.
 
+## Test
+
+```sh
+uv run pytest tests -v -s
+```
+
+- `tests/test_illegal_shapes.py` — tries to make broken shapes and checks they are refused.
+
 ## Make your own part
 
 Copy `examples/flange.py`, change the shape, and keep the last line as `result = ...`.

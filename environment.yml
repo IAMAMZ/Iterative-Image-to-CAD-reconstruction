@@ -9,6 +9,7 @@ dependencies:
   - scipy
   - networkx
   - pillow
+  - pytest
   - pip
   - pip:
       - pyrender
