@@ -3,3 +3,5 @@ data/raw/
 data/cad_json_200/
 data/meshes_hidden/
 .venv/
+data/realcad/
+data/cad_json_realcad/
