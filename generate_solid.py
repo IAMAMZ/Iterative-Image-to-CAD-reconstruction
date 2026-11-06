@@ -55,6 +55,18 @@ def check_solid(shape: cq.Shape) -> dict:
     return info
 
 
+def depth_preview(depth: np.ndarray) -> np.ndarray:
+    """Greyscale picture of a depth map for viewing only: near = white, far = dark,
+    background = black. Stretched per image, so don't use it for measurements."""
+    img = np.zeros(depth.shape, dtype=np.uint8)
+    fg = depth > 0
+    if fg.any():
+        lo, hi = depth[fg].min(), depth[fg].max()
+        t = (hi - depth[fg]) / max(hi - lo, 1e-9)  # 1 at nearest, 0 at farthest
+        img[fg] = (55 + 200 * t).astype(np.uint8)   # keep far surfaces visible over black
+    return img
+
+
 def generate(program: Path, out: Path, rig: dict) -> dict:
     out.mkdir(parents=True, exist_ok=True)
     shape = load_solid(program)
@@ -68,6 +80,7 @@ def generate(program: Path, out: Path, rig: dict) -> dict:
     for name, (rgb, depth, mask) in views.items():
         Image.fromarray(rgb).save(out / f"{name}.png")
         Image.fromarray((mask * 255).astype(np.uint8)).save(out / f"{name}_mask.png")
+        Image.fromarray(depth_preview(depth)).save(out / f"{name}_depth.png")
     np.savez_compressed(out / "depth.npz", **{n: v[1] for n, v in views.items()})
     # x_normalised = (x - center) * scale ; depth is in normalised units
     info["normalization"] = {"center": center.tolist(), "scale": float(scale)}
