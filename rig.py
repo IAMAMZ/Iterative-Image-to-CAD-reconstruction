@@ -82,10 +82,18 @@ def load_rig(path=RIG_PATH):
     return json.loads(Path(path).read_text())
 
 
-def normalize(mesh):
-    """Return (normalised copy, center, scale) with  x_norm = (x - center) * scale."""
-    center = mesh.bounding_box.centroid
-    scale = 1.0 / (np.linalg.norm(mesh.extents) / 2.0)
+def normalize(mesh, center=None, scale=None):
+    """Return (normalised copy, center, scale) with  x_norm = (x - center) * scale.
+
+    By default the mesh is fitted to the unit sphere. Pass another part's center and
+    scale to put this mesh in *that* part's frame, so the two can be compared
+    pixel-for-pixel (size and position differences then show up in the renders).
+    """
+    if center is None:
+        center = mesh.bounding_box.centroid
+    if scale is None:
+        scale = 1.0 / (np.linalg.norm(mesh.extents) / 2.0)
+    center = np.asarray(center, dtype=np.float64)
     m = mesh.copy()
     m.apply_translation(-center)
     m.apply_scale(scale)

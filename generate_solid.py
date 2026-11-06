@@ -4,6 +4,10 @@ The program is a .py file that assigns its final shape to `result`
 (a cq.Workplane or cq.Shape).
 
     uv run python generate_solid.py examples/flange.py --out out/flange
+
+Every CadQuery operation is checked as it runs (see op_checker.py) and logged to
+<out>/ops_log.jsonl, also when the run fails. Exit code 1 = the program or one of its
+operations was illegal; the log says which step, which line, why, and a hint.
 """
 import argparse
 import json
@@ -17,16 +21,29 @@ import numpy as np
 from PIL import Image
 
 from cq_render import CQRenderer, to_trimesh
+from op_checker import IllegalOperation, OpTrace, format_step
 from rig import load_rig, normalize, render_rig
+
+# files a run writes; removed first so a failed run never leaves stale results behind
+OUTPUTS = ("info.json", "solid.step", "solid.stl", "depth.npz", "ops_log.jsonl")
 
 
 class InvalidSolid(ValueError):
     """The program ran, but what it built is not a usable solid."""
 
+    def __init__(self, message, hint=None):
+        super().__init__(message)
+        self.hint = hint
 
-def load_solid(program: Path) -> cq.Shape:
-    """Execute the program and return its `result` as a single cq.Shape."""
-    ns = runpy.run_path(str(program), run_name="__cad__")
+
+def load_solid(program: Path, trace: OpTrace | None = None) -> cq.Shape:
+    """Execute the program and return its `result` as a single cq.Shape.
+    With a trace, every Workplane operation is checked and logged while it runs."""
+    if trace is None:
+        ns = runpy.run_path(str(program), run_name="__cad__")
+    else:
+        with trace:
+            ns = runpy.run_path(str(program), run_name="__cad__")
     if "result" not in ns:
         raise ValueError(f"{program} does not define `result`")
     res = ns["result"]
@@ -44,14 +61,18 @@ def check_solid(shape: cq.Shape) -> dict:
     """Basic validity stats; raises InvalidSolid if the shape is not a usable solid."""
     solids = shape.Solids()
     if not solids:  # check first: an empty result has no bounding box either
-        raise InvalidSolid("shape contains no solids")
+        raise InvalidSolid("shape contains no solids",
+                           hint="`result` must be a 3D solid, not a face, wire or sketch; "
+                                "extrude/revolve it, and don't end on a selector like .faces()")
     if not shape.isValid():
-        raise InvalidSolid("shape is not valid (e.g. self-intersecting geometry)")
+        raise InvalidSolid("shape is not valid (e.g. self-intersecting geometry)",
+                           hint="built with the low-level API? check the shapes it combines")
     bb = shape.BoundingBox()
     volume = shape.Volume()
     # "positive" relative to the part's size, so float noise like 1e-14 doesn't count
     if volume <= 1e-9 * bb.DiagonalLength ** 3:
-        raise InvalidSolid(f"shape has (near) zero volume: {volume:g}")
+        raise InvalidSolid(f"shape has (near) zero volume: {volume:g}",
+                           hint="the part is flat or degenerate")
     return {
         "valid": True,
         "n_solids": len(solids),
@@ -74,14 +95,32 @@ def depth_preview(depth: np.ndarray) -> np.ndarray:
     return img
 
 
-def generate(program: Path, out: Path, rig: dict) -> dict:
+def generate(program: Path, out: Path, rig: dict, normalization: dict | None = None) -> dict:
+    """normalization: {"center", "scale"} to reuse (e.g. a target's info.json entry);
+    default fits this part to the unit sphere."""
     out.mkdir(parents=True, exist_ok=True)
-    shape = load_solid(program)
-    info = check_solid(shape)
+    views_png = [f"{c['name']}{sfx}.png" for c in rig["cameras"] for sfx in ("", "_mask", "_depth")]
+    for f in [*OUTPUTS, *views_png]:
+        (out / f).unlink(missing_ok=True)
+    trace = OpTrace(program)
+    try:
+        shape = load_solid(program, trace)
+        info = check_solid(shape)
+        trace.record_result(shape)
+    except IllegalOperation:
+        raise  # already logged by the trace, at the operation that caused it
+    except Exception as e:
+        trace.record_failure(e, op="check_result" if isinstance(e, InvalidSolid) else "program")
+        raise
+    finally:
+        trace.write_jsonl(out / "ops_log.jsonl")
+    info["ops"] = {"n_steps": len(trace.steps),
+                   "warnings": [format_step(s) for s in trace.warnings]}
     cq.exporters.export(shape, str(out / "solid.step"))
     cq.exporters.export(shape, str(out / "solid.stl"))
 
-    mesh, center, scale = normalize(to_trimesh(shape))
+    norm = normalization or {}
+    mesh, center, scale = normalize(to_trimesh(shape), norm.get("center"), norm.get("scale"))
     with CQRenderer(rig["width"], rig["height"]) as r:
         views = render_rig(r, mesh, rig)
     for name, (rgb, depth, mask) in views.items():
@@ -101,14 +140,30 @@ def main():
     ap.add_argument("program", type=Path, help="CadQuery .py file defining `result`")
     ap.add_argument("--out", type=Path, default=None, help="default: out/<program name>")
     ap.add_argument("--rig", type=Path, default=None, help="camera rig json (default: rig.json)")
+    ap.add_argument("--like", type=Path, default=None,
+                    help="output dir of a target part: render in the target's frame "
+                         "(same centre and scale) so the two can be compared with compare.py")
+    ap.add_argument("--traceback", action="store_true", help="also print the Python traceback")
     args = ap.parse_args()
     out = args.out or Path("out") / args.program.stem
+    norm = json.loads((args.like / "info.json").read_text())["normalization"] if args.like else None
     try:
-        info = generate(args.program, out, load_rig(args.rig) if args.rig else load_rig())
-    except Exception:
-        traceback.print_exc()
+        info = generate(args.program, out, load_rig(args.rig) if args.rig else load_rig(), norm)
+    except Exception as e:
+        if args.traceback:
+            traceback.print_exc()
+        log = out / "ops_log.jsonl"
+        steps = [json.loads(l) for l in log.read_text().splitlines()] if log.exists() else []
+        for st in steps:
+            if st["status"] != "ok":
+                print(format_step(st), file=sys.stderr)
+        if not any(st["status"] == "error" for st in steps):
+            print(f"[ERROR  ] {type(e).__name__}: {e}", file=sys.stderr)
+        print(f"FAILED, see {log}", file=sys.stderr)
         sys.exit(1)
-    print(json.dumps(info, indent=2))
+    for w in info["ops"]["warnings"]:
+        print(w)
+    print(json.dumps({k: v for k, v in info.items() if k != "ops"}, indent=2))
     print(f"wrote solid.step, solid.stl, depth.npz and {len(info['views'])} views to {out}/")
 
 
