@@ -8,6 +8,7 @@ Write a 3D part as code, then take pictures of it from fixed angles.
 - `generate_solid.py` — runs a part file, checks the part is OK, saves it, and takes its pictures.
 - `cq_render.py` — the camera: turns a 3D shape into pictures.
 - `rig.py` — decides where the 8 cameras stand; saves them in `rig.json`.
+- `part_generators.py` — makes random simple parts (plates, brackets, stepped blocks) as part files.
 
 ## Setup
 
@@ -30,6 +31,13 @@ uv run pytest tests -v -s
 ```
 
 - `tests/test_illegal_shapes.py` — tries to make broken shapes and checks they are refused.
+- `tests/test_part_generators.py` — checks every random part is a real, correct shape.
+
+## Make many random parts
+
+```sh
+uv run python part_generators.py --n 10      # 10 of each kind → out/parts/
+```
 
 ## Make your own part
 
