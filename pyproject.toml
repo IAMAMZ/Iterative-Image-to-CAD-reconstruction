@@ -1,0 +1,17 @@
+[project]
+name = "image-to-cad"
+version = "0.1.0"
+description = "Iterative image-to-CAD reconstruction"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "cadquery>=2.4",
+    "trimesh",
+    "numpy",
+    "scipy",
+    "networkx",
+    "pillow",
+    "pyrender",
+]
+
+[tool.uv]
+package = false
