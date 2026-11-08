@@ -9,7 +9,17 @@ dependencies:
   - scipy
   - networkx
   - pillow
+  - scikit-image
+  - tqdm
   - pytest
   - pip
   - pip:
       - pyrender
+      - manifold3d
+      - open3d
+      - torch
+      - torchvision
+      - transformers==4.50.3
+      - accelerate
+      - qwen-vl-utils==0.0.10
+      - huggingface_hub

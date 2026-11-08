@@ -7,3 +7,10 @@ out/
 __pycache__/
 *.pyc
 .pytest_cache/
+cadrille/checkpoints/
+cadrille/work_dirs/
+cadrille/dl.log
+.conda/
+data/cad_json_realcad/
+data/realcad/
+data/renders/fusion360/
