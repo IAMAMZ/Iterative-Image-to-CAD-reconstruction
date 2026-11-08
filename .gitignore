@@ -13,3 +13,4 @@ cadrille/dl.log
 .conda/
 data/cad_json_realcad/
 data/realcad/
+data/renders/fusion360/
