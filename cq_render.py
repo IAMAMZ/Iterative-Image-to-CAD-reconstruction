@@ -6,8 +6,10 @@
 Run as a script for a demo:  uv run python cq_render.py --out out/demo
 """
 import os
+import sys
 
-os.environ.setdefault("PYOPENGL_PLATFORM", "egl")  # headless rendering
+if sys.platform.startswith("linux"):
+    os.environ.setdefault("PYOPENGL_PLATFORM", "egl")  # headless rendering (macOS uses pyrender's default backend)
 
 import argparse
 import math
