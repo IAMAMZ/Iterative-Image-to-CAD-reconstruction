@@ -30,8 +30,11 @@ MAX_NEW_TOKENS = 768
 SCORE_TIMEOUT_S = 120
 
 
+SPLIT = 'test'  # set by --split ('test' | 'train'); both index into fusion360_test_mesh
+
+
 def test_ids(limit=None):
-    ids = [l.strip() for l in (DATA / 'splits' / 'fusion360_test.txt').read_text().split() if l.strip()]
+    ids = [l.strip() for l in (DATA / 'splits' / f'fusion360_{SPLIT}.txt').read_text().split() if l.strip()]
     return ids[:limit]
 
 
@@ -242,5 +245,7 @@ if __name__ == '__main__':
     ap.add_argument('--jobs', type=int, default=8)
     ap.add_argument('--limit', type=int, default=None)
     ap.add_argument('--dtype', default='bfloat16', choices=['bfloat16', 'float32'])
+    ap.add_argument('--split', default='test', choices=['test', 'train'])
     a = ap.parse_args()
+    SPLIT = a.split
     {'gen': gen, 'score': score, 'table': table}[a.mode](a)
