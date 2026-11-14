@@ -16,3 +16,6 @@ cadrille/dl.log
 data/cad_json_realcad/
 data/realcad/
 data/renders/fusion360/
+
+# obsolete SFT / axis-view data moved out of the way (see archive/MANIFEST.jsonl)
+archive/
