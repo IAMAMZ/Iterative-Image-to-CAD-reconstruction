@@ -1,7 +1,7 @@
-# raw dataset and 3D/CAD source files stay local, never committed
+# raw dataset downloads stay local, never committed
 data/raw/
-data/cad_json_200/
-data/meshes_hidden/
+# full-resolution RealCAD originals (3.3 GB); tracked inputs are the downscaled copies in data/realcad/<split>/images
+data/realcad/src/
 .venv/
 out/
 __pycache__/
@@ -9,9 +9,11 @@ __pycache__/
 .pytest_cache/
 cadrille/checkpoints/
 cadrille/work_dirs/*
-!cadrille/work_dirs/f360_rl/
+!cadrille/work_dirs/f360_rl_test/
+!cadrille/work_dirs/f360_rl_dev/
+cadrille/work_dirs/f360_rl_dev/**/*_raw.stl
 cadrille/dl.log
 .conda/
-data/cad_json_realcad/
-data/realcad/
-data/renders/fusion360/
+
+# obsolete SFT / axis-view data moved out of the way (see archive/MANIFEST.jsonl)
+archive/
