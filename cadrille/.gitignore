@@ -5,5 +5,6 @@ data/text2cad
 data/deepcad_test_mesh
 data/fusion360_test_mesh
 work_dirs/*
-!work_dirs/f360_rl/
-!work_dirs/f360_sft/
+!work_dirs/f360_rl_test/
+!work_dirs/f360_rl_dev/
+work_dirs/f360_rl_dev/**/*_raw.stl

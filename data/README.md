@@ -16,7 +16,7 @@ data/<dataset>/<split>/
 | dataset   | dev | test | images | poses | meshes | notes |
 |-----------|----:|-----:|--------|-------|--------|-------|
 | deepcad   | 100 | 100  | 4 table views (rendered) | yes | stl + step (built from `deepcad/cad_json`) | |
-| fusion360 | 1380 | 345 | 4 table views (rendered) | yes | stl | dev = former "train"; all parts come from `raw/fusion360_test_mesh` |
+| fusion360 | 572 | 345 | 4 table views (rendered) | yes | stl | dev = former "train", trimmed to the 572 parts cadrille RL was run on (other 808 in `archive/fusion360_dev_unrun`); all parts come from `raw/fusion360_test_mesh` |
 | realcad   | 100 | 289  | 4 real photos, downscaled to 1024 px (originals are 4032x3024) | none | stl + step (built from `realcad/cad_json`) | test = 100 seeded picks + the 189 other built meshes |
 
 The 4 views are the "table" cameras of `cameras.json` (`top_left`, `top_right`, `top_front`, `top_back`).

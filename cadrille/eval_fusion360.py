@@ -1,8 +1,8 @@
 """Run cadrille (4-view image mode, CPU) over the Fusion360 test split and score every instance.
 
-  python eval_fusion360.py gen   --ckpt checkpoints/cadrille-rl --tag rl  [--bs 8] [--limit N]
-  python eval_fusion360.py score --tag rl [--jobs 8]
-  python eval_fusion360.py table --tags rl sft            # -> results/fusion360_test.{csv,md}
+  python eval_fusion360.py gen   --ckpt checkpoints/cadrille-rl --tag rl_test [--split test|dev] [--bs 8] [--limit N]
+  python eval_fusion360.py score --tag rl_test [--split test|dev] [--jobs 8]
+  python eval_fusion360.py table --tags rl_test           # -> results/fusion360_test.{csv,md}
 
 Input : data/raw/fusion360_test_mesh/<part>.stl for the parts in data/fusion360/<split>/ids.txt
 Gen   : batched, resumable; one predicted CadQuery program per part -> work_dirs/f360_<tag>/py/<part>.py

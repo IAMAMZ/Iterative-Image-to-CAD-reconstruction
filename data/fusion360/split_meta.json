@@ -2,7 +2,8 @@
   "seed": 2529,
   "source": "maksimko123/fusion360_test_mesh (Fusion360 reconstruction test split)",
   "n_source": 1725,
-  "n_train": 1380,
+  "n_train": 572,
   "n_test": 345,
-  "note": "dev = former train split (renamed); test unchanged"
+  "note": "dev = former train split (renamed), trimmed to the 572 parts cadrille RL was run on; the other 808 are in archive/fusion360_dev_unrun; test unchanged",
+  "n_dev": 572
 }
