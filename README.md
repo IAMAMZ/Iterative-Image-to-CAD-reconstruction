@@ -81,3 +81,34 @@ uv run python compare_image.py photo.png out/guess --camera iso_fr  # camera kno
 Look at `out/guess/compare_image/summary.png`: the picture, the guess from the found
 angle, and the overlay (red = missing, blue = extra). Size can't be judged from one
 picture, so only the shape counts.
+
+## Refinement loop (VLM agent, Stage 1)
+
+A local vision-language model (via [Ollama](https://ollama.com), default `gemma4:12b`, no API key)
+writes a CadQuery program from the target's pictures, then revises it round by round.
+Two arms decide which edits are kept:
+
+- `vlm` — the VLM looks at target vs. candidate renders and judges itself (`KEEP A` / `KEEP B`).
+- `geo` — the agent also gets the red/blue silhouette residual, the depth-error map and per-view
+  numbers; an edit is kept only if silhouette + depth agreement improves and no view's IoU drops
+  by more than 0.05.
+
+Both arms start from the same first program per part. The hidden true solid is only used afterwards
+(`eval3d.py`: 3D IoU from CAD booleans, Chamfer) to check whether each kept edit really helped.
+
+```sh
+ollama serve &                                            # in another terminal
+uv run python part_generators.py --n 2 --out out/pilot    # targets
+caffeinate -i uv run python refine.py out/pilot/* --arm both --rounds 4 --out out/refine
+uv run python summarize_runs.py out/refine
+```
+
+- `refine.py` — the loop. The size of the target is measured from its depth maps and calibrated
+  cameras (no 3D model); candidates are moved to the target's measured centre before comparing.
+- `vlm.py` — Ollama client, prompts, and a safety check on model-written code.
+- `eval3d.py` — offline 3D scores against the hidden solid.
+- `summarize_runs.py` — per-arm table: 3D IoU / Chamfer before vs. after, and kept/dropped edits
+  split by whether they really helped.
+- `--init <dir>` starts from your own programs (e.g. cadrille output) instead of asking the VLM.
+
+On macOS, run long jobs under `caffeinate -i` so the Mac doesn't sleep mid-run.

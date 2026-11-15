@@ -95,9 +95,12 @@ def depth_preview(depth: np.ndarray) -> np.ndarray:
     return img
 
 
-def generate(program: Path, out: Path, rig: dict, normalization: dict | None = None) -> dict:
+def generate(program: Path, out: Path, rig: dict, normalization: dict | None = None,
+             center_at=None) -> dict:
     """normalization: {"center", "scale"} to reuse (e.g. a target's info.json entry);
-    default fits this part to the unit sphere."""
+    default fits this part to the unit sphere.
+    center_at: (x, y, z) in mm; move the solid so its bounding-box centre lands there
+    (forgives a guess that has the right shape but sits in the wrong place)."""
     out.mkdir(parents=True, exist_ok=True)
     views_png = [f"{c['name']}{sfx}.png" for c in rig["cameras"] for sfx in ("", "_mask", "_depth")]
     for f in [*OUTPUTS, *views_png]:
@@ -106,6 +109,12 @@ def generate(program: Path, out: Path, rig: dict, normalization: dict | None = N
     try:
         shape = load_solid(program, trace)
         info = check_solid(shape)
+        if center_at is not None:
+            c = (np.array(info["bbox_min"]) + np.array(info["bbox_max"])) / 2
+            shift = np.asarray(center_at, float) - c
+            shape = shape.translate(cq.Vector(*shift))
+            info = check_solid(shape)
+            info["translated_by"] = shift.tolist()
         trace.record_result(shape)
     except IllegalOperation:
         raise  # already logged by the trace, at the operation that caused it
@@ -143,12 +152,15 @@ def main():
     ap.add_argument("--like", type=Path, default=None,
                     help="output dir of a target part: render in the target's frame "
                          "(same centre and scale) so the two can be compared with compare.py")
+    ap.add_argument("--center-at", type=float, nargs=3, default=None, metavar=("X", "Y", "Z"),
+                    help="move the solid so its bounding-box centre is here (mm)")
     ap.add_argument("--traceback", action="store_true", help="also print the Python traceback")
     args = ap.parse_args()
     out = args.out or Path("out") / args.program.stem
     norm = json.loads((args.like / "info.json").read_text())["normalization"] if args.like else None
     try:
-        info = generate(args.program, out, load_rig(args.rig) if args.rig else load_rig(), norm)
+        info = generate(args.program, out, load_rig(args.rig) if args.rig else load_rig(), norm,
+                        args.center_at)
     except Exception as e:
         if args.traceback:
             traceback.print_exc()
