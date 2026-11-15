@@ -78,3 +78,14 @@ def write_json(path):
                   for k, v in views().items()},
     }
     json.dump(doc, open(path, "w"), indent=2)
+
+
+def pose_json(entry):
+    """Per-part pose record written to <split>/poses/<id>.json (from a render manifest entry)."""
+    return json.dumps({
+        "id": entry["part"],
+        "frame": "object normalised to unit bounding sphere, +Z up; cameras are the 4 'table' cameras of "
+                 "data/cameras.json looking at the object after rotating it by R_table",
+        "centre": entry["centre"], "scale": entry["scale"], "R_table": entry["R_table"],
+        "table": entry["table"], "n_triangles": entry["n_triangles"], "watertight": entry["watertight"],
+    }, indent=1)

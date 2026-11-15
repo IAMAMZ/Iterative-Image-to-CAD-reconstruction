@@ -1,0 +1,35 @@
+{
+ "id": "34570_2041f80b_0002",
+ "frame": "object normalised to unit bounding sphere, +Z up; cameras are the 4 \"table\" cameras of data/cameras.json looking at the object after rotating it by R_table",
+ "centre": [
+  0.5,
+  0.5,
+  0.5
+ ],
+ "scale": 1.923047861150383,
+ "R_table": [
+  [
+   0.216521656,
+   0.97437419,
+   -0.060936932
+  ],
+  [
+   0.798431548,
+   -0.212651754,
+   -0.563281719
+  ],
+  [
+   -0.561805515,
+   0.073308722,
+   -0.824014803
+  ]
+ ],
+ "table": {
+  "stable_pose_index": 23,
+  "stable_pose_prob": 0.007663283670994953,
+  "yaw_deg": 173.82564130529482,
+  "table_plane_z": -0.23026126235543642
+ },
+ "n_triangles": 1020,
+ "watertight": true
+}

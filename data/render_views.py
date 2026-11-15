@@ -1,17 +1,17 @@
 """Render every part in a split from the shared cameras, with seeded random poses.
 
 usage: python render_views.py <split dev|test> [limit]
-reads   data/splits/<split>.txt, data/cad_json_200/ (local only, never committed)
-writes  data/renders/<split>/<part>/{rgb,mask}/<view>.png and depth.npz
-        data/meshes_hidden/<split>/<part>.{stl,step}   canonical ground truth (git-ignored)
-        data/meshes_hidden/<split>/<part>_{axis,table}_posed.stl  ground truth in the
-            render frame of each camera set (git-ignored)
-        data/cameras.json, data/renders/<split>/manifest.json
+reads   data/deepcad/<split>/ids.txt, data/deepcad/cad_json/ (local only, never committed)
+writes  data/deepcad/<split>/images/<part>/{rgb,mask}/<view>.png and depth.npz   (4 table views)
+        data/deepcad/<split>/poses/<part>.json
+        data/deepcad/<split>/meshes/<part>.{stl,step}   canonical ground truth (git-ignored)
+        data/deepcad/<split>/meshes/<part>_table_posed.stl  ground truth in the render frame (git-ignored)
+        data/cameras.json, data/deepcad/<split>/manifest.json
 
-Poses (independent per camera set, deterministic from SEED + part id):
-  axis  views: uniformly random 3D rotation.
+Pose (deterministic from SEED + part id):
   table views: a physically stable resting pose (trimesh.poses, sampled by stability
                probability) followed by a random spin about the vertical (+Z) axis.
+  (The 6 "axis" views were dropped and archived; the axis rotation is still drawn so table poses are unchanged.)
 Frames: x_render = R @ (scale * (x_canonical - centre)), with `centre` and `scale`
 from the manifest. R is stored per set (3x3, row-major). `table_plane_z` is the z of the
 table surface in the normalised render frame of the table set.
@@ -33,7 +33,7 @@ import cameras
 
 SEED = 2529
 HERE = Path(__file__).parent
-SRC = HERE / "cad_json_200" / "cad_json"
+SRC = HERE / "deepcad" / "cad_json"
 
 
 def to_mesh(shape):
@@ -101,14 +101,16 @@ def render_views(mesh_p, renderer, views):
 def main():
     split = sys.argv[1]
     limit = int(sys.argv[2]) if len(sys.argv) > 2 else None
-    ids = [l.strip() for l in open(HERE / "splits" / f"{split}.txt") if l.strip()][:limit]
+    split_root = HERE / "deepcad" / split
+    ids = [l.strip() for l in open(split_root / "ids.txt") if l.strip()][:limit]
     cameras.write_json(HERE / "cameras.json")
     views = cameras.views()
-    groups = {g: {k: v for k, v in views.items() if v["group"] == g} for g in ("axis", "table")}
+    groups = {g: {k: v for k, v in views.items() if v["group"] == g} for g in ("table",)}
     renderer = pyrender.OffscreenRenderer(cameras.IMG, cameras.IMG)
-    out_root = HERE / "renders" / split
-    mesh_root = HERE / "meshes_hidden" / split
+    out_root = split_root / "images"
+    mesh_root = split_root / "meshes"
     mesh_root.mkdir(parents=True, exist_ok=True)
+    (split_root / "poses").mkdir(parents=True, exist_ok=True)
     manifest, failed = {}, {}
     for pid in ids:
         name = pid.split("/")[1]
@@ -121,7 +123,7 @@ def main():
             rng = np.random.default_rng([SEED, int(name)])
             r_axis, r_table, tinfo = pose_rotations(mesh_n, rng)
             res = {}
-            for g, rot in (("axis", r_axis), ("table", r_table)):
+            for g, rot in (("table", r_table),):
                 mp = posed(mesh_n, rot)
                 mp.export(mesh_root / f"{name}_{g}_posed.stl")
                 res.update(render_views(mp, renderer, groups[g]))
@@ -141,11 +143,12 @@ def main():
             depths[vname] = depth.astype(np.float16)
         np.savez_compressed(d / "depth.npz", **depths)
         manifest[pid] = {"part": name, "centre": centre.tolist(), "scale": 1.0 / r,
-                         "R_axis": r_axis.round(9).tolist(), "R_table": r_table.round(9).tolist(),
+                         "R_table": r_table.round(9).tolist(),
                          "table": tinfo, "n_triangles": int(len(mesh.faces)),
                          "watertight": bool(mesh.is_watertight)}
+        (split_root / "poses" / f"{name}.json").write_text(cameras.pose_json(manifest[pid]), encoding="utf-8")
     json.dump({"split": split, "seed": SEED, "rendered": manifest, "failed": failed},
-              open(out_root / "manifest.json", "w"), indent=2)
+              open(split_root / "manifest.json", "w"), indent=2)
     print(f"{split}: rendered {len(manifest)} / {len(ids)}, failed {len(failed)}")
 
 

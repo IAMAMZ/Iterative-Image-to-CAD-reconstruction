@@ -1,0 +1,9 @@
+{
+  "seed": 2529,
+  "n_built_meshes": 389,
+  "n_dev": 100,
+  "n_test": 289,
+  "source": "sorted(built ids in gt_manifest.json), rng.sample(ids, 200); dev = sorted(first 100), test = sorted(rest)",
+  "poses": "none (real photos, camera poses unknown)",
+  "note": "test = 100 seeded picks + the 189 remaining built meshes (formerly realcad/unassigned), 289 total; dev unchanged"
+}
