@@ -21,11 +21,11 @@ import trimesh
 
 HERE = Path(__file__).parent
 DATA = HERE.parent / 'data'
-GT_DIR = DATA / 'meshes_hidden' / 'dev'
+GT_DIR = DATA / 'deepcad' / 'dev' / 'meshes'
 
 
 def sample_ids(n):
-    ids = [l.strip().split('/')[-1] for l in (DATA / 'splits' / 'dev.txt').read_text().split() if l.strip()]
+    ids = [l.strip().split('/')[-1] for l in (DATA / 'deepcad' / 'dev' / 'ids.txt').read_text().split() if l.strip()]
     ids = [i for i in ids if (GT_DIR / f'{i}.stl').exists()]
     step = max(len(ids) // n, 1)
     return ids[::step][:n]

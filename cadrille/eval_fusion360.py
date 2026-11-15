@@ -4,7 +4,7 @@
   python eval_fusion360.py score --tag rl [--jobs 8]
   python eval_fusion360.py table --tags rl sft            # -> results/fusion360_test.{csv,md}
 
-Input : data/raw/fusion360_test_mesh/<part>.stl for the parts in data/splits/fusion360_test.txt
+Input : data/raw/fusion360_test_mesh/<part>.stl for the parts in data/fusion360/<split>/ids.txt
 Gen   : batched, resumable; one predicted CadQuery program per part -> work_dirs/f360_<tag>/py/<part>.py
 Score : paper protocol (evaluate.py): the prediction is normalised by its own bbox (centre 0.5, longest side
         1), the GT likewise; volumetric IoU by mesh booleans (manifold3d); Chamfer distance on 8192 points.
@@ -30,8 +30,11 @@ MAX_NEW_TOKENS = 768
 SCORE_TIMEOUT_S = 120
 
 
+SPLIT = 'test'  # set by --split ('test' | 'dev'; 'train' = old name of dev); both index into fusion360_test_mesh
+
+
 def test_ids(limit=None):
-    ids = [l.strip() for l in (DATA / 'splits' / 'fusion360_test.txt').read_text().split() if l.strip()]
+    ids = [l.strip() for l in (DATA / 'fusion360' / SPLIT / 'ids.txt').read_text().split() if l.strip()]
     return ids[:limit]
 
 
@@ -194,7 +197,7 @@ def table(args):
     stats = {t: _stats([per[t][i] for i in ids if i in per[t]], len(ids)) for t in args.tags}
     paper = {'sft': (0.20, 77.6, 3.2), 'rl': (0.17, 84.6, 0.0)}
     L = ['# cadrille on Fusion360 test (4-view image input)', '',
-         f'{len(ids)} parts from `data/splits/fusion360_test.txt` (our seeded 20% of the 1725 Fusion360 test meshes). '
+         f'{len(ids)} parts from `data/fusion360/test/ids.txt` (our seeded 20% of the 1725 Fusion360 test meshes). '
          'Protocol follows cadrille `evaluate.py`: prediction and GT both normalised into the unit cube by bbox; '
          'IoU = volumetric (mesh booleans); CD = Chamfer distance on 8192 points, median, x1000; '
          'IR = share of programs that give no valid mesh. One sample per part (greedy, max 768 new tokens), '
@@ -242,5 +245,7 @@ if __name__ == '__main__':
     ap.add_argument('--jobs', type=int, default=8)
     ap.add_argument('--limit', type=int, default=None)
     ap.add_argument('--dtype', default='bfloat16', choices=['bfloat16', 'float32'])
+    ap.add_argument('--split', default='test', choices=['test', 'dev', 'train'])
     a = ap.parse_args()
+    SPLIT = 'dev' if a.split == 'train' else a.split
     {'gen': gen, 'score': score, 'table': table}[a.mode](a)

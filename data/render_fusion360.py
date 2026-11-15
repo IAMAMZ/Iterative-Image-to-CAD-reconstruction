@@ -4,13 +4,13 @@ Fusion360 (maksimko123/fusion360_test_mesh, 1725 STL meshes) ships as meshes, no
 is the mesh counterpart of render_views.py. Same layout and conventions, but a numpy z-buffer
 rasteriser instead of pyrender (no EGL/OpenGL needed; works on Windows ARM).
 
-usage: python render_fusion360.py split            # writes splits/fusion360_{train,test}.txt
-       python render_fusion360.py render <train|test> [limit] [--jobs N]
+usage: python render_fusion360.py split            # writes fusion360/{dev,test}/ids.txt
+       python render_fusion360.py render <dev|test> [limit] [--jobs N]
 
 reads   data/raw/fusion360_test_mesh/<part>.stl            (git-ignored)
-writes  data/renders/fusion360/<split>/<part>/{rgb,mask}/<view>.png and depth.npz
-        data/renders/fusion360/<split>/manifest.json
-        data/meshes_hidden/fusion360/<split>/<part>.stl and <part>_{axis,table}_posed.stl (git-ignored)
+writes  data/fusion360/<split>/images/<part>/{rgb,mask}/<view>.png and depth.npz   (4 table views)
+        data/fusion360/<split>/poses/<part>.json, data/fusion360/<split>/manifest.json
+        data/fusion360/<split>/meshes/<part>.stl and <part>_table_posed.stl (git-ignored)
 
 Poses are seeded from SEED + part name, as in render_views.py:
   axis  views: uniformly random 3D rotation.
@@ -41,7 +41,7 @@ TEST_FRACTION = 0.2
 
 def all_parts():
     """All 1725 part names, from the Hugging Face listing saved next to the meshes."""
-    listing = HERE / "splits" / "fusion360_all.txt"
+    listing = HERE / "fusion360" / "all_ids.txt"
     if listing.exists():
         return [l.strip() for l in listing.read_text().split() if l.strip()]
     return sorted(p.stem for p in SRC.glob("*.stl"))
@@ -52,13 +52,15 @@ def make_split():
     rng = random.Random(SEED)
     rng.shuffle(names)
     n_test = round(len(names) * TEST_FRACTION)
-    test, train = sorted(names[:n_test]), sorted(names[n_test:])
-    (HERE / "splits" / "fusion360_train.txt").write_text("\n".join(train) + "\n")
-    (HERE / "splits" / "fusion360_test.txt").write_text("\n".join(test) + "\n")
-    (HERE / "splits" / "fusion360_meta.json").write_text(json.dumps(
+    test, dev = sorted(names[:n_test]), sorted(names[n_test:])
+    for split, ids in (("dev", dev), ("test", test)):
+        (HERE / "fusion360" / split).mkdir(parents=True, exist_ok=True)
+        (HERE / "fusion360" / split / "ids.txt").write_text("\n".join(ids) + "\n")
+    (HERE / "fusion360" / "split_meta.json").write_text(json.dumps(
         {"seed": SEED, "source": "maksimko123/fusion360_test_mesh (Fusion360 reconstruction test split)",
-         "n_source": len(names), "n_train": len(train), "n_test": len(test)}, indent=2))
-    print(f"train {len(train)}, test {len(test)}")
+         "n_source": len(names), "n_dev": len(dev), "n_test": len(test),
+         "note": "dev = former train split (renamed); test unchanged"}, indent=2))
+    print(f"dev {len(dev)}, test {len(test)}")
 
 
 # ------------------------------------------------------------------ geometry
@@ -152,9 +154,11 @@ def render_part(args):
     name, split = args
     try:
         mesh = trimesh.load_mesh(SRC / f"{name}.stl")
-        mesh_root = HERE / "meshes_hidden" / "fusion360" / split
-        out = HERE / "renders" / "fusion360" / split / name
+        split_root = HERE / "fusion360" / split
+        mesh_root = split_root / "meshes"
+        out = split_root / "images" / name
         mesh_root.mkdir(parents=True, exist_ok=True)
+        (split_root / "poses").mkdir(parents=True, exist_ok=True)
         (out / "rgb").mkdir(parents=True, exist_ok=True)
         (out / "mask").mkdir(parents=True, exist_ok=True)
         mesh.export(mesh_root / f"{name}.stl")
@@ -163,7 +167,7 @@ def render_part(args):
         r_axis, r_table, tinfo = pose_rotations(mesh_n, rng)
         views = cameras.views()
         depths = {}
-        for g, rot in (("axis", r_axis), ("table", r_table)):
+        for g, rot in (("table", r_table),):
             mp = posed(mesh_n, rot)
             mp.export(mesh_root / f"{name}_{g}_posed.stl")
             for vname, v in views.items():
@@ -175,10 +179,12 @@ def render_part(args):
                 Image.fromarray((mask * 255).astype(np.uint8)).save(out / "mask" / f"{vname}.png")
                 depths[vname] = depth.astype(np.float16)
         np.savez_compressed(out / "depth.npz", **depths)
-        return name, {"part": name, "centre": centre.tolist(), "scale": 1.0 / r,
-                      "R_axis": r_axis.round(9).tolist(), "R_table": r_table.round(9).tolist(),
-                      "table": tinfo, "n_triangles": int(len(mesh.faces)),
-                      "watertight": bool(mesh.is_watertight)}, None
+        rec = {"part": name, "centre": centre.tolist(), "scale": 1.0 / r,
+               "R_table": r_table.round(9).tolist(),
+               "table": tinfo, "n_triangles": int(len(mesh.faces)),
+               "watertight": bool(mesh.is_watertight)}
+        (split_root / "poses" / f"{name}.json").write_text(cameras.pose_json(rec), encoding="utf-8")
+        return name, rec, None
     except Exception as e:
         return name, None, f"{type(e).__name__}: {e}"
 
@@ -186,18 +192,18 @@ def render_part(args):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("mode", choices=["split", "render"])
-    ap.add_argument("split", nargs="?", choices=["train", "test"])
+    ap.add_argument("split", nargs="?", choices=["dev", "test"])
     ap.add_argument("limit", nargs="?", type=int)
     ap.add_argument("--jobs", type=int, default=8)
     a = ap.parse_args()
     cameras.write_json(HERE / "cameras.json")
     if a.mode == "split":
         return make_split()
-    names = [l.strip() for l in open(HERE / "splits" / f"fusion360_{a.split}.txt") if l.strip()][:a.limit]
+    names = [l.strip() for l in open(HERE / "fusion360" / a.split / "ids.txt") if l.strip()][:a.limit]
     todo = [n for n in names if (SRC / f"{n}.stl").exists()]
     if len(todo) < len(names):
         print(f"warning: {len(names) - len(todo)} meshes not downloaded yet, skipping them")
-    out_root = HERE / "renders" / "fusion360" / a.split
+    out_root = HERE / "fusion360" / a.split
     out_root.mkdir(parents=True, exist_ok=True)
     mpath = out_root / "manifest.json"
     prev = json.loads(mpath.read_text()) if mpath.exists() else {"rendered": {}, "failed": {}}

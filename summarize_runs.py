@@ -14,7 +14,7 @@ Per arm:
   * the same for the shadow decisions (what the geometric check, and the VLM judge where
     it ran, would have decided on the very same edits) and their agreement
   * change-type mix (structural / dimensional / positional), stop reasons, tokens, time
-Per stratum (data/splits/stage1_meta.json: cadrille-IoU bin x mesh complexity), the
+Per stratum (data/fusion360/stage1_meta.json: cadrille-IoU bin x mesh complexity), the
 3D IoU gain of every arm.
 """
 import argparse
@@ -26,7 +26,7 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).parent
-META = ROOT / "data" / "splits" / "stage1_meta.json"
+META = ROOT / "data" / "fusion360" / "stage1_meta.json"
 METRICS = ("iou3d", "iou3d_cad", "cd_cad", "chamfer_x1000", "hausdorff", "f1", "iogt")
 
 

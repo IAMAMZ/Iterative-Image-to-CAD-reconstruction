@@ -1,7 +1,7 @@
 """Build refine.py targets from the Fusion360 ground-truth meshes.
 
     uv run python data/fusion360_targets.py                       # Stage 1 split
-    uv run python data/fusion360_targets.py --split data/splits/fusion360_test.txt --limit 5
+    uv run python data/fusion360_targets.py --split data/fusion360/test/ids.txt --limit 5
 
 reads   cadrille/results/fusion360_test_gt/<part>.stl   (committed; unit cube [0,1]^3)
 writes  out/targets/fusion360/<part>/  laid out like a generate_solid.py output:
@@ -27,7 +27,7 @@ from generate_solid import render_mesh  # noqa: E402
 from rig import load_rig  # noqa: E402
 
 GT_DIR = ROOT / "cadrille" / "results" / "fusion360_test_gt"
-DEFAULT_SPLIT = ROOT / "data" / "splits" / "fusion360_stage1.txt"
+DEFAULT_SPLIT = ROOT / "data" / "fusion360" / "stage1.txt"
 DEFAULT_OUT = ROOT / "out" / "targets" / "fusion360"
 CADRILLE_SIDE = 200.0
 

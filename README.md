@@ -82,11 +82,11 @@ picture, so only the shape counts.
 ## Refinement loop (Stage 1)
 
 Data: 345 Fusion360 test parts. Their ground-truth meshes and cadrille's predicted CadQuery
-programs are committed (`cadrille/results/fusion360_test_gt/`, `cadrille/work_dirs/f360_{rl,sft}/`).
+programs are committed (`cadrille/results/fusion360_test_gt/`, `cadrille/work_dirs/f360_rl/`; the SFT outputs are archived).
 Stage 1 uses a stratified subset of 60 parts (cadrille-IoU bin x mesh complexity).
 
 ```sh
-uv run python cadrille_init.py split                # -> data/splits/fusion360_stage1.txt (+ stage1_meta.json)
+uv run python cadrille_init.py split                # -> data/fusion360/stage1.txt (+ stage1_meta.json)
 uv run python data/fusion360_targets.py             # -> out/targets/fusion360/<part>/  (renders, depth, gt.stl)
 uv run python cadrille_init.py convert --tag rl     # -> out/init/cadrille_rl/<part>.py (+ placement fit)
 uv run python refine.py out/targets/fusion360/* --init out/init/cadrille_rl \

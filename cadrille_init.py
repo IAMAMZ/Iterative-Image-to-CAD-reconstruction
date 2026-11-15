@@ -1,6 +1,6 @@
 """Turn cadrille's predicted programs into refine.py starting programs.
 
-    uv run python cadrille_init.py split                      # -> data/splits/fusion360_stage1.txt
+    uv run python cadrille_init.py split                      # -> data/fusion360/stage1.txt
     uv run python data/fusion360_targets.py                   # build the targets of that split
     uv run python cadrille_init.py convert --tag rl           # -> out/init/cadrille_rl/<part>.py
     uv run python refine.py out/targets/fusion360/* --init out/init/cadrille_rl ...
@@ -38,7 +38,7 @@ from view_weights import measure_bbox, view_weights
 ROOT = Path(__file__).parent
 CADRILLE = ROOT / "cadrille"
 GT_DIR = CADRILLE / "results" / "fusion360_test_gt"
-SPLITS = ROOT / "data" / "splits"
+SPLITS = ROOT / "data" / "fusion360"          # <dataset>/<split> layout
 TARGETS = ROOT / "out" / "targets" / "fusion360"
 SEED = 2529
 IOU_BINS = ((0.0, 0.6, "low"), (0.6, 0.9, "mid"), (0.9, 1.01, "high"))
@@ -126,6 +126,9 @@ def build_mesh(src: str, work: Path, sandboxed=False):
 def convert(args):
     from rig import load_rig
     src_dir = CADRILLE / "work_dirs" / f"f360_{args.tag}" / "py"
+    if not src_dir.is_dir():          # SFT outputs were moved to the git-ignored archive/
+        raise SystemExit(f"{src_dir} not found: only the RL outputs are in the repo "
+                         "(SFT is archived, see archive/MANIFEST.jsonl); use --tag rl")
     out = args.out or ROOT / "out" / "init" / f"cadrille_{args.tag}"
     out.mkdir(parents=True, exist_ok=True)
     scores = {r["id"]: r for r in json.loads(
@@ -171,7 +174,7 @@ def convert(args):
 def split(args):
     scores = {r["id"]: r for r in json.loads(
         (CADRILLE / "work_dirs" / "f360_rl" / "scores.json").read_text())}
-    test = [l.strip() for l in (SPLITS / "fusion360_test.txt").read_text().split() if l.strip()]
+    test = [l.strip() for l in (SPLITS / "test" / "ids.txt").read_text().split() if l.strip()]
     rows = []
     for p in test:
         r = scores.get(p)
@@ -195,11 +198,11 @@ def split(args):
         take += rest[:per - len(take)]                 # top up if one half is short
         chosen += take
     chosen.sort(key=lambda r: r["part"])
-    (SPLITS / "fusion360_stage1.txt").write_text("\n".join(r["part"] for r in chosen) + "\n")
+    (SPLITS / "stage1.txt").write_text("\n".join(r["part"] for r in chosen) + "\n")
     (SPLITS / "stage1_meta.json").write_text(json.dumps(
         {"seed": SEED, "per_bin": args.per_bin, "complexity_median": med,
          "iou_bins": IOU_BINS, "parts": {r.pop("part"): r for r in chosen}}, indent=1))
-    print(f"wrote {len(chosen)} parts to {SPLITS / 'fusion360_stage1.txt'}")
+    print(f"wrote {len(chosen)} parts to {SPLITS / 'stage1.txt'}")
 
 
 def main():
