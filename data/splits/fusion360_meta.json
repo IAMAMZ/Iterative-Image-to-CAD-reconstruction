@@ -1,0 +1,7 @@
+{
+  "seed": 2529,
+  "source": "maksimko123/fusion360_test_mesh (Fusion360 reconstruction test split)",
+  "n_source": 1725,
+  "n_train": 1380,
+  "n_test": 345
+}

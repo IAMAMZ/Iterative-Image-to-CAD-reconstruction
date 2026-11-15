@@ -3,5 +3,15 @@ data/raw/
 data/cad_json_200/
 data/meshes_hidden/
 .venv/
-data/realcad/
+out/
+__pycache__/
+*.pyc
+.pytest_cache/
+cadrille/checkpoints/
+cadrille/work_dirs/*
+!cadrille/work_dirs/f360_rl/
+cadrille/dl.log
+.conda/
 data/cad_json_realcad/
+data/realcad/
+data/renders/fusion360/

@@ -1,0 +1,3441 @@
+[
+ {
+  "id": "100155_57ec5fc6_0000",
+  "valid": true,
+  "iou": 0.4112016179709144,
+  "cd_x1000": 3.2491327709221434,
+  "error": "",
+  "exec_s": 3.4,
+  "n_tokens": 360,
+  "hit_limit": false
+ },
+ {
+  "id": "101190_cfdcb477_0005",
+  "valid": true,
+  "iou": 0.9206753949311233,
+  "cd_x1000": 0.2512155387238488,
+  "error": "",
+  "exec_s": 3.3,
+  "n_tokens": 169,
+  "hit_limit": false
+ },
+ {
+  "id": "102263_037b99d3_0000",
+  "valid": true,
+  "iou": 0.8562396809101916,
+  "cd_x1000": 1.312635082066349,
+  "error": "",
+  "exec_s": 3.4,
+  "n_tokens": 197,
+  "hit_limit": false
+ },
+ {
+  "id": "104437_c0d34287_0000",
+  "valid": true,
+  "iou": 0.8570931914147779,
+  "cd_x1000": 0.23071171310163213,
+  "error": "",
+  "exec_s": 3.4,
+  "n_tokens": 260,
+  "hit_limit": false
+ },
+ {
+  "id": "104740_d3638bbe_0003",
+  "valid": true,
+  "iou": 0.8714926361175985,
+  "cd_x1000": 0.38821692000771457,
+  "error": "",
+  "exec_s": 1.7,
+  "n_tokens": 297,
+  "hit_limit": false
+ },
+ {
+  "id": "108852_fed54702_0004",
+  "valid": true,
+  "iou": 0.8739715343103795,
+  "cd_x1000": 0.030091003759669863,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 68,
+  "hit_limit": false
+ },
+ {
+  "id": "109096_01748cff_0000",
+  "valid": true,
+  "iou": 0.9097279653124147,
+  "cd_x1000": 0.10224650352862438,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 206,
+  "hit_limit": false
+ },
+ {
+  "id": "113177_e0a0fba7_0000",
+  "valid": false,
+  "iou": null,
+  "cd_x1000": null,
+  "error": "StdFail_NotDone: GC_MakeArcOfCircle::Value() - no result",
+  "n_tokens": 270,
+  "hit_limit": false
+ },
+ {
+  "id": "115533_da81d57e_0000",
+  "valid": true,
+  "iou": 0.010017533924930105,
+  "cd_x1000": 1.4928030239289571,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 340,
+  "hit_limit": false
+ },
+ {
+  "id": "115535_a171c715_0000",
+  "valid": true,
+  "iou": 0.8182900307240547,
+  "cd_x1000": 0.0811825621769517,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 147,
+  "hit_limit": false
+ },
+ {
+  "id": "116416_b2565d0a_0012",
+  "valid": true,
+  "iou": 0.9787350080930767,
+  "cd_x1000": 0.2769133020321635,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 123,
+  "hit_limit": false
+ },
+ {
+  "id": "116646_96f3ebb8_0000",
+  "valid": true,
+  "iou": 0.9322492035353185,
+  "cd_x1000": 1.3905913191527266,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 252,
+  "hit_limit": false
+ },
+ {
+  "id": "119553_c436b288_0013",
+  "valid": true,
+  "iou": 0.9635562868302369,
+  "cd_x1000": 0.06899952231148246,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 152,
+  "hit_limit": false
+ },
+ {
+  "id": "119894_8b172e77_0000",
+  "valid": true,
+  "iou": 0.0018290894646513952,
+  "cd_x1000": 7.369322096201347,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 306,
+  "hit_limit": false
+ },
+ {
+  "id": "120885_cf1949dd_0000",
+  "valid": true,
+  "iou": 0.6671364318229909,
+  "cd_x1000": 1.576605948214629,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 107,
+  "hit_limit": false
+ },
+ {
+  "id": "123082_1fd91000_0000",
+  "valid": true,
+  "iou": 0.9868172743441325,
+  "cd_x1000": 0.28106454053403973,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 51,
+  "hit_limit": false
+ },
+ {
+  "id": "123336_d21b9492_0000",
+  "valid": true,
+  "iou": 0.7564854358018069,
+  "cd_x1000": 0.815014476354977,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 257,
+  "hit_limit": false
+ },
+ {
+  "id": "124497_5c00f42d_0006",
+  "valid": true,
+  "iou": 0.9825276230133817,
+  "cd_x1000": 0.11179062850985236,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 50,
+  "hit_limit": false
+ },
+ {
+  "id": "125152_65ed33fd_0000",
+  "valid": true,
+  "iou": 0.07515500115616716,
+  "cd_x1000": 26.50280134251432,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 53,
+  "hit_limit": false
+ },
+ {
+  "id": "126254_7d086401_0003",
+  "valid": true,
+  "iou": 0.9900504820164466,
+  "cd_x1000": 0.21287630611220754,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 75,
+  "hit_limit": false
+ },
+ {
+  "id": "127024_3b28566f_0002",
+  "valid": true,
+  "iou": 0.9819467566698961,
+  "cd_x1000": 0.062142532467802734,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 99,
+  "hit_limit": false
+ },
+ {
+  "id": "127274_6484a80b_0000",
+  "valid": true,
+  "iou": 0.012352285213285142,
+  "cd_x1000": 0.39336794531100777,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 125,
+  "hit_limit": false
+ },
+ {
+  "id": "128043_9f8cd69e_0000",
+  "valid": true,
+  "iou": 0.5217424484107039,
+  "cd_x1000": 0.37680018330046283,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 275,
+  "hit_limit": false
+ },
+ {
+  "id": "128355_739c5ce0_0002",
+  "valid": true,
+  "iou": 0.9825316644993446,
+  "cd_x1000": 0.09782597000666779,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 50,
+  "hit_limit": false
+ },
+ {
+  "id": "128656_22e204c6_0005",
+  "valid": false,
+  "iou": null,
+  "cd_x1000": null,
+  "error": "StdFail_NotDone: GC_MakeArcOfCircle::Value() - no result",
+  "n_tokens": 114,
+  "hit_limit": false
+ },
+ {
+  "id": "130757_3a6352fd_0002",
+  "valid": true,
+  "iou": 0.956344600018171,
+  "cd_x1000": 0.1308995759484581,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 192,
+  "hit_limit": false
+ },
+ {
+  "id": "130757_fc4d165e_0001",
+  "valid": true,
+  "iou": 0.9540638080546116,
+  "cd_x1000": 1.150911491087735,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 141,
+  "hit_limit": false
+ },
+ {
+  "id": "130850_227be64a_0001",
+  "valid": true,
+  "iou": 0.9914960504541384,
+  "cd_x1000": 0.46574499216093923,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 55,
+  "hit_limit": false
+ },
+ {
+  "id": "130932_a060d2a3_0000",
+  "valid": true,
+  "iou": 0.8406755822798492,
+  "cd_x1000": 0.6739727610168831,
+  "error": "",
+  "exec_s": 1.7,
+  "n_tokens": 234,
+  "hit_limit": false
+ },
+ {
+  "id": "131066_7943a19c_0000",
+  "valid": true,
+  "iou": 0.8320804015896566,
+  "cd_x1000": 0.06025347746382104,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 49,
+  "hit_limit": false
+ },
+ {
+  "id": "131068_085c0ed9_0003",
+  "valid": true,
+  "iou": 0.9595273616984136,
+  "cd_x1000": 0.18387525826409415,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 145,
+  "hit_limit": false
+ },
+ {
+  "id": "131156_d1bee956_0000",
+  "valid": true,
+  "iou": 0.7916919581372163,
+  "cd_x1000": 0.042106839488548035,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 187,
+  "hit_limit": false
+ },
+ {
+  "id": "131709_8b86dfb6_0000",
+  "valid": true,
+  "iou": 0.7378271590748244,
+  "cd_x1000": 0.5492462690343886,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 205,
+  "hit_limit": false
+ },
+ {
+  "id": "132464_8dc52066_0000",
+  "valid": true,
+  "iou": 0.9682727101342288,
+  "cd_x1000": 0.16551140796640276,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 88,
+  "hit_limit": false
+ },
+ {
+  "id": "133073_013d4ebd_0022",
+  "valid": true,
+  "iou": 0.99968765908023,
+  "cd_x1000": 0.13393245679257124,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 45,
+  "hit_limit": false
+ },
+ {
+  "id": "133402_47273d61_0000",
+  "valid": true,
+  "iou": 0.8333325953710093,
+  "cd_x1000": 0.055360411169919375,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 49,
+  "hit_limit": false
+ },
+ {
+  "id": "133402_47273d61_0020",
+  "valid": true,
+  "iou": 0.9506237870163096,
+  "cd_x1000": 0.016773546960537466,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 50,
+  "hit_limit": false
+ },
+ {
+  "id": "133402_47273d61_0029",
+  "valid": true,
+  "iou": 0.9264043109151222,
+  "cd_x1000": 0.017678388203350957,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 50,
+  "hit_limit": false
+ },
+ {
+  "id": "133768_6787114d_0029",
+  "valid": true,
+  "iou": 1.0000000966974403,
+  "cd_x1000": 0.17106637084321485,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 46,
+  "hit_limit": false
+ },
+ {
+  "id": "134408_8183bf58_0000",
+  "valid": true,
+  "iou": 0.8940790468348729,
+  "cd_x1000": 0.06687451151852404,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 164,
+  "hit_limit": false
+ },
+ {
+  "id": "135001_e76e4574_0000",
+  "valid": true,
+  "iou": 0.8079054644374575,
+  "cd_x1000": 0.4830398460281179,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 130,
+  "hit_limit": false
+ },
+ {
+  "id": "135070_b300af8d_0013",
+  "valid": true,
+  "iou": 0.9611687985321181,
+  "cd_x1000": 0.060956146203043106,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 48,
+  "hit_limit": false
+ },
+ {
+  "id": "135092_c3610d5c_0006",
+  "valid": true,
+  "iou": 0.9256146782627019,
+  "cd_x1000": 0.2284164960211388,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 148,
+  "hit_limit": false
+ },
+ {
+  "id": "135538_9913818f_0013",
+  "valid": true,
+  "iou": 0.9632987693519517,
+  "cd_x1000": 0.07372405992257061,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 50,
+  "hit_limit": false
+ },
+ {
+  "id": "135654_34a24e52_0000",
+  "valid": true,
+  "iou": 0.12505783655693783,
+  "cd_x1000": 3.380947472632017,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 336,
+  "hit_limit": false
+ },
+ {
+  "id": "136128_30e5414b_0000",
+  "valid": true,
+  "iou": 0.955352904940288,
+  "cd_x1000": 0.42539662355603947,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 139,
+  "hit_limit": false
+ },
+ {
+  "id": "136204_cd4e55ea_0000",
+  "valid": true,
+  "iou": 0.970004579662187,
+  "cd_x1000": 0.17054199611466825,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 150,
+  "hit_limit": false
+ },
+ {
+  "id": "136206_911a4e4d_0000",
+  "valid": true,
+  "iou": 0.7947629396210051,
+  "cd_x1000": 0.4402227341010396,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 292,
+  "hit_limit": false
+ },
+ {
+  "id": "136716_076bbbb3_0006",
+  "valid": true,
+  "iou": 0.9523180624579382,
+  "cd_x1000": 0.053873590498946376,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 49,
+  "hit_limit": false
+ },
+ {
+  "id": "136804_03742933_0000",
+  "valid": true,
+  "iou": 0.7931861740130528,
+  "cd_x1000": 0.7874850786450373,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 162,
+  "hit_limit": false
+ },
+ {
+  "id": "136821_0f4b88d0_0007",
+  "valid": true,
+  "iou": 0.9472476704535909,
+  "cd_x1000": 0.08979408429016017,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 151,
+  "hit_limit": false
+ },
+ {
+  "id": "137403_81c69c1f_0000",
+  "valid": true,
+  "iou": 0.9408899760133738,
+  "cd_x1000": 0.1010149213952514,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 103,
+  "hit_limit": false
+ },
+ {
+  "id": "137753_f8c5f443_0000",
+  "valid": true,
+  "iou": 0.9849261472442552,
+  "cd_x1000": 0.20754798324003482,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 71,
+  "hit_limit": false
+ },
+ {
+  "id": "137837_9c9f163d_0002",
+  "valid": true,
+  "iou": 1.0000000794728214,
+  "cd_x1000": 0.04174865585332633,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 50,
+  "hit_limit": false
+ },
+ {
+  "id": "137837_9c9f163d_0008",
+  "valid": true,
+  "iou": 1.0000001788139434,
+  "cd_x1000": 0.06776942531540991,
+  "error": "",
+  "exec_s": 1.4,
+  "n_tokens": 50,
+  "hit_limit": false
+ },
+ {
+  "id": "137837_9c9f163d_0010",
+  "valid": true,
+  "iou": 0.9574808829242762,
+  "cd_x1000": 0.11167600055163496,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 51,
+  "hit_limit": false
+ },
+ {
+  "id": "137905_bef6aac2_0000",
+  "valid": true,
+  "iou": 0.9785727412376114,
+  "cd_x1000": 0.13789760741478446,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 83,
+  "hit_limit": false
+ },
+ {
+  "id": "138242_d520d083_0000",
+  "valid": true,
+  "iou": 0.8797328337041767,
+  "cd_x1000": 0.23972777216945512,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 91,
+  "hit_limit": false
+ },
+ {
+  "id": "139518_5ee97bb7_0000",
+  "valid": true,
+  "iou": 0.9100721043245977,
+  "cd_x1000": 0.08157933635363393,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 104,
+  "hit_limit": false
+ },
+ {
+  "id": "140391_46e0f895_0000",
+  "valid": true,
+  "iou": 0.5093277287388503,
+  "cd_x1000": 2.667457857967876,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 252,
+  "hit_limit": false
+ },
+ {
+  "id": "140600_a065e504_0004",
+  "valid": true,
+  "iou": 0.15302879662595503,
+  "cd_x1000": 27.36799044663053,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 234,
+  "hit_limit": false
+ },
+ {
+  "id": "141096_54f486ec_0000",
+  "valid": true,
+  "iou": 0.9734569728228775,
+  "cd_x1000": 0.22739489675027383,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 147,
+  "hit_limit": false
+ },
+ {
+  "id": "141742_0e1d8c2e_0001",
+  "valid": true,
+  "iou": 0.3708326960250014,
+  "cd_x1000": 0.8651565145219418,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 184,
+  "hit_limit": false
+ },
+ {
+  "id": "142315_5c796497_0000",
+  "valid": true,
+  "iou": 0.9743560160043403,
+  "cd_x1000": 0.12611161971124688,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 51,
+  "hit_limit": false
+ },
+ {
+  "id": "142852_00b5fde9_0001",
+  "valid": true,
+  "iou": 0.9541395703943815,
+  "cd_x1000": 0.08157276169966891,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 50,
+  "hit_limit": false
+ },
+ {
+  "id": "143293_fc5b0ff7_0019",
+  "valid": true,
+  "iou": 0.9995692906248878,
+  "cd_x1000": 0.11886806830315386,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 52,
+  "hit_limit": false
+ },
+ {
+  "id": "143310_b506ce21_0000",
+  "valid": true,
+  "iou": 0.24832800256904664,
+  "cd_x1000": 9.89369027936915,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 227,
+  "hit_limit": false
+ },
+ {
+  "id": "143325_c97f1121_0000",
+  "valid": true,
+  "iou": 0.21059453081419335,
+  "cd_x1000": 10.247500951835915,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 336,
+  "hit_limit": false
+ },
+ {
+  "id": "143967_d7e408c9_0004",
+  "valid": true,
+  "iou": 0.9994820720924886,
+  "cd_x1000": 0.3081919802635819,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 54,
+  "hit_limit": false
+ },
+ {
+  "id": "144276_ff01151b_0000",
+  "valid": true,
+  "iou": 0.7262853275626496,
+  "cd_x1000": 0.8889750011368809,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 173,
+  "hit_limit": false
+ },
+ {
+  "id": "144279_136348c1_0000",
+  "valid": true,
+  "iou": 0.635805500528533,
+  "cd_x1000": 1.542178399119923,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 288,
+  "hit_limit": false
+ },
+ {
+  "id": "144428_61da44e1_0000",
+  "valid": true,
+  "iou": 0.981354449653233,
+  "cd_x1000": 0.1064769273154635,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 158,
+  "hit_limit": false
+ },
+ {
+  "id": "144491_cbdce23f_0000",
+  "valid": true,
+  "iou": 0.38047750058300006,
+  "cd_x1000": 9.707418506098547,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 116,
+  "hit_limit": false
+ },
+ {
+  "id": "145121_2b2a370d_0001",
+  "valid": true,
+  "iou": 0.9444932282506799,
+  "cd_x1000": 0.2580500530783693,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 116,
+  "hit_limit": false
+ },
+ {
+  "id": "145540_a4f54d5f_0012",
+  "valid": true,
+  "iou": 0.999021868275447,
+  "cd_x1000": 0.18712530541984942,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 53,
+  "hit_limit": false
+ },
+ {
+  "id": "146317_5c5baff8_0000",
+  "valid": true,
+  "iou": 0.7141199789403639,
+  "cd_x1000": 0.139049060148111,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 247,
+  "hit_limit": false
+ },
+ {
+  "id": "146317_9562bd6f_0000",
+  "valid": true,
+  "iou": 0.6602579878536332,
+  "cd_x1000": 1.546822482437252,
+  "error": "",
+  "exec_s": 1.7,
+  "n_tokens": 309,
+  "hit_limit": false
+ },
+ {
+  "id": "147178_2016d56d_0001",
+  "valid": true,
+  "iou": 0.5165105994048648,
+  "cd_x1000": 6.427001717059473,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 82,
+  "hit_limit": false
+ },
+ {
+  "id": "148051_66cb4858_0027",
+  "valid": true,
+  "iou": 0.8507629642779193,
+  "cd_x1000": 0.12925753698373807,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 94,
+  "hit_limit": false
+ },
+ {
+  "id": "148051_e7ab8ae7_0004",
+  "valid": true,
+  "iou": 0.9792227944628238,
+  "cd_x1000": 0.11572013319706145,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 73,
+  "hit_limit": false
+ },
+ {
+  "id": "20241_6bced5ac_0000",
+  "valid": true,
+  "iou": 0.9718670094007527,
+  "cd_x1000": 0.161632077797748,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 69,
+  "hit_limit": false
+ },
+ {
+  "id": "20342_c140780b_0000",
+  "valid": true,
+  "iou": 0.9959158476619306,
+  "cd_x1000": 0.09143643284096598,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 50,
+  "hit_limit": false
+ },
+ {
+  "id": "21231_eb9826e5_0011",
+  "valid": true,
+  "iou": 0.9561561461565311,
+  "cd_x1000": 0.08614920258793453,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 68,
+  "hit_limit": false
+ },
+ {
+  "id": "21237_7887a24b_0011",
+  "valid": true,
+  "iou": 0.0,
+  "cd_x1000": 0.24872876400342658,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 130,
+  "hit_limit": false
+ },
+ {
+  "id": "21492_8bd34fc1_0008",
+  "valid": true,
+  "iou": 0.7186554678443916,
+  "cd_x1000": 4.828289357572363,
+  "error": "",
+  "exec_s": 1.7,
+  "n_tokens": 525,
+  "hit_limit": false
+ },
+ {
+  "id": "21604_520e1ae2_0001",
+  "valid": true,
+  "iou": 0.8428543646532677,
+  "cd_x1000": 0.07495444557045525,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 158,
+  "hit_limit": false
+ },
+ {
+  "id": "21604_520e1ae2_0009",
+  "valid": true,
+  "iou": 0.8392984382162456,
+  "cd_x1000": 0.06881477390595098,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 127,
+  "hit_limit": false
+ },
+ {
+  "id": "21646_a2dd0d00_0071",
+  "valid": true,
+  "iou": 0.9989016567784995,
+  "cd_x1000": 0.1483781873679767,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 53,
+  "hit_limit": false
+ },
+ {
+  "id": "21646_a2dd0d00_0073",
+  "valid": true,
+  "iou": 0.9690797277265559,
+  "cd_x1000": 0.23680953030652063,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 106,
+  "hit_limit": false
+ },
+ {
+  "id": "21707_c15f2c00_0006",
+  "valid": true,
+  "iou": 0.8148826178809574,
+  "cd_x1000": 0.31232206912815325,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 182,
+  "hit_limit": false
+ },
+ {
+  "id": "21732_adaf1650_0007",
+  "valid": true,
+  "iou": 0.5384078613332295,
+  "cd_x1000": 0.5156616237733784,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 111,
+  "hit_limit": false
+ },
+ {
+  "id": "21734_7cf58bd0_0011",
+  "valid": true,
+  "iou": 0.932923222664858,
+  "cd_x1000": 0.14049104131520346,
+  "error": "",
+  "exec_s": 1.7,
+  "n_tokens": 187,
+  "hit_limit": false
+ },
+ {
+  "id": "21740_6f0c9bdb_0023",
+  "valid": true,
+  "iou": 0.0,
+  "cd_x1000": 1.2454487888093029,
+  "error": "",
+  "exec_s": 1.8,
+  "n_tokens": 91,
+  "hit_limit": false
+ },
+ {
+  "id": "21773_01f6bc23_0018",
+  "valid": true,
+  "iou": 0.9999999047424771,
+  "cd_x1000": 0.3700830981561144,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 54,
+  "hit_limit": false
+ },
+ {
+  "id": "21803_8a36dcda_0032",
+  "valid": true,
+  "iou": 0.6103454167182082,
+  "cd_x1000": 12.522762515953115,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 184,
+  "hit_limit": false
+ },
+ {
+  "id": "21893_0500d043_0038",
+  "valid": true,
+  "iou": 0.7497358297876547,
+  "cd_x1000": 1.2048825600967659,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 59,
+  "hit_limit": false
+ },
+ {
+  "id": "21899_d55d6c08_0012",
+  "valid": true,
+  "iou": 0.9889895597712438,
+  "cd_x1000": 0.36277472201890865,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 186,
+  "hit_limit": false
+ },
+ {
+  "id": "21899_d55d6c08_0024",
+  "valid": true,
+  "iou": 0.7808278885003865,
+  "cd_x1000": 0.4784111127398738,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 144,
+  "hit_limit": false
+ },
+ {
+  "id": "21908_385686ec_0015",
+  "valid": true,
+  "iou": 1.0000000085816458,
+  "cd_x1000": 0.26849762068970395,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 54,
+  "hit_limit": false
+ },
+ {
+  "id": "21908_385686ec_0027",
+  "valid": true,
+  "iou": 0.9996195709890194,
+  "cd_x1000": 0.2926819974136818,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 82,
+  "hit_limit": false
+ },
+ {
+  "id": "22011_0832eefe_0013",
+  "valid": true,
+  "iou": 0.9725862059015022,
+  "cd_x1000": 0.13130545327374998,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 131,
+  "hit_limit": false
+ },
+ {
+  "id": "22066_308cdcfe_0000",
+  "valid": true,
+  "iou": 0.6223702902801987,
+  "cd_x1000": 0.3447021326988203,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 228,
+  "hit_limit": false
+ },
+ {
+  "id": "22124_6f71410e_0010",
+  "valid": true,
+  "iou": 0.7779097735707892,
+  "cd_x1000": 0.27636637772759837,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 53,
+  "hit_limit": false
+ },
+ {
+  "id": "22173_3dff5b17_0000",
+  "valid": true,
+  "iou": 0.6914920261166987,
+  "cd_x1000": 1.5322649540526567,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 167,
+  "hit_limit": false
+ },
+ {
+  "id": "22205_f48b96b3_0006",
+  "valid": true,
+  "iou": 0.960740780640421,
+  "cd_x1000": 0.07116831164380526,
+  "error": "",
+  "exec_s": 1.7,
+  "n_tokens": 68,
+  "hit_limit": false
+ },
+ {
+  "id": "22205_f48b96b3_0013",
+  "valid": true,
+  "iou": 0.8907664809767916,
+  "cd_x1000": 0.040542672581137085,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 48,
+  "hit_limit": false
+ },
+ {
+  "id": "22320_e9f9e6ae_0003",
+  "valid": true,
+  "iou": 0.9585363891937055,
+  "cd_x1000": 0.21722603283976802,
+  "error": "",
+  "exec_s": 1.7,
+  "n_tokens": 165,
+  "hit_limit": false
+ },
+ {
+  "id": "22320_e9f9e6ae_0011",
+  "valid": true,
+  "iou": 0.4965667012836327,
+  "cd_x1000": 0.11701926087862165,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 132,
+  "hit_limit": false
+ },
+ {
+  "id": "22432_e4a51ee9_0006",
+  "valid": true,
+  "iou": null,
+  "cd_x1000": 4.1999806610756565,
+  "error": "iou: ValueError: Not all meshes are volumes!",
+  "exec_s": 1.8,
+  "n_tokens": 191,
+  "hit_limit": false
+ },
+ {
+  "id": "22447_4062c6cb_0011",
+  "valid": true,
+  "iou": 0.8558118379950013,
+  "cd_x1000": 1.4228228417434776,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 67,
+  "hit_limit": false
+ },
+ {
+  "id": "22461_0ba0e480_0004",
+  "valid": true,
+  "iou": 0.9890174023866491,
+  "cd_x1000": 0.14309799246273805,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 52,
+  "hit_limit": false
+ },
+ {
+  "id": "22545_7c2ca3ce_0006",
+  "valid": true,
+  "iou": 0.9996892920785626,
+  "cd_x1000": 0.02509311092990213,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 48,
+  "hit_limit": false
+ },
+ {
+  "id": "22624_7af10d7d_0005",
+  "valid": true,
+  "iou": 0.9304623151795851,
+  "cd_x1000": 0.1313352814702966,
+  "error": "",
+  "exec_s": 1.7,
+  "n_tokens": 251,
+  "hit_limit": false
+ },
+ {
+  "id": "22624_7af10d7d_0008",
+  "valid": true,
+  "iou": 0.2563505089826228,
+  "cd_x1000": 1.5028676918455848,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 173,
+  "hit_limit": false
+ },
+ {
+  "id": "22666_bdaa1303_0013",
+  "valid": true,
+  "iou": 0.9258623062032862,
+  "cd_x1000": 0.2174598664033309,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 113,
+  "hit_limit": false
+ },
+ {
+  "id": "22788_b6a9e30a_0000",
+  "valid": true,
+  "iou": 0.8052536525507896,
+  "cd_x1000": 0.11757835419308488,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 50,
+  "hit_limit": false
+ },
+ {
+  "id": "22788_b6a9e30a_0009",
+  "valid": true,
+  "iou": 0.8322659803974946,
+  "cd_x1000": 0.07760972012699421,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 49,
+  "hit_limit": false
+ },
+ {
+  "id": "22891_b8c84495_0000",
+  "valid": true,
+  "iou": 0.3967843133970687,
+  "cd_x1000": 6.951785930811847,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 154,
+  "hit_limit": false
+ },
+ {
+  "id": "23083_fdb942ac_0000",
+  "valid": true,
+  "iou": 0.060691934192053265,
+  "cd_x1000": 0.6445894406743687,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 260,
+  "hit_limit": false
+ },
+ {
+  "id": "23093_e3cd7cbe_0000",
+  "valid": true,
+  "iou": 0.32375019501212704,
+  "cd_x1000": 0.3369761690613895,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 148,
+  "hit_limit": false
+ },
+ {
+  "id": "23206_b99a5251_0044",
+  "valid": true,
+  "iou": 0.9721337715817185,
+  "cd_x1000": 0.3185268811575409,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 104,
+  "hit_limit": false
+ },
+ {
+  "id": "23231_efe613bb_0019",
+  "valid": true,
+  "iou": 0.7494288573946464,
+  "cd_x1000": 0.5442568100139447,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 329,
+  "hit_limit": false
+ },
+ {
+  "id": "23247_bcd1e84f_0005",
+  "valid": true,
+  "iou": 0.7690845959759744,
+  "cd_x1000": 2.0584019604688937,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 244,
+  "hit_limit": false
+ },
+ {
+  "id": "23255_972fbfe6_0020",
+  "valid": true,
+  "iou": 0.9328518466885664,
+  "cd_x1000": 0.5569256567213188,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 247,
+  "hit_limit": false
+ },
+ {
+  "id": "23366_cc0bc28e_0000",
+  "valid": true,
+  "iou": 0.7726075712881113,
+  "cd_x1000": 0.33813711472268854,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 116,
+  "hit_limit": false
+ },
+ {
+  "id": "23393_d47067ad_0005",
+  "valid": false,
+  "iou": null,
+  "cd_x1000": null,
+  "error": "StdFail_NotDone: GC_MakeArcOfCircle::Value() - no result",
+  "n_tokens": 144,
+  "hit_limit": false
+ },
+ {
+  "id": "23393_d47067ad_0014",
+  "valid": true,
+  "iou": 0.9025939657830802,
+  "cd_x1000": 0.051814663007690526,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 67,
+  "hit_limit": false
+ },
+ {
+  "id": "23539_b3917f22_0003",
+  "valid": true,
+  "iou": 0.9371928158091066,
+  "cd_x1000": 0.28255903193586224,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 132,
+  "hit_limit": false
+ },
+ {
+  "id": "23573_ec33e368_0000",
+  "valid": true,
+  "iou": 0.5482661566349156,
+  "cd_x1000": 0.8725001167157296,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 128,
+  "hit_limit": false
+ },
+ {
+  "id": "23706_ef15ef9c_0000",
+  "valid": true,
+  "iou": 0.9510667421889712,
+  "cd_x1000": 0.0459235560793399,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 99,
+  "hit_limit": false
+ },
+ {
+  "id": "23774_716b8bc4_0007",
+  "valid": true,
+  "iou": 0.24317315720166527,
+  "cd_x1000": 4.315683105831542,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 139,
+  "hit_limit": false
+ },
+ {
+  "id": "23856_6be75f62_0005",
+  "valid": true,
+  "iou": 0.005673238686009476,
+  "cd_x1000": 0.2646022102335195,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 450,
+  "hit_limit": false
+ },
+ {
+  "id": "23881_bec7f38c_0002",
+  "valid": true,
+  "iou": 0.0,
+  "cd_x1000": 0.32318068159563157,
+  "error": "",
+  "exec_s": 1.7,
+  "n_tokens": 589,
+  "hit_limit": false
+ },
+ {
+  "id": "23881_bec7f38c_0003",
+  "valid": true,
+  "iou": 0.8312971799060024,
+  "cd_x1000": 0.06461554181087752,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 51,
+  "hit_limit": false
+ },
+ {
+  "id": "23956_ee17fe48_0000",
+  "valid": true,
+  "iou": 0.9592892068432592,
+  "cd_x1000": 0.21543139214516896,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 149,
+  "hit_limit": false
+ },
+ {
+  "id": "24032_d6172503_0031",
+  "valid": true,
+  "iou": 0.9838701827716334,
+  "cd_x1000": 0.17802778541443284,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 46,
+  "hit_limit": false
+ },
+ {
+  "id": "24131_3ea7d5a8_0009",
+  "valid": true,
+  "iou": 0.8982633415655507,
+  "cd_x1000": 0.6470918578764616,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 185,
+  "hit_limit": false
+ },
+ {
+  "id": "24195_9791f5d3_0005",
+  "valid": true,
+  "iou": 0.7200030799280006,
+  "cd_x1000": 0.40015197919486467,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 53,
+  "hit_limit": false
+ },
+ {
+  "id": "24195_9791f5d3_0008",
+  "valid": true,
+  "iou": 0.49908994351485664,
+  "cd_x1000": 1.9904528122110894,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 67,
+  "hit_limit": false
+ },
+ {
+  "id": "24425_0dc4b306_0000",
+  "valid": false,
+  "iou": null,
+  "cd_x1000": null,
+  "error": "StdFail_NotDone: GC_MakeArcOfCircle::Value() - no result",
+  "n_tokens": 189,
+  "hit_limit": false
+ },
+ {
+  "id": "24603_a4021250_0002",
+  "valid": true,
+  "iou": 0.27557769944689187,
+  "cd_x1000": 0.06405102175891286,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 49,
+  "hit_limit": false
+ },
+ {
+  "id": "24603_a4021250_0008",
+  "valid": true,
+  "iou": 0.9837707873780572,
+  "cd_x1000": 0.13087352705880326,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 126,
+  "hit_limit": false
+ },
+ {
+  "id": "24849_f328b6fc_0001",
+  "valid": true,
+  "iou": 0.6791952215781007,
+  "cd_x1000": 0.1198556647644738,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 86,
+  "hit_limit": false
+ },
+ {
+  "id": "25168_05818e21_0002",
+  "valid": true,
+  "iou": 0.9797613454031899,
+  "cd_x1000": 0.35282598239009383,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 109,
+  "hit_limit": false
+ },
+ {
+  "id": "25199_b2422c18_0005",
+  "valid": true,
+  "iou": 0.9568201361099011,
+  "cd_x1000": 0.08838007044951124,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 129,
+  "hit_limit": false
+ },
+ {
+  "id": "25199_d7aff7a5_0014",
+  "valid": true,
+  "iou": 0.2897783221598788,
+  "cd_x1000": 3.928084252120455,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 213,
+  "hit_limit": false
+ },
+ {
+  "id": "25199_d7aff7a5_0015",
+  "valid": true,
+  "iou": 0.6048846572146047,
+  "cd_x1000": 2.3551978487154583,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 153,
+  "hit_limit": false
+ },
+ {
+  "id": "25284_3364996e_0000",
+  "valid": false,
+  "iou": null,
+  "cd_x1000": null,
+  "error": "StdFail_NotDone: GC_MakeArcOfCircle::Value() - no result",
+  "n_tokens": 109,
+  "hit_limit": false
+ },
+ {
+  "id": "25365_769ce017_0000",
+  "valid": true,
+  "iou": 0.9968414726041345,
+  "cd_x1000": 0.212506050257694,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 46,
+  "hit_limit": false
+ },
+ {
+  "id": "25365_bb0e4ede_0010",
+  "valid": true,
+  "iou": 0.8393234517540822,
+  "cd_x1000": 0.06972271150261403,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 127,
+  "hit_limit": false
+ },
+ {
+  "id": "25389_035e5844_0000",
+  "valid": true,
+  "iou": 0.943326924873804,
+  "cd_x1000": 0.24740318250702598,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 70,
+  "hit_limit": false
+ },
+ {
+  "id": "25475_70092bfb_0000",
+  "valid": true,
+  "iou": 0.6890915294269047,
+  "cd_x1000": 0.19581312800629666,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 176,
+  "hit_limit": false
+ },
+ {
+  "id": "26086_bf892d7f_0022",
+  "valid": true,
+  "iou": 0.7052295455132493,
+  "cd_x1000": 2.5461163239653946,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 355,
+  "hit_limit": false
+ },
+ {
+  "id": "26243_b080f743_0000",
+  "valid": true,
+  "iou": 0.9873746982502162,
+  "cd_x1000": 0.19658351900824156,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 90,
+  "hit_limit": false
+ },
+ {
+  "id": "26384_83eddf22_0009",
+  "valid": true,
+  "iou": 0.9974375895386544,
+  "cd_x1000": 0.11119919730754192,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 48,
+  "hit_limit": false
+ },
+ {
+  "id": "26766_1aaa348c_0000",
+  "valid": true,
+  "iou": 0.9694424891761323,
+  "cd_x1000": 0.05983788209751812,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 123,
+  "hit_limit": false
+ },
+ {
+  "id": "27054_342fcf5c_0042",
+  "valid": true,
+  "iou": 0.7009286493642987,
+  "cd_x1000": 0.07563719765907645,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 212,
+  "hit_limit": false
+ },
+ {
+  "id": "27577_8520e14a_0002",
+  "valid": true,
+  "iou": 0.9360001747684541,
+  "cd_x1000": 0.039498904296212854,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 50,
+  "hit_limit": false
+ },
+ {
+  "id": "27682_04277f62_0000",
+  "valid": true,
+  "iou": 0.937935428173502,
+  "cd_x1000": 0.041197549671738866,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 68,
+  "hit_limit": false
+ },
+ {
+  "id": "27694_7801dc67_0017",
+  "valid": true,
+  "iou": 0.6272544146635038,
+  "cd_x1000": 0.8851898019935726,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 106,
+  "hit_limit": false
+ },
+ {
+  "id": "28933_ac11416d_0000",
+  "valid": true,
+  "iou": 0.9505989818001658,
+  "cd_x1000": 0.13386549472261053,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 151,
+  "hit_limit": false
+ },
+ {
+  "id": "30380_4d422f95_0005",
+  "valid": true,
+  "iou": 0.9787059552936376,
+  "cd_x1000": 0.1587232689878654,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 53,
+  "hit_limit": false
+ },
+ {
+  "id": "30400_8824ce97_0012",
+  "valid": true,
+  "iou": 0.9492116975887903,
+  "cd_x1000": 0.20701309363085293,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 96,
+  "hit_limit": false
+ },
+ {
+  "id": "30400_8824ce97_0013",
+  "valid": true,
+  "iou": 0.9834977395892774,
+  "cd_x1000": 0.2384379564239893,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 81,
+  "hit_limit": false
+ },
+ {
+  "id": "30400_8824ce97_0034",
+  "valid": true,
+  "iou": 0.25115497088233785,
+  "cd_x1000": 0.03905062913040446,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 99,
+  "hit_limit": false
+ },
+ {
+  "id": "30426_2cde26de_0004",
+  "valid": true,
+  "iou": 0.9205167778952413,
+  "cd_x1000": 1.836560665467307,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 97,
+  "hit_limit": false
+ },
+ {
+  "id": "30435_c97330d2_0012",
+  "valid": true,
+  "iou": 0.259566637483091,
+  "cd_x1000": 0.0821180702997604,
+  "error": "",
+  "exec_s": 1.4,
+  "n_tokens": 90,
+  "hit_limit": false
+ },
+ {
+  "id": "30690_3df2c9e2_0018",
+  "valid": true,
+  "iou": 0.9367475108936354,
+  "cd_x1000": 0.0313733839041113,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 48,
+  "hit_limit": false
+ },
+ {
+  "id": "30729_b4d83b07_0016",
+  "valid": true,
+  "iou": 0.06113807082369823,
+  "cd_x1000": 0.06291448359421992,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 91,
+  "hit_limit": false
+ },
+ {
+  "id": "30904_54099e05_0005",
+  "valid": true,
+  "iou": 0.45101360441107835,
+  "cd_x1000": 15.879677897859404,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 193,
+  "hit_limit": false
+ },
+ {
+  "id": "30904_54099e05_0016",
+  "valid": true,
+  "iou": 0.09287149004232775,
+  "cd_x1000": 0.27731266622118544,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 155,
+  "hit_limit": false
+ },
+ {
+  "id": "31008_8fa25b35_0003",
+  "valid": true,
+  "iou": 0.9298797053995029,
+  "cd_x1000": 0.04214550647738969,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 50,
+  "hit_limit": false
+ },
+ {
+  "id": "31280_c8bd4b11_0002",
+  "valid": true,
+  "iou": 0.9070305086394864,
+  "cd_x1000": 0.022928387032001764,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 47,
+  "hit_limit": false
+ },
+ {
+  "id": "31360_a1accb4b_0011",
+  "valid": true,
+  "iou": 0.9893856374584122,
+  "cd_x1000": 0.17238049592194715,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 53,
+  "hit_limit": false
+ },
+ {
+  "id": "31464_b2855e3a_0018",
+  "valid": true,
+  "iou": 0.970984050304409,
+  "cd_x1000": 0.43833248686401044,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 54,
+  "hit_limit": false
+ },
+ {
+  "id": "31616_c013ae1f_0000",
+  "valid": true,
+  "iou": 0.9998621875100574,
+  "cd_x1000": 0.278960794644985,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 54,
+  "hit_limit": false
+ },
+ {
+  "id": "31851_7f55f063_0000",
+  "valid": true,
+  "iou": 1.0822517643832632,
+  "cd_x1000": 0.21869183722845148,
+  "error": "",
+  "exec_s": 1.7,
+  "n_tokens": 148,
+  "hit_limit": false
+ },
+ {
+  "id": "31962_e5291336_0040",
+  "valid": true,
+  "iou": 0.9999999432276405,
+  "cd_x1000": 0.3477035581034376,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 82,
+  "hit_limit": false
+ },
+ {
+  "id": "32049_632b3378_0002",
+  "valid": true,
+  "iou": 0.9833759862584361,
+  "cd_x1000": 0.1815584896932339,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 51,
+  "hit_limit": false
+ },
+ {
+  "id": "33147_d7173b68_0012",
+  "valid": true,
+  "iou": 0.9772521262439248,
+  "cd_x1000": 0.21333890442081088,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 98,
+  "hit_limit": false
+ },
+ {
+  "id": "34226_dbed877f_0005",
+  "valid": true,
+  "iou": 0.7237477398690614,
+  "cd_x1000": 7.744543056951355,
+  "error": "",
+  "exec_s": 1.7,
+  "n_tokens": 216,
+  "hit_limit": false
+ },
+ {
+  "id": "34227_48203345_0011",
+  "valid": true,
+  "iou": 0.9753719599207277,
+  "cd_x1000": 0.11910106114906814,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 71,
+  "hit_limit": false
+ },
+ {
+  "id": "34234_04351713_0003",
+  "valid": true,
+  "iou": 0.9999999955766102,
+  "cd_x1000": 0.05355996887582536,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 48,
+  "hit_limit": false
+ },
+ {
+  "id": "34436_ffc43a58_0001",
+  "valid": true,
+  "iou": 0.9193594107278658,
+  "cd_x1000": 0.31211842318741206,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 132,
+  "hit_limit": false
+ },
+ {
+  "id": "34532_066f48a3_0000",
+  "valid": true,
+  "iou": 0.9847333642484469,
+  "cd_x1000": 0.19668379068764139,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 53,
+  "hit_limit": false
+ },
+ {
+  "id": "34699_5d3a78f6_0013",
+  "valid": true,
+  "iou": 0.882629956232444,
+  "cd_x1000": 0.04213979245958577,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 118,
+  "hit_limit": false
+ },
+ {
+  "id": "35149_f50fea8a_0000",
+  "valid": true,
+  "iou": 0.9806167914143078,
+  "cd_x1000": 0.1363208669030008,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 64,
+  "hit_limit": false
+ },
+ {
+  "id": "35166_562b126c_0009",
+  "valid": true,
+  "iou": 0.9919905330325807,
+  "cd_x1000": 0.0792584420521605,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 48,
+  "hit_limit": false
+ },
+ {
+  "id": "35580_2ab34839_0009",
+  "valid": true,
+  "iou": 0.9272162331277457,
+  "cd_x1000": 0.25241066504462506,
+  "error": "",
+  "exec_s": 1.7,
+  "n_tokens": 140,
+  "hit_limit": false
+ },
+ {
+  "id": "35962_dbbd6e18_0005",
+  "valid": true,
+  "iou": 0.8822570320865933,
+  "cd_x1000": 0.052308459668176044,
+  "error": "",
+  "exec_s": 1.7,
+  "n_tokens": 88,
+  "hit_limit": false
+ },
+ {
+  "id": "35968_5488b3e5_0006",
+  "valid": true,
+  "iou": 0.9865780800127084,
+  "cd_x1000": 0.22971612435063862,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 89,
+  "hit_limit": false
+ },
+ {
+  "id": "36088_1ea9c8a9_0001",
+  "valid": true,
+  "iou": 0.9523821525838361,
+  "cd_x1000": 0.13790436120202446,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 51,
+  "hit_limit": false
+ },
+ {
+  "id": "36088_1ea9c8a9_0012",
+  "valid": true,
+  "iou": 0.651775876248013,
+  "cd_x1000": 0.5501625340077171,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 81,
+  "hit_limit": false
+ },
+ {
+  "id": "36194_c9cfd107_0005",
+  "valid": true,
+  "iou": 0.9801000588782222,
+  "cd_x1000": 0.09890239606848411,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 48,
+  "hit_limit": false
+ },
+ {
+  "id": "36445_67816b83_0004",
+  "valid": true,
+  "iou": 0.8112356699650948,
+  "cd_x1000": 3.5867039482582532,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 158,
+  "hit_limit": false
+ },
+ {
+  "id": "37040_ecbcd25e_0033",
+  "valid": true,
+  "iou": 0.12719886564134775,
+  "cd_x1000": 5.144521993959764,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 91,
+  "hit_limit": false
+ },
+ {
+  "id": "37377_90529181_0005",
+  "valid": true,
+  "iou": 0.4182385002585711,
+  "cd_x1000": 0.06341190806225223,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 52,
+  "hit_limit": false
+ },
+ {
+  "id": "38114_917ea77b_0006",
+  "valid": true,
+  "iou": 0.9970430204459474,
+  "cd_x1000": 0.3633235421285901,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 54,
+  "hit_limit": false
+ },
+ {
+  "id": "38260_2a31c6df_0012",
+  "valid": true,
+  "iou": 0.9750775314272202,
+  "cd_x1000": 0.09776692076588023,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 83,
+  "hit_limit": false
+ },
+ {
+  "id": "38276_c9ef069a_0009",
+  "valid": true,
+  "iou": 0.9805430009778058,
+  "cd_x1000": 0.17044731132820132,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 98,
+  "hit_limit": false
+ },
+ {
+  "id": "38287_88ec74de_0035",
+  "valid": true,
+  "iou": 0.9398674611384475,
+  "cd_x1000": 0.19460463757038396,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 107,
+  "hit_limit": false
+ },
+ {
+  "id": "38675_6e07d74b_0004",
+  "valid": true,
+  "iou": 0.0,
+  "cd_x1000": 0.17398767578591556,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 127,
+  "hit_limit": false
+ },
+ {
+  "id": "39306_ee445998_0003",
+  "valid": true,
+  "iou": 0.9834102309546533,
+  "cd_x1000": 0.3022409321363236,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 69,
+  "hit_limit": false
+ },
+ {
+  "id": "39306_ee445998_0027",
+  "valid": true,
+  "iou": 0.9874990627169558,
+  "cd_x1000": 0.07704076648321961,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 50,
+  "hit_limit": false
+ },
+ {
+  "id": "39792_60786b6c_0005",
+  "valid": true,
+  "iou": 0.9223146190444083,
+  "cd_x1000": 0.10968678354799681,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 151,
+  "hit_limit": false
+ },
+ {
+  "id": "39850_b2aa4f1e_0009",
+  "valid": true,
+  "iou": 0.9861256598884129,
+  "cd_x1000": 0.07339870822929513,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 122,
+  "hit_limit": false
+ },
+ {
+  "id": "40061_d07e8764_0004",
+  "valid": true,
+  "iou": 0.8952395081181174,
+  "cd_x1000": 0.29687216042436715,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 91,
+  "hit_limit": false
+ },
+ {
+  "id": "40061_d07e8764_0019",
+  "valid": true,
+  "iou": 0.9715914717579286,
+  "cd_x1000": 0.4700932923294833,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 184,
+  "hit_limit": false
+ },
+ {
+  "id": "40624_e1c5c424_0013",
+  "valid": true,
+  "iou": 0.65606511803091,
+  "cd_x1000": 0.07757194867427372,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 113,
+  "hit_limit": false
+ },
+ {
+  "id": "40782_3383cd58_0006",
+  "valid": true,
+  "iou": 0.9793406481137119,
+  "cd_x1000": 0.13868334215890388,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 68,
+  "hit_limit": false
+ },
+ {
+  "id": "40887_454ffc48_0014",
+  "valid": true,
+  "iou": 0.9803917609833266,
+  "cd_x1000": 0.1530140941735503,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 53,
+  "hit_limit": false
+ },
+ {
+  "id": "40999_cad6be09_0004",
+  "valid": true,
+  "iou": 0.9015064993438836,
+  "cd_x1000": 5.346681589727944,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 99,
+  "hit_limit": false
+ },
+ {
+  "id": "41010_212b5129_0007",
+  "valid": true,
+  "iou": 0.7671624332573793,
+  "cd_x1000": 0.6218865765557012,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 348,
+  "hit_limit": false
+ },
+ {
+  "id": "41117_1b3271f2_0000",
+  "valid": true,
+  "iou": 0.0,
+  "cd_x1000": 0.45811290424225276,
+  "error": "",
+  "exec_s": 1.7,
+  "n_tokens": 546,
+  "hit_limit": false
+ },
+ {
+  "id": "41125_711db4bf_0030",
+  "valid": false,
+  "iou": null,
+  "cd_x1000": null,
+  "error": "Standard_NullObject: BRepAdaptor_Curve::No geometry",
+  "n_tokens": 274,
+  "hit_limit": false
+ },
+ {
+  "id": "41142_1bf94ee2_0003",
+  "valid": true,
+  "iou": 0.9998269309066491,
+  "cd_x1000": 0.020269430055772586,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 47,
+  "hit_limit": false
+ },
+ {
+  "id": "41501_b627682a_0007",
+  "valid": true,
+  "iou": 0.44728555736093084,
+  "cd_x1000": 0.10848035751674834,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 96,
+  "hit_limit": false
+ },
+ {
+  "id": "41501_b627682a_0030",
+  "valid": true,
+  "iou": 0.9357771105293464,
+  "cd_x1000": 0.09683223593976673,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 121,
+  "hit_limit": false
+ },
+ {
+  "id": "41672_5364f9b6_0000",
+  "valid": true,
+  "iou": 0.920302688568643,
+  "cd_x1000": 0.23829022420644724,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 167,
+  "hit_limit": false
+ },
+ {
+  "id": "41708_3a74f048_0009",
+  "valid": true,
+  "iou": 0.46153917292961383,
+  "cd_x1000": 0.3026043125910539,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 88,
+  "hit_limit": false
+ },
+ {
+  "id": "41729_b5092135_0006",
+  "valid": true,
+  "iou": 0.37664593139932323,
+  "cd_x1000": 1.999822865551804,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 106,
+  "hit_limit": false
+ },
+ {
+  "id": "41737_3653024c_0000",
+  "valid": true,
+  "iou": 0.9994219593684927,
+  "cd_x1000": 0.05957670051414116,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 48,
+  "hit_limit": false
+ },
+ {
+  "id": "41868_c16c1f64_0000",
+  "valid": false,
+  "iou": null,
+  "cd_x1000": null,
+  "error": "StdFail_NotDone: GC_MakeArcOfCircle::Value() - no result",
+  "n_tokens": 109,
+  "hit_limit": false
+ },
+ {
+  "id": "41896_7d8659e6_0011",
+  "valid": true,
+  "iou": 0.7808343534666284,
+  "cd_x1000": 0.4035425362171967,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 107,
+  "hit_limit": false
+ },
+ {
+  "id": "41902_43d78d0f_0013",
+  "valid": true,
+  "iou": 0.8270584561821126,
+  "cd_x1000": 0.051740904587568165,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 86,
+  "hit_limit": false
+ },
+ {
+  "id": "41941_79d46bb4_0006",
+  "valid": true,
+  "iou": 0.9027422107326801,
+  "cd_x1000": 0.1027686744486684,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 147,
+  "hit_limit": false
+ },
+ {
+  "id": "41970_24ba0c1b_0010",
+  "valid": true,
+  "iou": 0.40965327074901575,
+  "cd_x1000": 0.23365157969285702,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 171,
+  "hit_limit": false
+ },
+ {
+  "id": "41998_654ac923_0006",
+  "valid": true,
+  "iou": 0.0,
+  "cd_x1000": 0.27435068770839083,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 118,
+  "hit_limit": false
+ },
+ {
+  "id": "42329_df7f540f_0061",
+  "valid": true,
+  "iou": 0.6594740254488293,
+  "cd_x1000": 0.14759321348214402,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 71,
+  "hit_limit": false
+ },
+ {
+  "id": "42429_78ffab1b_0000",
+  "valid": true,
+  "iou": 0.9560237085665236,
+  "cd_x1000": 0.0433429251416171,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 67,
+  "hit_limit": false
+ },
+ {
+  "id": "42429_df14cc7f_0000",
+  "valid": true,
+  "iou": 0.9355206489043024,
+  "cd_x1000": 0.08142264498067983,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 53,
+  "hit_limit": false
+ },
+ {
+  "id": "42540_6eb6c3bc_0000",
+  "valid": true,
+  "iou": 0.9751107400195991,
+  "cd_x1000": 0.3448929842962971,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 142,
+  "hit_limit": false
+ },
+ {
+  "id": "42811_75f8e8a3_0000",
+  "valid": true,
+  "iou": 0.9086205950603549,
+  "cd_x1000": 0.12775690246060045,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 215,
+  "hit_limit": false
+ },
+ {
+  "id": "43009_6aa4e085_0028",
+  "valid": true,
+  "iou": 0.9514336932080862,
+  "cd_x1000": 0.130608104689509,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 53,
+  "hit_limit": false
+ },
+ {
+  "id": "43010_31eceafd_0006",
+  "valid": true,
+  "iou": 0.8135389287526764,
+  "cd_x1000": 0.18481065514386893,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 80,
+  "hit_limit": false
+ },
+ {
+  "id": "43529_4804941b_0002",
+  "valid": true,
+  "iou": 0.9475313917866434,
+  "cd_x1000": 0.5564174676606418,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 97,
+  "hit_limit": false
+ },
+ {
+  "id": "43529_4804941b_0049",
+  "valid": true,
+  "iou": 0.9523818732572504,
+  "cd_x1000": 0.19208557775758264,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 51,
+  "hit_limit": false
+ },
+ {
+  "id": "43562_004c6cea_0003",
+  "valid": false,
+  "iou": null,
+  "cd_x1000": null,
+  "error": "SyntaxError: '(' was never closed (<string>, line 3)",
+  "n_tokens": 768,
+  "hit_limit": true
+ },
+ {
+  "id": "43628_a95b7e66_0029",
+  "valid": true,
+  "iou": 0.9582688380809493,
+  "cd_x1000": 0.27940407419802016,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 54,
+  "hit_limit": false
+ },
+ {
+  "id": "43928_6ca53538_0031",
+  "valid": false,
+  "iou": null,
+  "cd_x1000": null,
+  "error": "StdFail_NotDone: GC_MakeArcOfCircle::Value() - no result",
+  "n_tokens": 192,
+  "hit_limit": false
+ },
+ {
+  "id": "43933_3b763a09_0006",
+  "valid": true,
+  "iou": 0.9778089591827233,
+  "cd_x1000": 0.1618338852646973,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 53,
+  "hit_limit": false
+ },
+ {
+  "id": "43934_912ff891_0011",
+  "valid": true,
+  "iou": 0.8621341302682232,
+  "cd_x1000": 0.6469423072092688,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 158,
+  "hit_limit": false
+ },
+ {
+  "id": "44522_a7c79550_0007",
+  "valid": true,
+  "iou": 0.8372250271290549,
+  "cd_x1000": 0.011625218462295084,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 47,
+  "hit_limit": false
+ },
+ {
+  "id": "44541_cefe3e4c_0000",
+  "valid": true,
+  "iou": 0.4177241502938768,
+  "cd_x1000": 0.8138133061649877,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 125,
+  "hit_limit": false
+ },
+ {
+  "id": "44920_70dd4b80_0002",
+  "valid": true,
+  "iou": 0.9994820720924881,
+  "cd_x1000": 0.3083232785956027,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 54,
+  "hit_limit": false
+ },
+ {
+  "id": "45359_1768ab3f_0016",
+  "valid": true,
+  "iou": 0.9800999383621465,
+  "cd_x1000": 0.049304442500274895,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 48,
+  "hit_limit": false
+ },
+ {
+  "id": "45432_67aa4de8_0000",
+  "valid": true,
+  "iou": 0.8610077515185696,
+  "cd_x1000": 0.22540717895365714,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 104,
+  "hit_limit": false
+ },
+ {
+  "id": "45680_5b1610e8_0000",
+  "valid": true,
+  "iou": 0.31383616519565666,
+  "cd_x1000": 0.045189582722026764,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 83,
+  "hit_limit": false
+ },
+ {
+  "id": "45680_5b1610e8_0001",
+  "valid": true,
+  "iou": 0.4821658022835518,
+  "cd_x1000": 0.023276784848110913,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 67,
+  "hit_limit": false
+ },
+ {
+  "id": "45922_26941172_0001",
+  "valid": true,
+  "iou": 0.957209512154425,
+  "cd_x1000": 0.07783335309013148,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 126,
+  "hit_limit": false
+ },
+ {
+  "id": "45922_26941172_0006",
+  "valid": true,
+  "iou": 0.9754610243662596,
+  "cd_x1000": 0.07923690875144025,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 48,
+  "hit_limit": false
+ },
+ {
+  "id": "46086_371b5052_0002",
+  "valid": true,
+  "iou": 0.7635337077014819,
+  "cd_x1000": 0.15613144677866214,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 161,
+  "hit_limit": false
+ },
+ {
+  "id": "48332_fb679f90_0004",
+  "valid": true,
+  "iou": 0.8682944385391682,
+  "cd_x1000": 0.13026860698481485,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 50,
+  "hit_limit": false
+ },
+ {
+  "id": "49215_5368e45e_0000",
+  "valid": true,
+  "iou": 0.9482863279068194,
+  "cd_x1000": 0.2049831214193174,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 120,
+  "hit_limit": false
+ },
+ {
+  "id": "49222_cbe1959b_0003",
+  "valid": true,
+  "iou": 0.9834013073216185,
+  "cd_x1000": 0.29138427755989044,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 54,
+  "hit_limit": false
+ },
+ {
+  "id": "49412_1f199584_0000",
+  "valid": true,
+  "iou": 0.9258323926366991,
+  "cd_x1000": 0.19262547694076476,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 171,
+  "hit_limit": false
+ },
+ {
+  "id": "49413_4e7d47f7_0000",
+  "valid": true,
+  "iou": 0.0,
+  "cd_x1000": 0.45641322097420756,
+  "error": "",
+  "exec_s": 1.7,
+  "n_tokens": 231,
+  "hit_limit": false
+ },
+ {
+  "id": "49503_e42c01c0_0002",
+  "valid": true,
+  "iou": 0.6702274337094124,
+  "cd_x1000": 3.124691016283568,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 239,
+  "hit_limit": false
+ },
+ {
+  "id": "49613_1b97c07b_0002",
+  "valid": true,
+  "iou": 0.7067309571519503,
+  "cd_x1000": 2.3161912978316064,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 143,
+  "hit_limit": false
+ },
+ {
+  "id": "50410_f8f03667_0007",
+  "valid": true,
+  "iou": 0.9215997664222945,
+  "cd_x1000": 0.01158310989375517,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 47,
+  "hit_limit": false
+ },
+ {
+  "id": "50681_eb7a9f92_0001",
+  "valid": true,
+  "iou": 0.2590123818067631,
+  "cd_x1000": 2.186717182377109,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 74,
+  "hit_limit": false
+ },
+ {
+  "id": "50681_eb7a9f92_0009",
+  "valid": true,
+  "iou": 0.999999928600001,
+  "cd_x1000": 0.15364777356607842,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 48,
+  "hit_limit": false
+ },
+ {
+  "id": "50777_2934de55_0011",
+  "valid": true,
+  "iou": 0.9950247941838986,
+  "cd_x1000": 0.23344316635803827,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 52,
+  "hit_limit": false
+ },
+ {
+  "id": "50897_3be92e2f_0015",
+  "valid": true,
+  "iou": 0.9787212465454256,
+  "cd_x1000": 0.13856043826534412,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 45,
+  "hit_limit": false
+ },
+ {
+  "id": "50897_3be92e2f_0016",
+  "valid": true,
+  "iou": 0.10215043028692143,
+  "cd_x1000": 7.427932756559759,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 165,
+  "hit_limit": false
+ },
+ {
+  "id": "51346_87465d9e_0001",
+  "valid": true,
+  "iou": 0.8289251514864229,
+  "cd_x1000": 0.06524411391011752,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 116,
+  "hit_limit": false
+ },
+ {
+  "id": "51509_fd5fcb9c_0001",
+  "valid": true,
+  "iou": 0.8933445681001816,
+  "cd_x1000": 0.11918876858531297,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 103,
+  "hit_limit": false
+ },
+ {
+  "id": "51736_e8b2b138_0010",
+  "valid": true,
+  "iou": 0.2923805173638791,
+  "cd_x1000": 19.914304728264,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 52,
+  "hit_limit": false
+ },
+ {
+  "id": "51777_87ff5835_0004",
+  "valid": true,
+  "iou": 0.915091453644875,
+  "cd_x1000": 0.16581225056938137,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 57,
+  "hit_limit": false
+ },
+ {
+  "id": "51791_b6580a7f_0011",
+  "valid": true,
+  "iou": 0.9801584565303942,
+  "cd_x1000": 0.09299753596604042,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 53,
+  "hit_limit": false
+ },
+ {
+  "id": "51877_0032e502_0015",
+  "valid": true,
+  "iou": 0.991007418863624,
+  "cd_x1000": 0.39671133293125865,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 77,
+  "hit_limit": false
+ },
+ {
+  "id": "51883_d97df863_0001",
+  "valid": true,
+  "iou": 0.9741267254008125,
+  "cd_x1000": 0.10418639341269825,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 52,
+  "hit_limit": false
+ },
+ {
+  "id": "51883_d97df863_0011",
+  "valid": true,
+  "iou": 0.7308519409201887,
+  "cd_x1000": 0.09017177497690958,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 149,
+  "hit_limit": false
+ },
+ {
+  "id": "51925_a4bed832_0002",
+  "valid": true,
+  "iou": 0.47744810253369224,
+  "cd_x1000": 0.09523081840250036,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 93,
+  "hit_limit": false
+ },
+ {
+  "id": "51932_c1f74efe_0001",
+  "valid": true,
+  "iou": 0.8258425921625733,
+  "cd_x1000": 2.9052077457273615,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 128,
+  "hit_limit": false
+ },
+ {
+  "id": "52024_97da327b_0002",
+  "valid": true,
+  "iou": 0.9576685367613208,
+  "cd_x1000": 0.03195196394706111,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 67,
+  "hit_limit": false
+ },
+ {
+  "id": "52352_adac16c3_0003",
+  "valid": true,
+  "iou": 0.7966633940858379,
+  "cd_x1000": 0.5659086379257465,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 107,
+  "hit_limit": false
+ },
+ {
+  "id": "52557_e6a00b06_0014",
+  "valid": true,
+  "iou": 0.9685841389072489,
+  "cd_x1000": 0.3173943140225765,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 118,
+  "hit_limit": false
+ },
+ {
+  "id": "53831_de0554da_0001",
+  "valid": true,
+  "iou": 0.7975423907092071,
+  "cd_x1000": 0.9230670184156999,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 124,
+  "hit_limit": false
+ },
+ {
+  "id": "54077_dd26efde_0000",
+  "valid": true,
+  "iou": 0.8098771050398951,
+  "cd_x1000": 0.2672512576185887,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 233,
+  "hit_limit": false
+ },
+ {
+  "id": "54360_db08c779_0014",
+  "valid": true,
+  "iou": 0.4618409476867925,
+  "cd_x1000": 1.980510827370217,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 81,
+  "hit_limit": false
+ },
+ {
+  "id": "54383_13d47b0e_0013",
+  "valid": true,
+  "iou": 0.02110646970029458,
+  "cd_x1000": 5.333291925099637,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 362,
+  "hit_limit": false
+ },
+ {
+  "id": "54659_e1303e28_0003",
+  "valid": true,
+  "iou": 0.5783872362189615,
+  "cd_x1000": 0.44264394893120884,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 187,
+  "hit_limit": false
+ },
+ {
+  "id": "54976_69951f7f_0000",
+  "valid": true,
+  "iou": 0.2405564937193149,
+  "cd_x1000": 0.9801843053926628,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 187,
+  "hit_limit": false
+ },
+ {
+  "id": "55057_4fbc0f08_0000",
+  "valid": true,
+  "iou": 0.8923866486097592,
+  "cd_x1000": 0.3271262859279059,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 204,
+  "hit_limit": false
+ },
+ {
+  "id": "55060_980d5147_0000",
+  "valid": true,
+  "iou": 1.0,
+  "cd_x1000": 0.13218172923000787,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 51,
+  "hit_limit": false
+ },
+ {
+  "id": "55124_a3f4d43f_0011",
+  "valid": true,
+  "iou": 0.9825500387536336,
+  "cd_x1000": 0.107927653557853,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 68,
+  "hit_limit": false
+ },
+ {
+  "id": "55210_474c3ef7_0000",
+  "valid": true,
+  "iou": 0.8998698698201891,
+  "cd_x1000": 2.854966545996431,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 210,
+  "hit_limit": false
+ },
+ {
+  "id": "55327_eb2ad109_0000",
+  "valid": true,
+  "iou": 0.7586113126676114,
+  "cd_x1000": 0.5935359573093137,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 183,
+  "hit_limit": false
+ },
+ {
+  "id": "55336_6181655b_0000",
+  "valid": true,
+  "iou": 0.8039888358688421,
+  "cd_x1000": 0.11260621113575545,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 254,
+  "hit_limit": false
+ },
+ {
+  "id": "55636_6180bfce_0006",
+  "valid": true,
+  "iou": 0.5985116871510171,
+  "cd_x1000": 0.20010101282037585,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 169,
+  "hit_limit": false
+ },
+ {
+  "id": "56013_752d02cb_0001",
+  "valid": true,
+  "iou": 0.8250272585641569,
+  "cd_x1000": 0.04375260362849244,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 147,
+  "hit_limit": false
+ },
+ {
+  "id": "56065_00bbe5da_0003",
+  "valid": true,
+  "iou": 0.9724218510978513,
+  "cd_x1000": 0.13479571577091246,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 53,
+  "hit_limit": false
+ },
+ {
+  "id": "56250_3b6024e3_0025",
+  "valid": true,
+  "iou": 0.6749808950101183,
+  "cd_x1000": 0.11704835134112304,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 71,
+  "hit_limit": false
+ },
+ {
+  "id": "56460_78d17e23_0004",
+  "valid": true,
+  "iou": 0.917375481687433,
+  "cd_x1000": 0.1941581343622458,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 99,
+  "hit_limit": false
+ },
+ {
+  "id": "57020_310f992c_0000",
+  "valid": true,
+  "iou": 0.7942623266026347,
+  "cd_x1000": 0.5263244817891998,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 106,
+  "hit_limit": false
+ },
+ {
+  "id": "57152_9359fc8e_0000",
+  "valid": true,
+  "iou": 0.9381163586463398,
+  "cd_x1000": 0.06396494065123311,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 50,
+  "hit_limit": false
+ },
+ {
+  "id": "60716_dcd9370c_0006",
+  "valid": true,
+  "iou": 0.9996892920785626,
+  "cd_x1000": 0.025355271287329503,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 48,
+  "hit_limit": false
+ },
+ {
+  "id": "60720_ef9a0a95_0009",
+  "valid": true,
+  "iou": 0.9996891485008242,
+  "cd_x1000": 0.21749758381782258,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 46,
+  "hit_limit": false
+ },
+ {
+  "id": "60787_6f3aa359_0003",
+  "valid": true,
+  "iou": 0.722373146763043,
+  "cd_x1000": 0.12613809103593454,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 87,
+  "hit_limit": false
+ },
+ {
+  "id": "60996_662df59e_0000",
+  "valid": true,
+  "iou": 0.9570100732978887,
+  "cd_x1000": 0.1860047013846706,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 86,
+  "hit_limit": false
+ },
+ {
+  "id": "61469_c09267fc_0000",
+  "valid": false,
+  "iou": null,
+  "cd_x1000": null,
+  "error": "StdFail_NotDone: GC_MakeArcOfCircle::Value() - no result",
+  "n_tokens": 290,
+  "hit_limit": false
+ },
+ {
+  "id": "61899_93eee6e5_0000",
+  "valid": true,
+  "iou": 0.4780225700075678,
+  "cd_x1000": 2.295471611058192,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 251,
+  "hit_limit": false
+ },
+ {
+  "id": "63072_c8bc39e6_0001",
+  "valid": true,
+  "iou": 0.526502849064485,
+  "cd_x1000": 1.2769484869670742,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 283,
+  "hit_limit": false
+ },
+ {
+  "id": "63132_330141d7_0010",
+  "valid": true,
+  "iou": 0.9738571934470398,
+  "cd_x1000": 0.09262806655015937,
+  "error": "",
+  "exec_s": 1.7,
+  "n_tokens": 142,
+  "hit_limit": false
+ },
+ {
+  "id": "67403_bb0225a8_0000",
+  "valid": true,
+  "iou": 0.5696085002846054,
+  "cd_x1000": 0.06326012258945547,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 103,
+  "hit_limit": false
+ },
+ {
+  "id": "69239_a96344a9_0000",
+  "valid": true,
+  "iou": 0.7097678348378342,
+  "cd_x1000": 6.0971492817411415,
+  "error": "",
+  "exec_s": 1.7,
+  "n_tokens": 271,
+  "hit_limit": false
+ },
+ {
+  "id": "69739_d92d72d2_0000",
+  "valid": true,
+  "iou": 0.2822813526480664,
+  "cd_x1000": 3.388071829940275,
+  "error": "",
+  "exec_s": 1.7,
+  "n_tokens": 169,
+  "hit_limit": false
+ },
+ {
+  "id": "70169_914780d4_0013",
+  "valid": true,
+  "iou": 0.9850447597105103,
+  "cd_x1000": 0.25633981154140456,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 109,
+  "hit_limit": false
+ },
+ {
+  "id": "70188_002060a2_0002",
+  "valid": true,
+  "iou": 0.9767227150003822,
+  "cd_x1000": 0.12825967840493213,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 113,
+  "hit_limit": false
+ },
+ {
+  "id": "73388_10a40b49_0024",
+  "valid": true,
+  "iou": 0.9952336241399099,
+  "cd_x1000": 0.27768349407108733,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 54,
+  "hit_limit": false
+ },
+ {
+  "id": "73908_60ffee0f_0001",
+  "valid": true,
+  "iou": 0.8090822066536985,
+  "cd_x1000": 1.8089641579260851,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 230,
+  "hit_limit": false
+ },
+ {
+  "id": "74051_f60f9282_0000",
+  "valid": true,
+  "iou": 0.6073505534120758,
+  "cd_x1000": 2.184686785744237,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 244,
+  "hit_limit": false
+ },
+ {
+  "id": "74811_83a8fddf_0000",
+  "valid": true,
+  "iou": 0.9843115392008635,
+  "cd_x1000": 0.16406442247252387,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 46,
+  "hit_limit": false
+ },
+ {
+  "id": "76880_9bb28e72_0005",
+  "valid": true,
+  "iou": 0.0,
+  "cd_x1000": 0.8093864237438829,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 53,
+  "hit_limit": false
+ },
+ {
+  "id": "77211_d46ae17d_0001",
+  "valid": true,
+  "iou": 0.9582206971004191,
+  "cd_x1000": 0.26511938774043314,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 96,
+  "hit_limit": false
+ },
+ {
+  "id": "77686_d2bfddf4_0000",
+  "valid": true,
+  "iou": 0.8333001848458478,
+  "cd_x1000": 0.17513591109528193,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 50,
+  "hit_limit": false
+ },
+ {
+  "id": "78513_7ad0bd6a_0005",
+  "valid": true,
+  "iou": 0.9999998850561777,
+  "cd_x1000": 0.21471465396571685,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 54,
+  "hit_limit": false
+ },
+ {
+  "id": "79098_6d4d6157_0000",
+  "valid": true,
+  "iou": 0.4300608071719748,
+  "cd_x1000": 0.19982850531493707,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 144,
+  "hit_limit": false
+ },
+ {
+  "id": "79424_5ac55435_0000",
+  "valid": true,
+  "iou": 0.0,
+  "cd_x1000": 0.5728447910595471,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 403,
+  "hit_limit": false
+ },
+ {
+  "id": "79510_f27c9c97_0000",
+  "valid": true,
+  "iou": 0.9211377840254564,
+  "cd_x1000": 0.06576489710512486,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 88,
+  "hit_limit": false
+ },
+ {
+  "id": "79625_8be98a9f_0000",
+  "valid": true,
+  "iou": 0.9996891755632917,
+  "cd_x1000": 0.26835282641157476,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 48,
+  "hit_limit": false
+ },
+ {
+  "id": "79986_27ba3aa9_0000",
+  "valid": true,
+  "iou": 0.9964129795027391,
+  "cd_x1000": 0.2851809035024644,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 48,
+  "hit_limit": false
+ },
+ {
+  "id": "81997_a224b06d_0000",
+  "valid": true,
+  "iou": 0.8906937010117656,
+  "cd_x1000": 0.16468247122320248,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 103,
+  "hit_limit": false
+ },
+ {
+  "id": "82203_8b9714ce_0000",
+  "valid": true,
+  "iou": 0.5279545395059527,
+  "cd_x1000": 0.2716124490726014,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 242,
+  "hit_limit": false
+ },
+ {
+  "id": "83111_3ad0d7a8_0000",
+  "valid": true,
+  "iou": 0.26858386003956747,
+  "cd_x1000": 2.6076723655060494,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 154,
+  "hit_limit": false
+ },
+ {
+  "id": "83219_f6c9d6bc_0000",
+  "valid": true,
+  "iou": 0.9602545677518547,
+  "cd_x1000": 0.19694027408563142,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 97,
+  "hit_limit": false
+ },
+ {
+  "id": "83374_f47c70a0_0000",
+  "valid": false,
+  "iou": null,
+  "cd_x1000": null,
+  "error": "StdFail_NotDone: BRep_API: command not done",
+  "n_tokens": 209,
+  "hit_limit": false
+ },
+ {
+  "id": "83470_1e871838_0000",
+  "valid": true,
+  "iou": 0.9858668086944423,
+  "cd_x1000": 0.1740238910658742,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 90,
+  "hit_limit": false
+ },
+ {
+  "id": "86296_8a6ed4d3_0008",
+  "valid": true,
+  "iou": 0.9921723046378723,
+  "cd_x1000": 0.3730009142470233,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 52,
+  "hit_limit": false
+ },
+ {
+  "id": "86586_ee75152f_0000",
+  "valid": true,
+  "iou": 0.9774653435818745,
+  "cd_x1000": 0.11139263150725112,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 91,
+  "hit_limit": false
+ },
+ {
+  "id": "86898_b705167e_0000",
+  "valid": true,
+  "iou": 0.9101936624294596,
+  "cd_x1000": 0.13049192103136817,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 80,
+  "hit_limit": false
+ },
+ {
+  "id": "87757_eb92dadf_0015",
+  "valid": true,
+  "iou": 0.9412352638244372,
+  "cd_x1000": 0.0840693741809119,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 73,
+  "hit_limit": false
+ },
+ {
+  "id": "88300_ac762961_0003",
+  "valid": true,
+  "iou": 0.9497718947534911,
+  "cd_x1000": 0.07811461117498184,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 61,
+  "hit_limit": false
+ },
+ {
+  "id": "88317_a9fa6cf2_0000",
+  "valid": true,
+  "iou": 0.36847793566057185,
+  "cd_x1000": 0.11372448944062401,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 97,
+  "hit_limit": false
+ },
+ {
+  "id": "89253_e57586a5_0000",
+  "valid": true,
+  "iou": 0.9889570314904956,
+  "cd_x1000": 0.14615268896376737,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 89,
+  "hit_limit": false
+ },
+ {
+  "id": "91457_9b6cdf83_0001",
+  "valid": true,
+  "iou": 0.9633066235409643,
+  "cd_x1000": 0.10143170401135831,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 89,
+  "hit_limit": false
+ },
+ {
+  "id": "91546_80acf346_0000",
+  "valid": true,
+  "iou": 0.9864551366917722,
+  "cd_x1000": 0.13413145243915414,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 65,
+  "hit_limit": false
+ },
+ {
+  "id": "91555_fecd461a_0000",
+  "valid": true,
+  "iou": 0.7905937128092829,
+  "cd_x1000": 0.2773349808587735,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 264,
+  "hit_limit": false
+ },
+ {
+  "id": "91557_62c39321_0000",
+  "valid": true,
+  "iou": 0.6547819513031192,
+  "cd_x1000": 1.815792749769269,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 96,
+  "hit_limit": false
+ },
+ {
+  "id": "92030_4f061297_0000",
+  "valid": true,
+  "iou": 0.989238077118251,
+  "cd_x1000": 0.3156362311698017,
+  "error": "",
+  "exec_s": 1.6,
+  "n_tokens": 78,
+  "hit_limit": false
+ },
+ {
+  "id": "93181_b95f586d_0000",
+  "valid": true,
+  "iou": 0.9803045746609321,
+  "cd_x1000": 0.11666669286939316,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 86,
+  "hit_limit": false
+ },
+ {
+  "id": "97342_27fcca0b_0001",
+  "valid": true,
+  "iou": 0.8443946402293904,
+  "cd_x1000": 0.19182533557901565,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 137,
+  "hit_limit": false
+ },
+ {
+  "id": "97732_4959b064_0000",
+  "valid": true,
+  "iou": 0.9719629724298251,
+  "cd_x1000": 0.29436230471205266,
+  "error": "",
+  "exec_s": 1.5,
+  "n_tokens": 109,
+  "hit_limit": false
+ },
+ {
+  "id": "99732_6f03d7fc_0001",
+  "valid": true,
+  "iou": 0.6053443738160013,
+  "cd_x1000": 0.4609840733306955,
+  "error": "",
+  "exec_s": 1.4,
+  "n_tokens": 82,
+  "hit_limit": false
+ }
+]
