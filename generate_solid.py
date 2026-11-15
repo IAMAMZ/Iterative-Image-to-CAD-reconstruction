@@ -127,16 +127,27 @@ def generate(program: Path, out: Path, rig: dict, normalization: dict | None = N
                    "warnings": [format_step(s) for s in trace.warnings]}
     cq.exporters.export(shape, str(out / "solid.step"))
     cq.exporters.export(shape, str(out / "solid.stl"))
+    return render_mesh(to_trimesh(shape), out, rig, normalization, info)
 
+
+def render_mesh(mesh, out: Path, rig: dict, normalization: dict | None = None,
+                info: dict | None = None) -> dict:
+    """Render a mesh (in its own units) from every rig camera and write the views,
+    depth.npz and info.json. Shared by candidate solids and mesh-only targets, so both
+    are rendered by exactly the same code."""
+    out.mkdir(parents=True, exist_ok=True)
+    info = dict(info or {})
     norm = normalization or {}
-    mesh, center, scale = normalize(to_trimesh(shape), norm.get("center"), norm.get("scale"))
+    mesh_n, center, scale = normalize(mesh, norm.get("center"), norm.get("scale"))
     with CQRenderer(rig["width"], rig["height"]) as r:
-        views = render_rig(r, mesh, rig)
+        views = render_rig(r, mesh_n, rig)
     for name, (rgb, depth, mask) in views.items():
         Image.fromarray(rgb).save(out / f"{name}.png")
         Image.fromarray((mask * 255).astype(np.uint8)).save(out / f"{name}_mask.png")
         Image.fromarray(depth_preview(depth)).save(out / f"{name}_depth.png")
     np.savez_compressed(out / "depth.npz", **{n: v[1] for n, v in views.items()})
+    info.setdefault("bbox_min", mesh.bounds[0].tolist())
+    info.setdefault("bbox_max", mesh.bounds[1].tolist())
     # x_normalised = (x - center) * scale ; depth is in normalised units
     info["normalization"] = {"center": center.tolist(), "scale": float(scale)}
     info["views"] = list(views)

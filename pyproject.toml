@@ -11,6 +11,8 @@ dependencies = [
     "networkx",
     "pillow",
     "pyrender",
+    "manifold3d>=3.5.5",
+    "matplotlib>=3.10.9",
 ]
 
 [tool.uv]
@@ -20,3 +22,6 @@ package = false
 dev = [
     "pytest>=9.2.0",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

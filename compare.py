@@ -67,6 +67,21 @@ def view_metrics(mask_t, depth_t, mask_c, depth_c, mm_per_unit=1.0):
     return m
 
 
+def largest_residual(mask_t, mask_c, min_px=20):
+    """Biggest connected blob of missing or extra material in one view.
+    -> (area_px, (row0, row1, col0, col1)) or (0, None)."""
+    from scipy import ndimage
+    lab, n = ndimage.label(mask_t ^ mask_c)
+    if n == 0:
+        return 0, None
+    areas = ndimage.sum(np.ones_like(lab), lab, index=np.arange(1, n + 1))
+    k = int(np.argmax(areas))
+    if areas[k] < min_px:
+        return 0, None
+    sl = ndimage.find_objects(lab)[k]
+    return int(areas[k]), (sl[0].start, sl[0].stop, sl[1].start, sl[1].stop)
+
+
 # ------------------------------------------------------------------ images
 def overlay_image(mask_t, mask_c):
     img = np.empty(mask_t.shape + (3,), np.uint8)
