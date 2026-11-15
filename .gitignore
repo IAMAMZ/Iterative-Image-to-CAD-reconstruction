@@ -10,7 +10,6 @@ __pycache__/
 cadrille/checkpoints/
 cadrille/work_dirs/*
 !cadrille/work_dirs/f360_rl/
-!cadrille/work_dirs/f360_sft/
 cadrille/dl.log
 .conda/
 data/cad_json_realcad/
