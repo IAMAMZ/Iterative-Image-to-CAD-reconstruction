@@ -95,6 +95,15 @@ uv run python summarize_runs.py out/refine          # tables, summary.json, per_
 uv run python figures.py out/refine                 # out/refine/figures/
 ```
 
+**Tuning set.** Pilots and prompt changes run on 9 other test parts (same strata, none of the
+60 evaluation parts), so the evaluation parts stay unseen until the final run:
+
+```sh
+uv run python cadrille_init.py tune                 # -> data/fusion360/tuning.txt (+ tuning_meta.json)
+uv run python data/fusion360_targets.py --split data/fusion360/tuning.txt --out out/targets/fusion360_tuning
+uv run python cadrille_init.py convert --tag rl --targets out/targets/fusion360_tuning --out out/init/cadrille_rl_tuning
+```
+
 Dry run without any model: `--backend echo` (a fake agent that perturbs one number per round).
 
 **Sandbox (Linux, opt-in).** `--sandbox` (on `refine.py` and `cadrille_init.py convert`) builds
@@ -134,6 +143,7 @@ scratch), `--shadow-judge` (judge every edit in every arm for agreement statisti
 Files:
 - `refine.py` — the loop, arms and logging (every edit logs the geometric check's decision, the
   judge's where it ran, and what it really did to the hidden shape).
+- `cq_reference.py` — short CadQuery reference entries (real signatures) picked per prompt for the local model.
 - `sandbox.py` — optional bwrap sandbox for builds (`--sandbox`).
 - `geo_check.py` — weighted score and acceptance rule. `view_weights.py` — view confidence.
 - `vlm.py` — backends (`ollama`, `echo`), prompts, verification questions, reply parsing.

@@ -1,0 +1,88 @@
+{
+ "seed": 2530,
+ "per_bin": 3,
+ "complexity_median": 1512.0,
+ "iou_bins": [
+  [
+   0.0,
+   0.6,
+   "low"
+  ],
+  [
+   0.6,
+   0.9,
+   "mid"
+  ],
+  [
+   0.9,
+   1.01,
+   "high"
+  ]
+ ],
+ "parts": {
+  "108852_fed54702_0004": {
+   "cadrille_rl_iou": 0.8967503257214171,
+   "cadrille_rl_cd": 0.019486148710446533,
+   "complexity": 752,
+   "iou_bin": "mid",
+   "mesh": "simple"
+  },
+  "115533_da81d57e_0000": {
+   "cadrille_rl_iou": 0.27118709261688,
+   "cadrille_rl_cd": 3.223231961492441,
+   "complexity": 28076,
+   "iou_bin": "low",
+   "mesh": "complex"
+  },
+  "125152_65ed33fd_0000": {
+   "cadrille_rl_iou": 0.32783667455179644,
+   "cadrille_rl_cd": 1.789125913930384,
+   "complexity": 2264,
+   "iou_bin": "low",
+   "mesh": "complex"
+  },
+  "135092_c3610d5c_0006": {
+   "cadrille_rl_iou": 0.9737554459802157,
+   "cadrille_rl_cd": 0.18779531232547264,
+   "complexity": 1794,
+   "iou_bin": "high",
+   "mesh": "complex"
+  },
+  "21604_520e1ae2_0001": {
+   "cadrille_rl_iou": 0.9570277357901235,
+   "cadrille_rl_cd": 0.04015857212507612,
+   "complexity": 2284,
+   "iou_bin": "high",
+   "mesh": "complex"
+  },
+  "24195_9791f5d3_0005": {
+   "cadrille_rl_iou": 0.7988335784352962,
+   "cadrille_rl_cd": 0.28645983688597976,
+   "complexity": 3024,
+   "iou_bin": "mid",
+   "mesh": "complex"
+  },
+  "24603_a4021250_0002": {
+   "cadrille_rl_iou": 0.5511570284383134,
+   "cadrille_rl_cd": 0.03473592723073363,
+   "complexity": 20,
+   "iou_bin": "low",
+   "mesh": "simple"
+  },
+  "46086_371b5052_0002": {
+   "cadrille_rl_iou": 0.8251227511334922,
+   "cadrille_rl_cd": 0.10406306990806026,
+   "complexity": 1530,
+   "iou_bin": "mid",
+   "mesh": "complex"
+  },
+  "56065_00bbe5da_0003": {
+   "cadrille_rl_iou": 0.9883858642153951,
+   "cadrille_rl_cd": 0.13095811566209062,
+   "complexity": 1512,
+   "iou_bin": "high",
+   "mesh": "simple"
+  }
+ },
+ "excluded": "60 parts of the evaluation split"
+}

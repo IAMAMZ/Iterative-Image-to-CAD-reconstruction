@@ -112,6 +112,9 @@ def summarize(root: Path) -> dict:
             "parts_improved": sum(g > 0.005 for g in gains), "parts_worse": sum(g < -0.005 for g in gains),
             "invalid_rate": (len(edits) - len(valid)) / len(edits) if edits else None,
             "repair_success": len(repaired) / len(needed) if needed else None,
+            # edits whose dropped definitions (e.g. w0 = cq.Workplane(...)) were restored
+            "restored_rate": sum(bool(e.get("restored")) for e in edits) / len(edits) if edits else None,
+            "repeated_replies": sum(e.get("repeated_replies") or 0 for e in edits),
             "acceptance": decision_stats(valid, "accepted"),
             "shadow_geo": decision_stats(valid, "geo_decision"),
             "shadow_vlm": decision_stats(valid, "vlm_decision"),
@@ -167,7 +170,9 @@ def main():
                   f"   best(geo) {mi(q[k]['best_geo'], p)}   best(oracle) {mi(q[k]['best_oracle'], p)}")
         a, g, v = m["acceptance"], m["shadow_geo"], m["shadow_vlm"]
         print(f"  parts improved {m['parts_improved']}, worse {m['parts_worse']}; "
-              f"invalid {f(m['invalid_rate'], 2)}, repair success {f(m['repair_success'], 2)}")
+              f"invalid {f(m['invalid_rate'], 2)}, repair success {f(m['repair_success'], 2)}, "
+              f"definitions restored {f(m['restored_rate'], 2)}, "
+              f"repeated replies {m['repeated_replies']}")
         for name, d in (("accepted", a), ("geo check", g), ("vlm judge", v)):
             if d["n"]:
                 c = d["counts"]

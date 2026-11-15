@@ -93,6 +93,7 @@ uv run python figures.py out/refine
 |---|---|
 | `data/fusion360_targets.py` | For each part in the split: map the GT to the cadrille frame (`to_target_frame`), render with `render_mesh`, write `out/targets/fusion360/<part>/` with `gt.stl` (offline scoring only) and `info.json` (source, units, watertight flag, face/vertex counts). |
 | `cadrille_init.py split` | Stratified 60-part subset: cadrille-RL IoU bin (low < 0.6, mid 0.6–0.9, high ≥ 0.9) × mesh complexity (faces + vertices vs. median 1512), 10 per cell, seed 2529. Writes `data/fusion360/stage1.txt` and `stage1_meta.json` (strata used by the summaries). |
+| `cadrille_init.py tune` | **Tuning set** for pilots and prompt changes: 3 parts per IoU bin (9), same strata, drawn only from test parts outside Stage 1 (seed 2530) → `data/fusion360/tuning.txt` + `tuning_meta.json`. Build with `fusion360_targets.py --split data/fusion360/tuning.txt --out out/targets/fusion360_tuning` and `convert --targets out/targets/fusion360_tuning --out out/init/cadrille_rl_tuning`. The first three pilots used 3 Stage 1 parts (127274_6484a80b_0000, 135654_34a24e52_0000, 22011_0832eefe_0013); report them as seen during development. |
 | `cadrille_init.py convert` | Turns `cadrille/work_dirs/f360_<tag>/py/<part>.py` into a refine program (`to_refine_program`: adds `result = r`), builds it, then the **placement fit**: isotropic scale `s ∈ [0.7, 1.4]` by a 13-point log grid + golden-section search, maximising the weighted geo score against the target renders (GT-free). Applied only if `|s−1| > 0.005` and the score gains > 1e-3, as a visible code line `result = cq.Workplane(obj=result.val().scale(s))`. Logs to `init_log.json`. `--no-placement` ablates it. |
 
 ### The geometric checker (contribution 2)
@@ -142,12 +143,30 @@ uv run python figures.py out/refine
    those answered "Yes" there are kept.
 4. **Rounds** for each arm (`refine_part`):
    1. stop if `--budget-seconds` is used up;
-   2. question arms: answer the questions on the current candidate; all "Yes" → stop
-      (`all_questions_yes`); otherwise ask for feedback on the No/Unclear ones;
+   2. question arms: answer the questions on the current candidate; otherwise ask for feedback
+      on the No/Unclear ones. All "Yes" → stop (`all_questions_yes`) in `vlm`/`gsolver`
+      (CADCodeVerify). Arms that also see the geometric evidence (`hybrid`) stop only if the
+      weighted silhouette IoU is ≥ `ALL_YES_IOU` (0.98) too; otherwise they continue without
+      question feedback (`qa_all_yes_continued`). A 7B model answers vague questions "Yes"
+      while a view is plainly wrong (pilot: top-view IoU 0.41);
    3. collect evidence: target grid + candidate grid, and for residual arms the overlay grid,
       depth-error grid, zoomed detail strip and the weighted residual table;
    4. `Agent.write_program`: send the prompt, check the code, build; on a build error send the
-      error back (up to `--repairs`, default 2). `NO_CHANGE` → stop;
+      error back (up to `--repairs`, default 2). `NO_CHANGE` → stop. Guidance for small models:
+      - **restored definitions:** top-level definitions the reply uses but dropped (cadrille's
+        `w0 = cq.Workplane(...)`) are copied back from the current program before building
+        (`vlm.restore_definitions`, logged as `restored`);
+      - **repair prompt** quotes the missing definition for a `NameError`, and says so when the
+        reply is a copy of the previous failed one (`repeated_replies`);
+      - repairs sample at temperature 0.8 (first attempt 0.4), so the model does not resend
+        the same program;
+      - **CadQuery reference entries** (`cq_reference.py`, ablate with `--no-reference`): the
+        edit prompt gets entries for the methods the current program uses (call chains are
+        followed, so methods between `.sketch()` and `.finalize()` count as Sketch methods),
+        about 700 tokens; a repair gets the failing method, what it needs (e.g. `cutBlind` →
+        `faces` + `rect`, `fillet` → `edges`) or, for a method the object lacks, what to use
+        instead (`Sketch.moveTo` → `push`). Each entry = real signature read with `inspect`
+        from the installed CadQuery + a one-line rule + an example; a test builds every example;
    5. score the new candidate (`score`: compare + geo score + offline `eval3d`);
    6. decide (table below). The geo decision is computed and logged for **every** arm (shadow);
       the judge runs where the rule needs it, or everywhere with `--shadow-judge`;
@@ -180,7 +199,7 @@ passes it and can write anywhere (`tests/test_sandbox.py` shows this). Renders a
 (masks and depth identical, shading within 1 grey level).
 
 **Flags.** `--rounds` (4), `--budget-seconds`, `--repairs` (2), `--backend`, `--model`, `--think`,
-`--init`, `--fallback`, `--shadow-judge`, `--sandbox`, `--seed`, `--out`, and ablations `--no-weights`,
+`--init`, `--fallback`, `--shadow-judge`, `--sandbox`, `--no-reference`, `--seed`, `--out`, and ablations `--no-weights`,
 `--no-kernel`, `--no-residuals`, `--no-residual-images`, `--no-detail`, `--no-images`.
 
 ### Evaluation and reporting
@@ -214,7 +233,7 @@ mean_iou, w_iou, depth_mae, geo_score, kernel_warnings`, all `eval3d` metrics, `
 
 ## 6. Tests
 
-`uv run pytest` (57 tests, `testpaths = ["tests"]`).
+`uv run pytest` (102 tests, `testpaths = ["tests"]`).
 
 | Test file | Checks |
 |---|---|
@@ -222,6 +241,7 @@ mean_iou, w_iou, depth_mae, geo_score, kernel_warnings`, all `eval3d` metrics, `
 | `test_view_weights_and_geo_check.py` | Clean views weigh 1; a corrupted view is the only one down-weighted; low-weight views cannot veto; trusted views can. |
 | `test_vlm_parsing.py` | `CHANGE:` / `NO_CHANGE`, questions, answers, `KEEP`, code checks, kernel report, `format_program` keeps the AST. |
 | `test_sandbox.py` | Sandbox blocks other files, network and writes; a program that passes `check_code` but exports a file is contained; sandboxed renders match plain ones. Skipped off Linux. |
+| `test_cq_reference.py` | Every reference entry exists in the installed CadQuery and its example builds a valid solid; methods are attributed to Workplane/Sketch correctly; error → entry selection; reference stays < 1200 tokens for cadrille programs. |
 | `test_refine_echo.py` | Every arm end to end with the echo agent; shadow decisions and usage logged; summaries written; a failing start program is skipped. |
 | `test_compare.py`, `test_compare_image.py`, `test_illegal_shapes.py` | Checker scores/colours, image checker, op_checker catches illegal operations at the right step. |
 

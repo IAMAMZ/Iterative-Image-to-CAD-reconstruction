@@ -9,6 +9,7 @@ A proprietary backend (Gemini / Vertex AI) plugs in as one more function in BACK
 """
 import ast
 import base64
+import builtins
 import hashlib
 import json
 import random
@@ -199,6 +200,78 @@ def parse_change(text: str):
     return None, None
 
 
+_BUILTINS = set(dir(builtins))
+
+
+def _definitions(tree):
+    """Top-level `name = ...` statements of a module, in order: {name: stmt}."""
+    defs = {}
+    for st in tree.body:
+        if isinstance(st, ast.Assign) and len(st.targets) == 1 and isinstance(st.targets[0], ast.Name):
+            defs.setdefault(st.targets[0].id, st)
+    return defs
+
+
+def _loaded(node):
+    return {n.id for n in ast.walk(node) if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load)}
+
+
+def undefined_names(src: str) -> set[str]:
+    """Names a program reads but never assigns or imports (None if it does not parse)."""
+    try:
+        tree = ast.parse(src)
+    except SyntaxError:
+        return None
+    bound = {n.id for n in ast.walk(tree) if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store)}
+    for n in ast.walk(tree):
+        if isinstance(n, (ast.Import, ast.ImportFrom)):
+            bound |= {(a.asname or a.name).split(".")[0] for a in n.names}
+        elif isinstance(n, (ast.FunctionDef, ast.Lambda)):
+            bound |= {a.arg for a in n.args.args}
+            if isinstance(n, ast.FunctionDef):
+                bound.add(n.name)
+    return _loaded(tree) - bound - _BUILTINS
+
+
+def restore_definitions(src: str, base: str | None):
+    """Small models often copy an edited program without the lines that define the
+    workplanes it uses (cadrille's `w0 = cq.Workplane(...)`), so it fails with NameError.
+    Put back, right after the imports, every top-level definition from the program being
+    edited (`base`) that the new program uses but does not define, plus whatever those
+    definitions need in turn. -> (program, [restored names])."""
+    if not base:
+        return src, []
+    missing = undefined_names(src)
+    if not missing:
+        return src, []
+    try:
+        base_tree = ast.parse(base)
+    except SyntaxError:
+        return src, []
+    defs = _definitions(base_tree)
+    need, todo = set(), [m for m in missing if m in defs]
+    while todo:
+        name = todo.pop()
+        if name in need:
+            continue
+        need.add(name)
+        todo += [d for d in _loaded(defs[name].value) if d in defs and d not in need]
+    if not need:
+        return src, []
+    order = [n for n in defs if n in need]                      # keep the base program's order
+    block = "\n".join(ast.get_source_segment(base, defs[n]) for n in order)
+    lines = src.splitlines()
+    at = 0
+    for i, l in enumerate(lines):                               # after the last leading import
+        if l.startswith(("import ", "from ")):
+            at = i + 1
+        elif l.strip() and not l.startswith("#"):
+            break
+    out = lines[:at] + ["# restored from the current program (the reply used but did not define it)",
+                        block] + lines[at:]
+    return "\n".join(out) + "\n", order
+
+
 # ------------------------------------------------------------------ prompts
 SYSTEM = """You are a CAD engineer. You write and edit CadQuery (Python) programs that \
 rebuild a mechanical part from pictures of it.
@@ -207,7 +280,9 @@ Rules for every program you write:
 - Lengths are in the part's own units (the part's longest side is about 200 units). Z is up.
 - Start with `import cadquery as cq` (you may also `import math`; nothing else).
 - Assign the final single solid to a variable named `result`.
-- Reply with exactly one ```python code block containing the whole program.
+- Reply with exactly one ```python code block containing the whole program. It must run on \
+its own: keep every line it needs, including the lines that create workplanes \
+(e.g. `w0 = cq.Workplane(...)`) and the `import`.
 
 When you edit an existing program:
 - Treat the current program as the scaffold: keep its coordinate frame, orientation and \
@@ -289,7 +364,7 @@ def kernel_report(info: dict) -> str:
 
 
 def refine_prompt(program, lo, hi, cand_size=None, *, n_images=2, residual_table=None,
-                  detail=False, kernel=None, qa_feedback=None, gsolver=None):
+                  detail=False, kernel=None, qa_feedback=None, gsolver=None, reference=None):
     """The edit request. Which evidence goes in is decided by the arm (see refine.ARMS)."""
     lines = []
     if n_images:
@@ -321,6 +396,8 @@ def refine_prompt(program, lo, hi, cand_size=None, *, n_images=2, residual_table
                   qa_feedback]
     if gsolver:
         lines += ["", "Geometric properties, target vs current:", gsolver]
+    if reference:
+        lines += ["", reference]
     lines += ["", "Current program:", f"```python\n{format_program(program).strip()}\n```", "",
               "Find the single biggest geometric difference between the target and the current "
               "reconstruction, fix it, and reply in the format from the rules (CHANGE line, then "
@@ -328,9 +405,54 @@ def refine_prompt(program, lo, hi, cand_size=None, *, n_images=2, residual_table
     return "\n".join(lines)
 
 
-def repair_prompt(error):
-    return ("That program failed:\n" + error.strip() + "\n\nFix it and reply with the complete "
-            "corrected program in one ```python block. Use only the CadQuery methods listed.")
+_NAME_ERROR = re.compile(r"NameError: name '(\w+)' is not defined")
+
+# Sketch vs Workplane mix-ups seen in the pilot (qwen2.5vl:7b): error pattern -> how to fix it
+API_HINTS = [
+    (r"'Sketch' object has no attribute 'extrude'",
+     "A sketch must be closed with .finalize() before extruding: "
+     "wp.sketch()....finalize().extrude(depth)."),
+    (r"'Sketch' object has no attribute '(moveTo|center|pushPoints|hole|box|cylinder|workplane)'",
+     "Inside .sketch() ... .finalize() only Sketch methods work: place shapes with "
+     ".push([(x, y)]) then .circle(r) / .rect(w, h) (mode='s' to subtract). Workplane methods "
+     "such as moveTo/center/pushPoints/hole come after .finalize()."),
+    (r"Sketch\.circle\(\) got an unexpected keyword argument",
+     "Sketch.circle takes the radius positionally: .circle(r) or .circle(r, mode='s')."),
+    (r"'Workplane' object has no attribute 'scale'",
+     "Scale a whole solid with cq.Workplane(obj=result.val().scale(f)), not result.scale(f)."),
+    (r"'Workplane' object has no attribute '(segment|arc|assemble)'",
+     "segment/arc/assemble are Sketch methods: start with wp.sketch() and end with .finalize()."),
+]
+
+
+def repair_prompt(error, base=None, repeated=False, reference=None):
+    """Build-error feedback. For an undefined name the current program defines, quote its
+    definition; if the reply was a copy of the previous failed one, say so."""
+    lines = ["That program failed:", error.strip()]
+    m = _NAME_ERROR.search(error)
+    if m and base:
+        try:
+            d = _definitions(ast.parse(base)).get(m.group(1))
+        except SyntaxError:
+            d = None
+        if d is not None:
+            lines += ["", f"`{m.group(1)}` is defined in the current program as:",
+                      f"```python\n{ast.get_source_segment(base, d)}\n```",
+                      "Include that line (and the import) in your program."]
+        else:
+            lines += ["", f"`{m.group(1)}` is used but never defined: define it before use."]
+    for pat, hint in API_HINTS:
+        if re.search(pat, error):
+            lines += ["", "How to fix it: " + hint]
+            break
+    if reference:
+        lines += ["", reference]
+    if repeated:
+        lines += ["", "Your reply was identical to the previous failed program. Change the code "
+                      "so that this error cannot happen again."]
+    lines += ["", "Fix it and reply with the complete corrected program in one ```python block. "
+                  "Use only the CadQuery methods listed."]
+    return "\n".join(lines)
 
 
 VLM_JUDGE = """Image 1 is the TARGET part. Image 2 is reconstruction A. Image 3 is \

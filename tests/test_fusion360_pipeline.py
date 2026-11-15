@@ -77,3 +77,11 @@ def test_fit_scale_recovers_a_known_scale(f360_target):
     s, fitted, unscaled = fit_scale(small, f360_target, load_rig())
     assert s == pytest.approx(1.25, rel=0.02)
     assert fitted > unscaled
+
+
+def test_tuning_set_is_disjoint_from_the_evaluation_split():
+    d = ROOT / "data" / "fusion360"
+    stage1, tuning = set((d / "stage1.txt").read_text().split()), set((d / "tuning.txt").read_text().split())
+    assert len(stage1) == 60 and len(tuning) == 9 and not stage1 & tuning
+    meta = json.loads((d / "tuning_meta.json").read_text())["parts"]
+    assert {r["iou_bin"] for r in meta.values()} == {"low", "mid", "high"}

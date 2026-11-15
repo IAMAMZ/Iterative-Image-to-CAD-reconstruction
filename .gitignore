@@ -16,3 +16,6 @@ cadrille/dl.log
 # obsolete SFT / axis-view data moved out of the way (see archive/MANIFEST.jsonl)
 archive/*
 !archive/procedural/
+
+# papers / proposal (not redistributed)
+pdfs/

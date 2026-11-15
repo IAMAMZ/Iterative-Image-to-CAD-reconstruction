@@ -5,6 +5,8 @@
     uv run python cadrille_init.py convert --tag rl           # -> out/init/cadrille_rl/<part>.py
     uv run python refine.py out/targets/fusion360/* --init out/init/cadrille_rl ...
 
+    uv run python cadrille_init.py tune                       # -> data/fusion360/tuning.txt
+
 convert
   * appends `result = r` (cadrille assigns its solid to `r`)
   * placement (as in GATOR's placement step): fits one isotropic scale of the solid to the
@@ -14,6 +16,11 @@ convert
     Disable with --no-placement (ablation).
   * copies cadrille's own scores (cadrille protocol: bbox-normalised IoU / CD) to
     scores.json, and logs parts whose cadrille program does not build (invalid rate, IR).
+
+tune
+  a small tuning set (default 3 per IoU bin) with the same strata, drawn only from test parts
+  outside the Stage 1 split -> data/fusion360/tuning.txt. Pilots and prompt changes use these
+  parts, so the 60 evaluation parts stay unseen until the final run.
 
 split
   ~60 parts of the Fusion360 test split, stratified by cadrille-RL IoU (< 0.6, 0.6-0.9,
@@ -171,12 +178,15 @@ def convert(args):
           f"({len(bad)} invalid: {bad[:5]}{'...' if len(bad) > 5 else ''})")
 
 
-def split(args):
+def split(args, out_name="stage1", exclude=(), seed=SEED):
+    """Stratified subset of the test parts -> data/fusion360/<name>.txt + <name>_meta.json."""
     scores = {r["id"]: r for r in json.loads(
         (CADRILLE / "work_dirs" / "f360_rl" / "scores.json").read_text())}
     test = [l.strip() for l in (SPLITS / "test" / "ids.txt").read_text().split() if l.strip()]
     rows = []
     for p in test:
+        if p in exclude:
+            continue
         r = scores.get(p)
         if not r or not r.get("valid") or r.get("iou") is None or not (GT_DIR / f"{p}.stl").exists():
             continue
@@ -184,7 +194,7 @@ def split(args):
         rows.append({"part": p, "cadrille_rl_iou": r["iou"], "cadrille_rl_cd": r["cd_x1000"],
                      "complexity": int(len(m.faces) + len(m.vertices))})
     med = float(np.median([r["complexity"] for r in rows]))
-    rng = random.Random(SEED)
+    rng = random.Random(seed)
     chosen = []
     for lo, hi, name in IOU_BINS:
         pool = [dict(r, iou_bin=name, mesh=("complex" if r["complexity"] > med else "simple"))
@@ -198,11 +208,24 @@ def split(args):
         take += rest[:per - len(take)]                 # top up if one half is short
         chosen += take
     chosen.sort(key=lambda r: r["part"])
-    (SPLITS / "stage1.txt").write_text("\n".join(r["part"] for r in chosen) + "\n")
-    (SPLITS / "stage1_meta.json").write_text(json.dumps(
-        {"seed": SEED, "per_bin": args.per_bin, "complexity_median": med,
-         "iou_bins": IOU_BINS, "parts": {r.pop("part"): r for r in chosen}}, indent=1))
-    print(f"wrote {len(chosen)} parts to {SPLITS / 'stage1.txt'}")
+    (SPLITS / f"{out_name}.txt").write_text("\n".join(r["part"] for r in chosen) + "\n")
+    meta = {"seed": seed, "per_bin": args.per_bin, "complexity_median": med,
+            "iou_bins": IOU_BINS, "parts": {r.pop("part"): r for r in chosen}}
+    if exclude:
+        meta["excluded"] = f"{len(exclude)} parts of the evaluation split"
+    (SPLITS / f"{out_name}_meta.json").write_text(json.dumps(meta, indent=1))
+    print(f"wrote {len(chosen)} parts to {SPLITS / (out_name + '.txt')}")
+
+
+def tune(args):
+    """Tuning set for pilots and prompt changes: same strata as Stage 1, drawn only from
+    test parts that are NOT in the Stage 1 evaluation split, so the evaluation parts stay
+    unseen while the method is developed."""
+    stage1 = SPLITS / "stage1.txt"
+    if not stage1.exists():
+        raise SystemExit("run `cadrille_init.py split` first: the tuning set excludes its parts")
+    exclude = set(stage1.read_text().split())
+    split(args, out_name="tuning", exclude=exclude, seed=SEED + 1)
 
 
 def main():
@@ -210,6 +233,8 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("split")
     s.add_argument("--per-bin", type=int, default=20)
+    t = sub.add_parser("tune", help="tuning set outside the Stage 1 parts (for pilots)")
+    t.add_argument("--per-bin", type=int, default=3)
     c = sub.add_parser("convert")
     c.add_argument("--tag", default="rl", choices=["rl", "sft"])
     c.add_argument("--targets", type=Path, default=TARGETS)
@@ -224,7 +249,7 @@ def main():
             sandbox.check()
         except sandbox.SandboxUnavailable as e:
             ap.error(str(e))
-    {"split": split, "convert": convert}[args.cmd](args)
+    {"split": split, "tune": tune, "convert": convert}[args.cmd](args)
 
 
 if __name__ == "__main__":

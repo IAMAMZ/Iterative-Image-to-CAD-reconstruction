@@ -45,3 +45,20 @@ def test_failed_starting_program_is_skipped(f360_target, tmp_path):
     meta = json.loads((out / f360_target.name / "init" / "init.json").read_text())
     assert meta["ok"] is False and meta["error"]
     assert not (out / f360_target.name / "geo").exists()
+
+
+def test_all_yes_stop_rule():
+    assert refine.stops_on_all_yes(refine.ARMS["vlm"], 0.5)           # CADCodeVerify: always
+    assert not refine.stops_on_all_yes(refine.ARMS["hybrid"], 0.80)   # geometry disagrees
+    assert refine.stops_on_all_yes(refine.ARMS["hybrid"], 0.99)       # both agree
+
+
+def test_agent_restores_dropped_definitions(f360_target, tmp_path, monkeypatch):
+    base = to_refine_program(
+        (ROOT / "cadrille" / "work_dirs" / "f360_rl" / "py" / f"{f360_target.name}.py").read_text())
+    reply = "CHANGE: dimensional - x\n```python\nimport cadquery as cq\nresult = w0.box(50, 50, 50)\n```"
+    monkeypatch.setattr(refine.vlm, "chat", lambda *a, **k: (reply, {"seconds": 0.0}))
+    agent = refine.Agent("m", False, 1, backend="echo")
+    status, attempts, tr, _ = agent.write_program("msg", [], tmp_path / "c", f360_target,
+                                                  [0, 0, 0], base=base)
+    assert status == "ok" and attempts == 1 and tr[0]["restored"] == ["w0"]
