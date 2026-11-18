@@ -15,6 +15,7 @@ import argparse
 import csv
 import json
 import multiprocessing as mp
+import os
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -25,7 +26,8 @@ import batch_eval as be
 
 HERE = Path(__file__).parent
 DATA = HERE.parent / 'data'
-SRC = DATA / 'raw' / 'fusion360_test_mesh'
+# F360_SRC overrides the raw-mesh folder (data/raw is git-ignored, so a worktree may point at another checkout)
+SRC = Path(os.environ.get('F360_SRC', DATA / 'raw' / 'fusion360_test_mesh'))
 MAX_NEW_TOKENS = 768
 SCORE_TIMEOUT_S = 120
 
