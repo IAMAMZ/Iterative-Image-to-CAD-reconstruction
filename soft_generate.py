@@ -3,7 +3,7 @@
 For machines with no working OpenGL (e.g. Windows on ARM). Same camera rig, same
 outputs (rgb / depth / mask), so compare.py works on the results unchanged.
 
-    python soft_generate.py prog.py --out out/x [--like out/target]
+    python soft_generate.py prog.py --out runs/_scratch/x [--like <target dir>]
 """
 import sys
 import types

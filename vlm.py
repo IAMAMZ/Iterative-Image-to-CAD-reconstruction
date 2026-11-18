@@ -1,11 +1,11 @@
 """Talk to the agent's vision-language model, and the prompts the agent uses.
 
 Backends (pick with `backend=`):
+  vertex  Gemini on Vertex AI (vertex_ai.py); project + model come from .env (default)
   ollama  a local open-weight VLM through `ollama serve` (e.g. gemma4:12b); no API keys
   echo    a fake agent for tests and dry runs: it perturbs one number of the current
           program, answers judge/question prompts deterministically, never calls a model
 Every backend returns (reply text, stats) with token counts, so runs can be costed.
-A proprietary backend (Gemini / Vertex AI) plugs in as one more function in BACKENDS.
 """
 import ast
 import base64
@@ -103,14 +103,30 @@ def _echo(messages, model, think, temperature, num_ctx, max_tokens, deadline):
                   "cut_off": None}
 
 
-BACKENDS = {"ollama": _ollama, "echo": _echo}
+def _vertex(messages, model, think, temperature, num_ctx, max_tokens, deadline):
+    import vertex_ai  # lazy: only this backend needs google-genai and a GCP project
+    return vertex_ai.chat(messages, model, think, temperature, num_ctx, max_tokens, deadline)
 
 
-def chat(messages, model="gemma4:12b", think=False, temperature=0.4, num_ctx=16384,
-         max_tokens=2500, deadline=480, backend="ollama"):
+BACKENDS = {"vertex": _vertex, "ollama": _ollama, "echo": _echo}
+DEFAULT_BACKEND = "vertex"
+OLLAMA_MODEL = "gemma4:12b"
+
+
+def default_model(backend: str) -> str:
+    """Model used when none is given: VERTEX_MODEL from .env for vertex, gemma4 otherwise."""
+    if backend == "vertex":
+        import vertex_ai
+        return vertex_ai.default_model()
+    return OLLAMA_MODEL if backend == "ollama" else "echo"
+
+
+def chat(messages, model=None, think=False, temperature=0.4, num_ctx=16384,
+         max_tokens=2500, deadline=480, backend=DEFAULT_BACKEND):
     """messages: [{"role", "content", "images": [png bytes, ...]}] -> (reply text, stats)."""
     if backend not in BACKENDS:
         raise ValueError(f"unknown backend {backend!r}; choose from {sorted(BACKENDS)}")
+    model = model or default_model(backend)
     return BACKENDS[backend](messages, model, think, temperature, num_ctx, max_tokens, deadline)
 
 

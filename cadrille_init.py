@@ -2,8 +2,8 @@
 
     uv run python cadrille_init.py split                      # -> data/fusion360/stage1.txt
     uv run python data/fusion360_targets.py                   # build the targets of that split
-    uv run python cadrille_init.py convert --tag rl           # -> out/init/cadrille_rl/<part>.py
-    uv run python refine.py out/targets/fusion360/* --init out/init/cadrille_rl ...
+    uv run python cadrille_init.py convert --tag rl           # -> data/generated/init/cadrille_rl/<part>.py
+    uv run python refine.py data/generated/targets/fusion360/* --init data/generated/init/cadrille_rl ...
 
     uv run python cadrille_init.py tune                       # -> data/fusion360/tuning.txt
 
@@ -39,6 +39,7 @@ from pathlib import Path
 import numpy as np
 import trimesh
 
+import layout
 import sandbox
 from view_weights import measure_bbox, view_weights
 
@@ -46,7 +47,7 @@ ROOT = Path(__file__).parent
 CADRILLE = ROOT / "cadrille"
 GT_DIR = CADRILLE / "results" / "fusion360_test_gt"
 SPLITS = ROOT / "data" / "fusion360"          # <dataset>/<split> layout
-TARGETS = ROOT / "out" / "targets" / "fusion360"
+TARGETS = ROOT / "data" / "generated" / "targets" / "fusion360"
 SEED = 2529
 IOU_BINS = ((0.0, 0.6, "low"), (0.6, 0.9, "mid"), (0.9, 1.01, "high"))
 PLACEMENT_MARK = "# placement:"
@@ -136,11 +137,11 @@ def convert(args):
     if not src_dir.is_dir():          # SFT outputs were moved to the git-ignored archive/
         raise SystemExit(f"{src_dir} not found: only the RL outputs are in the repo "
                          "(SFT is archived, see archive/MANIFEST.jsonl); use --tag rl")
-    out = args.out or ROOT / "out" / "init" / f"cadrille_{args.tag}"
+    out = args.out or ROOT / "data" / "generated" / "init" / f"cadrille_{args.tag}"
     out.mkdir(parents=True, exist_ok=True)
     scores = {r["id"]: r for r in json.loads(
         (CADRILLE / "work_dirs" / f"f360_{args.tag}" / "scores.json").read_text())}
-    parts = [p.name for p in sorted(args.targets.iterdir()) if (p / "info.json").exists()]
+    parts = [p.name for p in sorted(args.targets.iterdir()) if layout.info(p).exists()]
     parts = parts[:args.limit]
     rig = load_rig()
     log = {"tag": args.tag, "placement": not args.no_placement, "parts": {}}

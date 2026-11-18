@@ -3,7 +3,7 @@
     from cq_render import render_shape
     rgb, depth, mask = render_shape(cq.Workplane().box(1, 2, 3), azim=45, elev=30)
 
-Run as a script for a demo:  uv run python cq_render.py --out out/demo
+Run as a script for a demo:  uv run python cq_render.py --out runs/_scratch/demo
 """
 import os
 import sys
@@ -128,7 +128,7 @@ def demo_part():
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--out", default="out/demo", help="output directory")
+    ap.add_argument("--out", default="runs/_scratch/demo", help="output directory")
     ap.add_argument("--size", type=int, default=512)
     args = ap.parse_args()
 

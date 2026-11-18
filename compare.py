@@ -3,9 +3,9 @@
 Both parts must be rendered with the same rig AND in the same frame, otherwise a
 part twice the size would look identical. Render the candidate with --like:
 
-    uv run python generate_solid.py target.py    --out out/target
-    uv run python generate_solid.py candidate.py --out out/cand --like out/target
-    uv run python compare.py out/target out/cand              # -> out/cand/compare/
+    uv run python generate_solid.py target.py    --out runs/_scratch/target
+    uv run python generate_solid.py candidate.py --out runs/_scratch/cand --like runs/_scratch/target
+    uv run python compare.py runs/_scratch/target runs/_scratch/cand   # -> .../cand/diff/
 
 Per view it measures
   * silhouette IoU   = |target AND candidate| / |target OR candidate|   (1 = same outline)
@@ -25,6 +25,8 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageDraw
+
+import layout
 
 BG = (255, 255, 255)
 BOTH = (200, 200, 200)
@@ -132,8 +134,8 @@ def _legend(width, vmax, mm_per_unit):
 # ------------------------------------------------------------------ io
 def load_views(run_dir: Path):
     """-> ({view: (mask, depth)}, info) from a generate_solid.py output directory."""
-    info = json.loads((run_dir / "info.json").read_text())
-    depth = np.load(run_dir / "depth.npz")
+    info = json.loads(layout.info(run_dir).read_text())
+    depth = np.load(layout.depth(run_dir))
     views = {v: (depth[v] > 0, depth[v]) for v in info["views"]}
     return views, info
 
@@ -193,11 +195,11 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("target", type=Path, help="generate_solid.py output dir of the target")
     ap.add_argument("candidate", type=Path, help="... of the candidate (rendered with --like target)")
-    ap.add_argument("--out", type=Path, default=None, help="default: <candidate>/compare")
+    ap.add_argument("--out", type=Path, default=None, help="default: <candidate>/diff")
     ap.add_argument("--depth-vmax", type=float, default=0.05,
                     help="depth error (normalised units) shown as the darkest colour")
     args = ap.parse_args()
-    r = compare(args.target, args.candidate, args.out or args.candidate / "compare", args.depth_vmax)
+    r = compare(args.target, args.candidate, args.out or args.candidate / layout.DIFF, args.depth_vmax)
     print(f"{'view':10s} {'IoU':>6s} {'missing':>8s} {'extra':>7s} {'depth MAE mm':>13s}")
     for v, m in r["views"].items():
         d = "n/a" if m["depth_mae_mm"] is None else f"{m['depth_mae_mm']:.3f}"

@@ -1,7 +1,8 @@
 """Summarise refine.py runs: compare the review methods (arms) on the same parts.
 
-    uv run python summarize_runs.py out/refine        # prints tables; writes summary.json,
-                                                      # per_part.csv and edits.csv
+    uv run python summarize_runs.py runs/<run>   # prints tables; writes results/summary.json,
+                                                 # results/parts.csv and results/edits.csv
+(refine.py already does this as it goes, via report.py.)
 
 Per arm:
   * shape quality vs the hidden GT at round 0 (cadrille / first program), at the end, at
@@ -65,10 +66,15 @@ def decision_stats(edits, key):
 
 
 def load(root: Path):
-    rows = [json.loads(l) for f in sorted(root.glob("*/*/results.jsonl"))
+    """Rows of every arm's log.jsonl and its result.json. Also reads runs made before the
+    runs/ layout (<root>/<part>/<arm>/results.jsonl + final.json)."""
+    new = (root / "parts").is_dir()
+    log, res = ("parts/*/*/log.jsonl", "parts/*/*/result.json") if new else \
+        ("*/*/results.jsonl", "*/*/final.json")
+    rows = [json.loads(l) for f in sorted(root.glob(log))
             for l in f.read_text().splitlines() if l.strip()]
     finals = {}
-    for f in root.glob("*/*/final.json"):
+    for f in root.glob(res):
         d = json.loads(f.read_text())
         finals[d["part"], d["arm"]] = d
     return rows, finals
@@ -128,8 +134,14 @@ def summarize(root: Path) -> dict:
             "wall_seconds_per_part": mean([f.get("wall_seconds") for f in fin.values()]),
             "gain_by_stratum": {k: med_iqr(v) for k, v in sorted(strata.items())},
         }
-    write_csv(root, rows, finals)
+    write_csv(results_dir(root), rows, finals)
     return out
+
+
+def results_dir(root: Path) -> Path:
+    d = root / "results"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
 
 
 def write_csv(root, rows, finals):
@@ -137,7 +149,7 @@ def write_csv(root, rows, finals):
             "hausdorff", "f1", "w_iou", "llm_seconds", "prompt_tokens", "output_tokens",
             "wall_seconds"]
     init = {(r["part"], r["arm"]): r for r in rows if r["round"] == 0}
-    with open(root / "per_part.csv", "w", newline="") as f:
+    with open(root / "parts.csv", "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(keys + ["iou3d_init", "iou3d_best_oracle"])
         for (p, a), d in sorted(finals.items()):
@@ -156,10 +168,10 @@ def write_csv(root, rows, finals):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("root", type=Path, help="refine.py --out dir")
+    ap.add_argument("root", type=Path, help="a refine.py run folder (runs/<date>_<name>)")
     args = ap.parse_args()
     s = summarize(args.root)
-    (args.root / "summary.json").write_text(json.dumps(s, indent=2) + "\n")
+    (results_dir(args.root) / "summary.json").write_text(json.dumps(s, indent=2) + "\n")
     f = lambda x, p=3: "  n/a" if x is None else f"{x:.{p}f}"
     mi = lambda d, p=3: "n/a" if d is None else f"{d['median']:.{p}f} ({d['iqr']:.{p}f})"
     for arm, m in s.items():

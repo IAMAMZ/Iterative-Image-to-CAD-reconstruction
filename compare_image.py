@@ -13,9 +13,9 @@ silhouette with the part's silhouette in that picture:
      silhouette is shifted and scaled to the target's centre and area before
      scoring. Only the *shape* is judged.
 
-    uv run python generate_solid.py guess.py --out out/guess
-    uv run python compare_image.py photo.png out/guess --camera search
-        -> out/guess/compare_image/{overlay.png, summary.png, report.json}
+    uv run python generate_solid.py guess.py --out runs/_scratch/guess
+    uv run python compare_image.py photo.png runs/_scratch/guess --camera search
+        -> runs/_scratch/guess/compare_image/{overlay.png, summary.png, report.json}
 
 Overlay colours are as in compare.py: grey = both, RED = missing (in the image, not
 the candidate), BLUE = extra (candidate only). There is no depth error here: a single

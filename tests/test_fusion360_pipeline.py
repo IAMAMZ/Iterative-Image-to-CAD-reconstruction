@@ -21,14 +21,14 @@ CADRILLE_SCORES = ROOT / "cadrille" / "work_dirs" / "f360_rl" / "scores.json"
 
 def _as_candidate(mesh, target, out):
     """Render a mesh as a candidate in the target's frame (what --like does)."""
-    norm = json.loads((target / "info.json").read_text())["normalization"]
+    norm = json.loads((target / "internal" / "info.json").read_text())["normalization"]
     render_mesh(mesh, out, load_rig(), norm)
     mesh.export(out / "solid.stl")
     return out
 
 
 def test_target_layout_and_frame(f360_target):
-    info = json.loads((f360_target / "info.json").read_text())
+    info = json.loads((f360_target / "internal" / "info.json").read_text())
     assert set(info["views"]) == {c["name"] for c in load_rig()["cameras"]}
     gt = trimesh.load(f360_target / "gt.stl")
     assert gt.extents.max() == pytest.approx(200.0, rel=1e-6)       # cadrille's frame
@@ -65,7 +65,7 @@ def test_placement_code_runs(f360_target, tmp_path):
     from refine import build
     src = to_refine_program((CADRILLE_PY / f"{PART}.py").read_text()) + placement_code(0.9)
     assert build(src, tmp_path / "c", f360_target, (0.0, 0.0, 0.0)) is None
-    info = json.loads((tmp_path / "c" / "info.json").read_text())
+    info = json.loads((tmp_path / "c" / "internal" / "info.json").read_text())
     size = np.array(info["bbox_max"]) - np.array(info["bbox_min"])
     assert size.max() == pytest.approx(0.9 * 200, rel=0.03)
 

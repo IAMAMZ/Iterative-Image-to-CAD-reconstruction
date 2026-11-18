@@ -66,7 +66,7 @@ def runs(tmp_path_factory):
     for name, length in (("target", 40), ("same", 40), ("longer", 48)):
         (tmp / f"{name}.py").write_text(BOX.format(length))
     generate(tmp / "target.py", tmp / "target", rig)
-    norm = json.loads((tmp / "target" / "info.json").read_text())["normalization"]
+    norm = json.loads((tmp / "target" / "internal" / "info.json").read_text())["normalization"]
     generate(tmp / "same.py", tmp / "same", rig, norm)
     generate(tmp / "longer.py", tmp / "longer", rig, norm)
     generate(tmp / "longer.py", tmp / "longer_own_frame", rig)  # the mistake: no shared frame

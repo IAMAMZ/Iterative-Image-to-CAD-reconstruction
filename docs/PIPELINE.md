@@ -20,6 +20,11 @@ Our three contributions relative to CADCodeVerify and GATOR:
 3. **CAD-kernel diagnostics** (per-operation OpenCascade checks, no-op / split warnings) fed back
    to the agent, also when the build succeeds.
 
+The method is the `geo` arm: the geometric checker alone informs and gates every edit. `hybrid`
+(geo + CADCodeVerify-style verification questions and VLM judge) is an ablation that asks whether
+adding visual review on top helps; on the pilot it did not (all-Yes stops ended runs early, the
+judge vetoed a good edit).
+
 ## 2. Data flow
 
 ```
@@ -32,8 +37,8 @@ cadrille/results/fusion360_test_gt/<part>.stl        cadrille/work_dirs/f360_rl/
    map to cadrille frame, render 8 cameras            cadrille_init.py convert --tag rl
           │                                             append `result = r`, build, fit scale
           ▼                                                          │
- out/targets/fusion360/<part>/                                      ▼
-   <view>.png  _mask  _depth  depth.npz  info.json  gt.stl   out/init/cadrille_rl/<part>.py
+ data/generated/targets/fusion360/<part>/                           ▼
+   renders/  internal/{depth.npz,info.json}  gt.stl   data/generated/init/cadrille_rl/<part>.py
           │                                                          │
           └───────────────────────┬──────────────────────────────────┘
                                   ▼
@@ -43,10 +48,10 @@ cadrille/results/fusion360_test_gt/<part>.stl        cadrille/work_dirs/f360_rl/
                         ─ offline score (eval3d.py)
                                   │
                                   ▼
-                      out/refine/<part>/<arm>/results.jsonl, final.json, round_XX/
+                      runs/<date>_<name>/parts/<part>/<arm>/round_XX_<outcome>/
                                   │
-                summarize_runs.py ┴ figures.py
-                tables, summary.json, per_part.csv, edits.csv, figures/*.png
+                report.py (summarize_runs.py + figures.py), after every part
+                README.md  results.md  results/  parts/<part>/{compare.png,scores.md}
 ```
 
 Commands (the README has the same):
@@ -55,14 +60,15 @@ Commands (the README has the same):
 uv run python cadrille_init.py split
 uv run python data/fusion360_targets.py
 uv run python cadrille_init.py convert --tag rl
-uv run python refine.py out/targets/fusion360/* --init out/init/cadrille_rl \
-    --arm main --rounds 4 --backend ollama --model qwen2.5vl:7b --out out/refine
-uv run python summarize_runs.py out/refine
-uv run python figures.py out/refine
+uv run python refine.py data/generated/targets/fusion360/* \
+    --init data/generated/init/cadrille_rl --arm main --rounds 4 --name stage1
+# -> runs/<date>_stage1/README.md   (report.py runs/<run> rebuilds the pages)
 ```
 
-`--backend echo` replaces the model with a fake agent for dry runs. Note the default `--model` in
-`refine.py` is `gemma4:12b`; pass the model you have pulled.
+The default backend is `vertex` (Gemini on Vertex AI): `cp .env.example .env`, set
+`GOOGLE_CLOUD_PROJECT` and `VERTEX_MODEL`, then `gcloud auth application-default login` once.
+`--backend ollama` uses the local model (default `--model gemma4:12b`; pass the one you have
+pulled). `--backend echo` replaces the model with a fake agent for dry runs.
 
 ## 3. Frames and units
 
@@ -91,16 +97,16 @@ uv run python figures.py out/refine
 
 | File | Role |
 |---|---|
-| `data/fusion360_targets.py` | For each part in the split: map the GT to the cadrille frame (`to_target_frame`), render with `render_mesh`, write `out/targets/fusion360/<part>/` with `gt.stl` (offline scoring only) and `info.json` (source, units, watertight flag, face/vertex counts). |
+| `data/fusion360_targets.py` | For each part in the split: map the GT to the cadrille frame (`to_target_frame`), render with `render_mesh`, write `data/generated/targets/fusion360/<part>/` with `gt.stl` (offline scoring only) and `info.json` (source, units, watertight flag, face/vertex counts). |
 | `cadrille_init.py split` | Stratified 60-part subset: cadrille-RL IoU bin (low < 0.6, mid 0.6–0.9, high ≥ 0.9) × mesh complexity (faces + vertices vs. median 1512), 10 per cell, seed 2529. Writes `data/fusion360/stage1.txt` and `stage1_meta.json` (strata used by the summaries). |
-| `cadrille_init.py tune` | **Tuning set** for pilots and prompt changes: 3 parts per IoU bin (9), same strata, drawn only from test parts outside Stage 1 (seed 2530) → `data/fusion360/tuning.txt` + `tuning_meta.json`. Build with `fusion360_targets.py --split data/fusion360/tuning.txt --out out/targets/fusion360_tuning` and `convert --targets out/targets/fusion360_tuning --out out/init/cadrille_rl_tuning`. The first three pilots used 3 Stage 1 parts (127274_6484a80b_0000, 135654_34a24e52_0000, 22011_0832eefe_0013); report them as seen during development. |
+| `cadrille_init.py tune` | **Tuning set** for pilots and prompt changes: 3 parts per IoU bin (9), same strata, drawn only from test parts outside Stage 1 (seed 2530) → `data/fusion360/tuning.txt` + `tuning_meta.json`. Build with `fusion360_targets.py --split data/fusion360/tuning.txt --out data/generated/targets/fusion360_tuning` and `convert --targets data/generated/targets/fusion360_tuning --out data/generated/init/cadrille_rl_tuning`. The first three pilots used 3 Stage 1 parts (127274_6484a80b_0000, 135654_34a24e52_0000, 22011_0832eefe_0013); report them as seen during development. |
 | `cadrille_init.py convert` | Turns `cadrille/work_dirs/f360_<tag>/py/<part>.py` into a refine program (`to_refine_program`: adds `result = r`), builds it, then the **placement fit**: isotropic scale `s ∈ [0.7, 1.4]` by a 13-point log grid + golden-section search, maximising the weighted geo score against the target renders (GT-free). Applied only if `|s−1| > 0.005` and the score gains > 1e-3, as a visible code line `result = cq.Workplane(obj=result.val().scale(s))`. Logs to `init_log.json`. `--no-placement` ablates it. |
 
 ### The geometric checker (contribution 2)
 
 | File | Role |
 |---|---|
-| `compare.py` | Per view: silhouette IoU, missing / extra pixels, depth MAE on the overlap. Writes overlay images (red = missing, blue = extra) and depth-error heatmaps to `<cand>/compare/`. `largest_residual()` finds the largest connected missing/extra blob for the zoomed detail tile. |
+| `compare.py` | Per view: silhouette IoU, missing / extra pixels, depth MAE on the overlap. Writes overlay images (red = missing, blue = extra) and depth-error heatmaps to `<cand>/diff/`. `largest_residual()` finds the largest connected missing/extra blob for the zoomed detail tile. |
 | `view_weights.py` | Confidence per **target** view. Each view's depth is back-projected to 3D and projected into every other view (space carving): a point must land on the other view's silhouette and must not be in front of its visible surface (`DEPTH_TOL = 0.03`, 3×3 min-filter on depth). `r(v,u)` = symmetric rejection rate; `c_v = 1 − median_u r(v,u)`; `w_v = clip((c_v − 0.6)/(0.98 − 0.6), 0, 1)`. The median means one bad view cannot drag good ones down. Clean renders give exactly 1.0; cached in `<target>/view_weights.json`. |
 | `geo_check.py` | `geo_score` = weighted mean silhouette IoU − weighted mean depth MAE. `geo_accept(cur, new, w)` keeps an edit iff the gain > `min_gain` (1e-3) **and** no *trusted* view (`w ≥ 0.5`) loses more than 0.05 IoU. `|gain| ≤ min_gain` is flagged *inconclusive*. `residual_table` is the per-view table shown to the agent (with the weight column). |
 
@@ -109,10 +115,11 @@ uv run python figures.py out/refine
 `vlm.py` holds everything model-facing.
 
 - **Backends.** `chat(messages, backend=...)` dispatches through `BACKENDS`:
-  `ollama` (streams from `http://localhost:11434/api/chat`, returns token stats) and `echo`
+  `vertex` (default; `vertex_ai.py`, Gemini via google-genai with ADC auth, project/model
+  from `.env`, retries 429/5xx, thinking tokens counted as output), `ollama` (streams from `http://localhost:11434/api/chat`, returns token stats) and `echo`
   (deterministic fake: seeded by the text + image bytes; perturbs one number in the program by
   ×0.9/×1.1 with a `CHANGE: dimensional` line, sometimes `NO_CHANGE`; answers judge / question /
-  answer / feedback prompts in the right format). A Gemini/Vertex backend is one more entry here.
+  answer / feedback prompts in the right format).
 - **Code safety.** `extract_code` pulls the fenced block; `check_code` allows only `cadquery` and
   `math` imports, forbids `open/exec/eval/__import__/...`, and requires `result`.
 - **System prompt** (`SYSTEM`): units, the cadrille Sketch API (`segment`, `arc`, `close`,
@@ -178,8 +185,8 @@ uv run python figures.py out/refine
 |---|---|---|
 | `premise` | — (just target and candidate grids) | VLM judge prefers the new version |
 | `vlm` | failed verification questions + feedback | VLM judge |
-| `geo` | residual images, detail tile, weighted table | `geo_accept` |
-| `hybrid` (ours) | everything above | `geo_accept` **and** judge; judge alone if the geo gain is inconclusive |
+| `geo` (ours) | residual images, detail tile, weighted table | `geo_accept` |
+| `hybrid` (ablation) | everything above | `geo_accept` **and** judge; judge alone if the geo gain is inconclusive |
 | `oracle` | as `geo` | hidden 3D IoU rises (analysis only) |
 | `gsolver` | as `vlm` + GT-vs-candidate properties (size, volume, area, pieces, through-holes, centroid) | always (CADCodeVerify's geometric-solver* upper bound; uses GT) |
 
@@ -192,7 +199,7 @@ harmful if it falls by more than 0.005, else neutral.
 **Sandbox (opt-in, Linux).** `sandbox.py` wraps the build subprocess in bubblewrap when
 `--sandbox` is given (`refine.py`, `cadrille_init.py convert`): all namespaces unshared (no
 network); `/usr`, `/etc`, `/sys` read-only; home hidden except the repo code, venv and uv's
-Python install (read-only); `out/`, `data/`, `cadrille/`, `archive/`, `.git` masked; only the
+Python install (read-only); `runs/`, `data/`, `cadrille/`, `archive/`, `.git` masked; only the
 target's `info.json` visible; the candidate folder and a fresh `/tmp` writable; GPU device nodes
 passed through for EGL. `vlm.check_code` alone is not enough: e.g. `cq.exporters.export(...)`
 passes it and can write anywhere (`tests/test_sandbox.py` shows this). Renders are unchanged
@@ -207,33 +214,47 @@ passes it and can write anywhere (`tests/test_sandbox.py` shows this). Renders a
 | File | Role |
 |---|---|
 | `eval3d.py` | Offline only; the agent and acceptance rules never call it on their own decisions. With `gt.stl`: mesh-boolean volume IoU and IoGT via manifold3d (per connected piece); with `solid.step`: exact OCC booleans. Surface metrics on 30 000 samples: Chamfer ×1000, Hausdorff, F1 at 1% of the bbox diameter, normal consistency. **cadrille protocol** (each mesh unit-cube normalised, 8192 points): `iou3d_cad`, `cd_cad` = mean squared distance ×1000 — round 0 reproduces cadrille's published per-part scores. `failed()` = overlap 0, distances None. `properties()` feeds the gsolver arm. |
-| `summarize_runs.py` | Per arm: median (IQR) and mean of `iou3d, iou3d_cad, cd_cad, chamfer_x1000, hausdorff, f1, iogt` at round 0 / final / best_geo / best_oracle; gains; invalid-proposal rate and repair success; acceptance rate; kept-precision, harmful-accept rate and good-recall for the real and shadow decisions; geo–VLM agreement; change-tag distribution; stop reasons; tokens and seconds; gains per stratum. Writes `summary.json`, `per_part.csv`, `edits.csv`. |
-| `figures.py` | `iou_by_round.png`, `iou_vs_time.png`, `edit_outcomes.png`, and `montage_<part>.png` (target, round 0, final per arm). |
+| `summarize_runs.py` | Per arm: median (IQR) and mean of `iou3d, iou3d_cad, cd_cad, chamfer_x1000, hausdorff, f1, iogt` at round 0 / final / best_geo / best_oracle; gains; invalid-proposal rate and repair success; acceptance rate; kept-precision, harmful-accept rate and good-recall for the real and shadow decisions; geo–VLM agreement; change-tag distribution; stop reasons; tokens and seconds; gains per stratum. Writes `results/summary.json`, `results/parts.csv`, `results/edits.csv`. |
+| `figures.py` | `results/figures/`: `iou_by_round.png`, `iou_vs_time.png`, `edit_outcomes.png`. |
+| `report.py` | After every part: `README.md` (status, headline table, where to look, terms), `results.md` (every part × arm, worst start first), `parts/<part>/compare.png` (target / start / each arm's final: 4 renders + 4 depth-error maps) and `scores.md` (round-by-round table). |
+| `progress.py` | Called by `report.py`: `parts/<part>/progress.png` (per arm a strip start → round 1 → ..., shape over depth error in the view where the start was most wrong, framed green kept / red rejected, + a 3D IoU-by-round chart) and `results/figures/progress_by_part.png` (small multiples, one IoU-by-round chart per part, worst start first). |
+| `layout.py` | Paths inside a rendered-solid folder (`renders/`, `diff/`, `internal/`); readers fall back to the old flat layout. |
 | `compare_image.py` | Older single-image checker (camera search + outline IoU); not used by the Stage 1 loop. |
 
 ## 5. Output layout
 
 ```
-out/refine/
-  run_config.json                      all flags of the run
-  summary.json  per_part.csv  edits.csv  figures/
-  <part>/
-    view_weights.json  questions.json
-    init/        init.json, solid.step/.stl, renders, depth.npz, info.json, ops_log.jsonl, compare/
+runs/<date>_<name>/                    (--name; --out sets the folder exactly)
+  README.md  results.md                start here / every part x arm
+  results/                             summary.json  parts.csv  edits.csv  figures/
+  config.json  log.txt                 all flags (+ target paths) / console output
+  parts/<part>/
+    progress.png                       start → round 1 → ... per arm (one view) + IoU chart
+    compare.png  scores.md             final programs in 4 views / round-by-round table
+    questions.json                     verification questions (question arms)
+    internal/view_weights.json
+    init/                              starting program (internal/init.json: source, error)
     <arm>/
-      results.jsonl                    one row per round (see below)
-      final.json                       stop reason, final + best_geo + best_oracle metrics, usage
-      round_XX/                        candidate build + agent.json (prompt, transcript, decision, QA)
+      final -> round_XX_kept | ../init the state the arm ended with
+      log.jsonl                        one row per round (see below)
+      result.json                      stop reason, final + best_geo + best_oracle metrics, usage
+      round_XX_<outcome>/              kept | rejected | failed | no-change | stopped
 ```
 
-A `results.jsonl` row for a built edit contains: `round, status, attempts, repairs_used,
+Every program folder (targets too, see `layout.py`): `program.py`, `solid.stl`/`solid.step`,
+`conversation.json` (prompt, transcript, decision, QA), `renders/` (8 cameras: shaded, mask,
+depth), `diff/` (overlay + depth-error images, `summary.png`, `report.json`), `internal/`
+(`info.json`, `depth.npz`, `ops_log.jsonl`). Inputs (targets, starting programs) live in the
+git-ignored `data/generated/`; runs from before this layout are in `archive/runs_until_2026-11-18/`.
+
+A `log.jsonl` row for a built edit contains: `round, status, attempts, repairs_used,
 change_tag, change, accepted, verdict, geo_decision, geo_gain, geo_inconclusive, vlm_decision,
 mean_iou, w_iou, depth_mae, geo_score, kernel_warnings`, all `eval3d` metrics, `iou3d_before`,
 `qa_yes/qa_n` (question arms), `detail_view`, token/time usage and `wall_seconds`.
 
 ## 6. Tests
 
-`uv run pytest` (102 tests, `testpaths = ["tests"]`).
+`uv run pytest` (115 tests, `testpaths = ["tests"]`).
 
 | Test file | Checks |
 |---|---|
@@ -242,7 +263,8 @@ mean_iou, w_iou, depth_mae, geo_score, kernel_warnings`, all `eval3d` metrics, `
 | `test_vlm_parsing.py` | `CHANGE:` / `NO_CHANGE`, questions, answers, `KEEP`, code checks, kernel report, `format_program` keeps the AST. |
 | `test_sandbox.py` | Sandbox blocks other files, network and writes; a program that passes `check_code` but exports a file is contained; sandboxed renders match plain ones. Skipped off Linux. |
 | `test_cq_reference.py` | Every reference entry exists in the installed CadQuery and its example builds a valid solid; methods are attributed to Workplane/Sketch correctly; error → entry selection; reference stays < 1200 tokens for cadrille programs. |
-| `test_refine_echo.py` | Every arm end to end with the echo agent; shadow decisions and usage logged; summaries written; a failing start program is skipped. |
+| `test_vertex_ai.py` | Vertex backend with a stubbed Gemini client: `.env` parsing (shell wins), config errors, message/image conversion, token stats incl. thinking, cut-off, thinking level, retry on 429 only, `vlm` defaults to vertex, `refine` errors on missing config. |
+| `test_refine_echo.py` | Every arm end to end with the echo agent; shadow decisions and usage logged; round folders named by outcome, `final` link, README / results.md / compare.png written; a failing start program is skipped; default run folder is `runs/<date>_<name>`. |
 | `test_compare.py`, `test_compare_image.py`, `test_illegal_shapes.py` | Checker scores/colours, image checker, op_checker catches illegal operations at the right step. |
 
 `tests/conftest.py` provides a session fixture `f360_target` (part `101190_cfdcb477_0005`).
@@ -254,4 +276,4 @@ mean_iou, w_iou, depth_mae, geo_score, kernel_warnings`, all `eval3d` metrics, `
 - **cadrille's inputs** were its own 4-view renders (`cadrille/eval_fusion360.py`), not our 8 cameras.
 - cadrille cannot be the editing agent: it is a fine-tuned image→code model, not instruction-following.
 - Echo-backend numbers are meaningless; no real-model run has been done yet.
-- Not yet built: Gemini/Vertex backend, Stage 2 (corrupted views).
+- Not yet built: Stage 2 (corrupted views). The Vertex backend has no real run yet.

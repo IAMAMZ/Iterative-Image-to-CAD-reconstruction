@@ -75,7 +75,7 @@ def test_wrong_part_scores_lower(setup):
 
 def test_known_camera_mode(setup):
     """A rig render scored with its own camera is near perfect; with another camera it is not."""
-    img = setup / "l_part" / "iso_fr.png"
+    img = setup / "l_part" / "renders" / "iso_fr.png"
     good = compare_image(img, setup / "l_part", setup / "o3", camera="iso_fr")
     bad = compare_image(img, setup / "l_part", setup / "o4", camera="front")
     assert good["iou"] > 0.99 and bad["iou"] < 0.9

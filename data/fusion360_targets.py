@@ -4,8 +4,8 @@
     uv run python data/fusion360_targets.py --split data/fusion360/test/ids.txt --limit 5
 
 reads   cadrille/results/fusion360_test_gt/<part>.stl   (committed; unit cube [0,1]^3)
-writes  out/targets/fusion360/<part>/  laid out like a generate_solid.py output:
-          <view>.png, <view>_mask.png, <view>_depth.png, depth.npz, info.json
+writes  data/generated/targets/fusion360/<part>/  laid out like a generate_solid.py output
+          (layout.py): renders/<view>{,_mask,_depth}.png, internal/{depth.npz,info.json}
         plus gt.stl (the hidden true shape, for offline scoring only; the agent never reads it)
 
 Frame: cadrille writes its programs in a canonical frame centred on the bounding box with
@@ -25,10 +25,11 @@ sys.path.insert(0, str(ROOT))
 
 from generate_solid import render_mesh  # noqa: E402
 from rig import load_rig  # noqa: E402
+import layout  # noqa: E402
 
 GT_DIR = ROOT / "cadrille" / "results" / "fusion360_test_gt"
 DEFAULT_SPLIT = ROOT / "data" / "fusion360" / "stage1.txt"
-DEFAULT_OUT = ROOT / "out" / "targets" / "fusion360"
+DEFAULT_OUT = ROOT / "data" / "generated" / "targets" / "fusion360"
 CADRILLE_SIDE = 200.0
 
 
@@ -66,7 +67,7 @@ def main():
     parts = read_split(args.split)[:args.limit]
     done = failed = 0
     for i, p in enumerate(parts, 1):
-        if (args.out / p / "info.json").exists() and not args.force:
+        if layout.info(args.out / p).exists() and not args.force:
             continue
         try:
             build_target(p, args.out, rig)

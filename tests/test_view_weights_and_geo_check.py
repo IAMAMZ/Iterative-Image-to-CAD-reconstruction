@@ -8,7 +8,7 @@ from view_weights import consistency, to_weights
 
 
 def _depths(target):
-    d = np.load(target / "depth.npz")
+    d = np.load(target / "internal" / "depth.npz")
     return {k: d[k] for k in d.files}
 
 

@@ -9,14 +9,14 @@ cannot reach the network or read or write anything it was not given:
   network            none (all namespaces unshared)
   home directory     hidden; only the repo's code, the Python environment and uv's Python
                      install are visible, read-only
-  data               hidden (out/, data/, cadrille/ are empty); only the target's info.json
+  data               hidden (runs/, data/, cadrille/ are empty); only the target's info.json
                      (normalisation for --like) is visible, read-only -- never gt.stl
   writable           only the candidate's output directory, and a fresh empty /tmp
   system             /usr, /etc, /sys read-only; GPU device nodes (EGL rendering)
   process            killed with the parent, own session, minimal environment
 
     from sandbox import wrap
-    cmd = wrap(cmd, writable=[cand_dir], readonly=[target_dir / "info.json"])
+    cmd = wrap(cmd, writable=[cand_dir], readonly=[layout.info(target_dir)])
 """
 import os
 import shutil
@@ -24,7 +24,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-HIDDEN = ("out", "data", "cadrille", "archive", ".git")   # repo folders the build never needs
+HIDDEN = ("runs", "out", "data", "cadrille", "archive", ".git")   # repo folders the build never needs
 KEEP_ENV = ("LANG", "LC_ALL", "PYOPENGL_PLATFORM", "__EGL_VENDOR_LIBRARY_FILENAMES",
             "CUDA_VISIBLE_DEVICES")
 

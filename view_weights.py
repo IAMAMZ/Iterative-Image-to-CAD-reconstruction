@@ -15,7 +15,7 @@ Uses only the target's masks, depth maps and the calibrated rig -- never the 3D 
 On clean renders every weight is ~1 (the Stage 1 sanity check); with corrupted masks or
 depth (Stage 2) the views that disagree with the rest get down-weighted.
 
-    uv run python view_weights.py out/targets/fusion360/<part>
+    uv run python view_weights.py data/generated/targets/fusion360/<part>
 """
 import argparse
 import json
@@ -24,6 +24,7 @@ from pathlib import Path
 import numpy as np
 from scipy import ndimage
 
+import layout
 from rig import load_rig
 
 # clean renders give c = 1.000 exactly; a 25 px shift or 0.15 depth bias of one view gives
@@ -76,10 +77,10 @@ def _rejected(pts, depth_u, near_u, cam_u, K):
 def measure_bbox(target_dir: Path, rig: dict):
     """Bounding box (target units) of the target from its depth maps and the calibrated
     cameras: back-project every foreground pixel of every view. Uses no 3D model."""
-    info = json.loads((Path(target_dir) / "info.json").read_text())
+    info = json.loads(layout.info(target_dir).read_text())
     center = np.array(info["normalization"]["center"])
     scale = info["normalization"]["scale"]
-    depth = np.load(Path(target_dir) / "depth.npz")
+    depth = np.load(layout.depth(target_dir))
     pts = np.concatenate([backproject(depth[c["name"]], c, rig["K"])
                           for c in rig["cameras"] if c["name"] in depth.files])
     pts = pts / scale + center                              # normalised -> target units
@@ -124,16 +125,17 @@ def to_weights(cons: dict) -> dict:
 
 
 def view_weights(target_dir: Path, rig: dict | None = None, cache=True) -> dict:
-    """Per-view weights of a target dir, cached in <target>/view_weights.json."""
+    """Per-view weights of a target dir, cached in <target>/internal/view_weights.json."""
     target_dir = Path(target_dir)
-    f = target_dir / CACHE
+    f = layout.internal(target_dir, CACHE)
     if cache and f.exists():
         return json.loads(f.read_text())["weights"]
     rig = rig or load_rig()
-    depth = np.load(target_dir / "depth.npz")
+    depth = np.load(layout.depth(target_dir))
     cons = consistency({k: depth[k] for k in depth.files}, rig)
     w = to_weights(cons)
     if cache:
+        f.parent.mkdir(exist_ok=True)
         f.write_text(json.dumps({"weights": w, "consistency": cons,
                                  "c_min": C_MIN, "c_full": C_FULL,
                                  "depth_tol": DEPTH_TOL}, indent=2) + "\n")

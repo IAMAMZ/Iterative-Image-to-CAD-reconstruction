@@ -3,10 +3,11 @@
 The program is a .py file that assigns its final shape to `result`
 (a cq.Workplane or cq.Shape).
 
-    uv run python generate_solid.py examples/flange.py --out out/flange
+    uv run python generate_solid.py examples/flange.py --out runs/_scratch/flange
 
+Output folder layout: see layout.py (program-level files on top, renders/, internal/).
 Every CadQuery operation is checked as it runs (see op_checker.py) and logged to
-<out>/ops_log.jsonl, also when the run fails. Exit code 1 = the program or one of its
+<out>/internal/ops_log.jsonl, also when the run fails. Exit code 1 = the program or one of its
 operations was illegal; the log says which step, which line, why, and a hint.
 """
 import argparse
@@ -20,12 +21,13 @@ import cadquery as cq
 import numpy as np
 from PIL import Image
 
+import layout
 from cq_render import CQRenderer, to_trimesh
 from op_checker import IllegalOperation, OpTrace, format_step
 from rig import load_rig, normalize, render_rig
 
 # files a run writes; removed first so a failed run never leaves stale results behind
-OUTPUTS = ("info.json", "solid.step", "solid.stl", "depth.npz", "ops_log.jsonl")
+OUTPUTS = ("solid.step", "solid.stl")
 
 
 class InvalidSolid(ValueError):
@@ -103,8 +105,12 @@ def generate(program: Path, out: Path, rig: dict, normalization: dict | None = N
     (forgives a guess that has the right shape but sits in the wrong place)."""
     out.mkdir(parents=True, exist_ok=True)
     views_png = [f"{c['name']}{sfx}.png" for c in rig["cameras"] for sfx in ("", "_mask", "_depth")]
-    for f in [*OUTPUTS, *views_png]:
+    stale = [*OUTPUTS, *(f"{layout.INTERNAL}/{f}" for f in layout.INTERNAL_FILES),
+             *(f"{layout.RENDERS}/{f}" for f in views_png),
+             *layout.INTERNAL_FILES, *views_png]            # (older flat layout)
+    for f in stale:
         (out / f).unlink(missing_ok=True)
+    (out / layout.INTERNAL).mkdir(exist_ok=True)
     trace = OpTrace(program)
     try:
         shape = load_solid(program, trace)
@@ -122,7 +128,7 @@ def generate(program: Path, out: Path, rig: dict, normalization: dict | None = N
         trace.record_failure(e, op="check_result" if isinstance(e, InvalidSolid) else "program")
         raise
     finally:
-        trace.write_jsonl(out / "ops_log.jsonl")
+        trace.write_jsonl(out / layout.INTERNAL / "ops_log.jsonl")
     info["ops"] = {"n_steps": len(trace.steps),
                    "warnings": [format_step(s) for s in trace.warnings]}
     cq.exporters.export(shape, str(out / "solid.step"))
@@ -135,30 +141,32 @@ def render_mesh(mesh, out: Path, rig: dict, normalization: dict | None = None,
     """Render a mesh (in its own units) from every rig camera and write the views,
     depth.npz and info.json. Shared by candidate solids and mesh-only targets, so both
     are rendered by exactly the same code."""
-    out.mkdir(parents=True, exist_ok=True)
+    rd, idir = out / layout.RENDERS, out / layout.INTERNAL
+    rd.mkdir(parents=True, exist_ok=True)
+    idir.mkdir(parents=True, exist_ok=True)
     info = dict(info or {})
     norm = normalization or {}
     mesh_n, center, scale = normalize(mesh, norm.get("center"), norm.get("scale"))
     with CQRenderer(rig["width"], rig["height"]) as r:
         views = render_rig(r, mesh_n, rig)
     for name, (rgb, depth, mask) in views.items():
-        Image.fromarray(rgb).save(out / f"{name}.png")
-        Image.fromarray((mask * 255).astype(np.uint8)).save(out / f"{name}_mask.png")
-        Image.fromarray(depth_preview(depth)).save(out / f"{name}_depth.png")
-    np.savez_compressed(out / "depth.npz", **{n: v[1] for n, v in views.items()})
+        Image.fromarray(rgb).save(rd / f"{name}.png")
+        Image.fromarray((mask * 255).astype(np.uint8)).save(rd / f"{name}_mask.png")
+        Image.fromarray(depth_preview(depth)).save(rd / f"{name}_depth.png")
+    np.savez_compressed(idir / "depth.npz", **{n: v[1] for n, v in views.items()})
     info.setdefault("bbox_min", mesh.bounds[0].tolist())
     info.setdefault("bbox_max", mesh.bounds[1].tolist())
     # x_normalised = (x - center) * scale ; depth is in normalised units
     info["normalization"] = {"center": center.tolist(), "scale": float(scale)}
     info["views"] = list(views)
-    (out / "info.json").write_text(json.dumps(info, indent=2))
+    (idir / "info.json").write_text(json.dumps(info, indent=2))
     return info
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("program", type=Path, help="CadQuery .py file defining `result`")
-    ap.add_argument("--out", type=Path, default=None, help="default: out/<program name>")
+    ap.add_argument("--out", type=Path, default=None, help="default: runs/_scratch/<program name>")
     ap.add_argument("--rig", type=Path, default=None, help="camera rig json (default: rig.json)")
     ap.add_argument("--like", type=Path, default=None,
                     help="output dir of a target part: render in the target's frame "
@@ -167,15 +175,15 @@ def main():
                     help="move the solid so its bounding-box centre is here (mm)")
     ap.add_argument("--traceback", action="store_true", help="also print the Python traceback")
     args = ap.parse_args()
-    out = args.out or Path("out") / args.program.stem
-    norm = json.loads((args.like / "info.json").read_text())["normalization"] if args.like else None
+    out = args.out or Path("runs") / "_scratch" / args.program.stem
+    norm = json.loads(layout.info(args.like).read_text())["normalization"] if args.like else None
     try:
         info = generate(args.program, out, load_rig(args.rig) if args.rig else load_rig(), norm,
                         args.center_at)
     except Exception as e:
         if args.traceback:
             traceback.print_exc()
-        log = out / "ops_log.jsonl"
+        log = layout.ops_log(out)
         steps = [json.loads(l) for l in log.read_text().splitlines()] if log.exists() else []
         for st in steps:
             if st["status"] != "ok":

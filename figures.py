@@ -1,12 +1,12 @@
-"""Figures for the report/poster from a refine.py output dir.
+"""Figures for the report/poster from a refine.py run folder.
 
-    uv run python figures.py out/refine            # -> out/refine/figures/*.png
+    uv run python figures.py runs/<run>            # -> runs/<run>/results/figures/*.png
+    (refine.py already does this as it goes, via report.py)
 
   iou_by_round.png    mean hidden 3D IoU of the kept program after each round, per arm
   iou_vs_time.png     the same against cumulative wall time (GATOR Fig. 6 style)
   edit_outcomes.png   kept / dropped edits split by what they did to the hidden shape
-  montage_<part>.png  target | first program | final program of each arm (iso view),
-                      with the final silhouette residual underneath
+Per-part image comparisons are parts/<part>/compare.png (report.py).
 """
 import argparse
 import json
@@ -17,7 +17,6 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
-from PIL import Image, ImageDraw  # noqa: E402
 
 from summarize_runs import load, outcome  # noqa: E402
 
@@ -101,47 +100,23 @@ def plot_outcomes(rows, out):
     plt.close(fig)
 
 
-def montage(root, part, finals, target_root, out, view="iso_fr", tile=220):
-    arms = sorted(a for p, a in finals if p == part)
-    if not arms:
-        return
-    tdir = None
-    if target_root is not None and (target_root / part).exists():
-        tdir = target_root / part
-    cols = [("target", tdir / f"{view}.png" if tdir else None, None),
-            ("first", root / part / "init" / f"{view}.png", root / part / "init" / "compare" / f"{view}_overlay.png")]
-    for a in arms:
-        d = Path(finals[part, a]["final_dir"])
-        iou = finals[part, a].get("iou3d")
-        cols.append((f"{a} {iou:.3f}" if iou is not None else a, d / f"{view}.png",
-                     d / "compare" / f"{view}_overlay.png"))
-    sheet = Image.new("RGB", (tile * len(cols), 2 * tile), (255, 255, 255))
-    for i, (lab, img, ov) in enumerate(cols):
-        for j, p in enumerate((img, ov)):
-            if p is not None and Path(p).exists():
-                im = Image.open(p).convert("RGB").resize((tile, tile), Image.LANCZOS)
-                if j == 0:
-                    ImageDraw.Draw(im).text((5, 4), lab, fill=(0, 0, 0))
-                sheet.paste(im, (i * tile, j * tile))
-    sheet.save(out / f"montage_{part}.png")
+def write_figures(root: Path) -> Path:
+    rows, _ = load(root)
+    out = root / "results" / "figures"
+    out.mkdir(parents=True, exist_ok=True)
+    if rows:
+        traj, times = kept_trajectories(rows)
+        plot_rounds(traj, out)
+        plot_time(traj, times, out)
+        plot_outcomes(rows, out)
+    return out
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("root", type=Path)
-    ap.add_argument("--targets", type=Path, default=Path("out/targets/fusion360"))
-    ap.add_argument("--montages", type=int, default=6, help="how many parts get a montage")
     args = ap.parse_args()
-    rows, finals = load(args.root)
-    out = args.root / "figures"
-    out.mkdir(exist_ok=True)
-    traj, times = kept_trajectories(rows)
-    plot_rounds(traj, out)
-    plot_time(traj, times, out)
-    plot_outcomes(rows, out)
-    for part in sorted({p for p, _ in finals})[:args.montages]:
-        montage(args.root, part, finals, args.targets, out)
-    print(f"wrote figures to {out}")
+    print(f"wrote figures to {write_figures(args.root)}")
 
 
 if __name__ == "__main__":

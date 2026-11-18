@@ -23,3 +23,4 @@ dependencies:
       - accelerate
       - qwen-vl-utils==0.0.10
       - huggingface_hub
+      - google-genai

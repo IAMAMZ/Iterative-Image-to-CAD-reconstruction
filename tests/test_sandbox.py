@@ -60,7 +60,7 @@ def test_sandboxed_build_matches_plain_build(f360_target, tmp_path):
     assert refine.build(src, tmp_path / "plain", f360_target, center) is None
     assert refine.build(src, tmp_path / "boxed", f360_target, center, sandboxed=True) is None
     for f in ("front.png", "front_mask.png", "iso_fr_depth.png"):   # shading may differ by 1
-        a, b = (np.asarray(Image.open(tmp_path / d / f), dtype=int) for d in ("plain", "boxed"))
+        a, b = (np.asarray(Image.open(tmp_path / d / "renders" / f), dtype=int) for d in ("plain", "boxed"))
         assert a.shape == b.shape and np.abs(a - b).max() <= 1, f
 
 

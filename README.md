@@ -24,9 +24,10 @@ uv sync                     # or: conda env create -f environment.yml
 uv run python generate_solid.py examples/flange.py
 ```
 
-Pictures and files appear in `out/flange/`.
+Pictures and files appear in `runs/_scratch/flange/` (`renders/` = pictures, `internal/` =
+machine-readable data; see `layout.py`).
 
-Every command is checked by the CAD kernel and written to `out/flange/ops_log.jsonl`.
+Every command is checked by the CAD kernel and written to `runs/_scratch/flange/internal/ops_log.jsonl`.
 If a command is illegal the run stops, exits with code 1, and prints e.g.
 
 ```
@@ -56,12 +57,12 @@ Copy `examples/flange.py`, change the shape, and keep the last line as `result =
 ## Compare a guess to the real part
 
 ```sh
-uv run python generate_solid.py real.py  --out out/real
-uv run python generate_solid.py guess.py --out out/guess --like out/real   # same size frame!
-uv run python compare.py out/real out/guess
+uv run python generate_solid.py real.py  --out runs/_scratch/real
+uv run python generate_solid.py guess.py --out runs/_scratch/guess --like runs/_scratch/real   # same size frame!
+uv run python compare.py runs/_scratch/real runs/_scratch/guess
 ```
 
-Look at `out/guess/compare/summary.png`: red = material the guess is missing,
+Look at `runs/_scratch/guess/diff/summary.png`: red = material the guess is missing,
 blue = extra material, the heatmap = how wrong the depth is (pale = right, dark = wrong).
 
 ## Compare a guess to just a picture
@@ -70,12 +71,12 @@ At test time there is no 3D model, only an image. This finds the camera angle
 that best fits, lines the outlines up, and scores how well they match.
 
 ```sh
-uv run python generate_solid.py guess.py --out out/guess
-uv run python compare_image.py photo.png out/guess                  # camera unknown: search
-uv run python compare_image.py photo.png out/guess --camera iso_fr  # camera known
+uv run python generate_solid.py guess.py --out runs/_scratch/guess
+uv run python compare_image.py photo.png runs/_scratch/guess                  # camera unknown: search
+uv run python compare_image.py photo.png runs/_scratch/guess --camera iso_fr  # camera known
 ```
 
-Look at `out/guess/compare_image/summary.png`: the picture, the guess from the found
+Look at `runs/_scratch/guess/compare_image/summary.png`: the picture, the guess from the found
 angle, and the overlay (red = missing, blue = extra). Size can't be judged from one
 picture, so only the shape counts.
 
@@ -85,23 +86,35 @@ Data: 345 Fusion360 test parts. Their ground-truth meshes and cadrille's predict
 programs are committed (`cadrille/results/fusion360_test_gt/`, `cadrille/work_dirs/f360_rl/`; the SFT outputs are archived).
 Stage 1 uses a stratified subset of 60 parts (cadrille-IoU bin x mesh complexity).
 
+The agent runs on Gemini through Vertex AI by default: `cp .env.example .env`, set
+`GOOGLE_CLOUD_PROJECT` and `VERTEX_MODEL`, and authenticate once with
+`gcloud auth application-default login`. `--backend ollama` switches back to the local model.
+
 ```sh
 uv run python cadrille_init.py split                # -> data/fusion360/stage1.txt (+ stage1_meta.json)
-uv run python data/fusion360_targets.py             # -> out/targets/fusion360/<part>/  (renders, depth, gt.stl)
-uv run python cadrille_init.py convert --tag rl     # -> out/init/cadrille_rl/<part>.py (+ placement fit)
-uv run python refine.py out/targets/fusion360/* --init out/init/cadrille_rl \
-    --arm main --rounds 4 --backend ollama --out out/refine
-uv run python summarize_runs.py out/refine          # tables, summary.json, per_part.csv, edits.csv
-uv run python figures.py out/refine                 # out/refine/figures/
+uv run python data/fusion360_targets.py             # -> data/generated/targets/fusion360/<part>/
+uv run python cadrille_init.py convert --tag rl     # -> data/generated/init/cadrille_rl/<part>.py
+uv run python refine.py data/generated/targets/fusion360/* \
+    --init data/generated/init/cadrille_rl --arm main --rounds 4 --name stage1
 ```
+
+The run goes to `runs/<date>_stage1/`. **Open its `README.md`**: it has the headline table,
+where to look and what every file is, and is kept up to date while the run is going.
+`results.md` has every part (worst starting program first) and a small IoU-by-round chart per
+part; `parts/<part>/progress.png` shows each arm's program after every round (green = kept,
+red = rejected) next to the target, and `compare.png` the final programs in four views; `parts/<part>/scores.md` lists every round
+(what the model changed, kept or not, 3D IoU before → after). Round folders are named by
+outcome (`round_02_kept`, `round_03_rejected`, ...) and `<arm>/final` links to the one the arm
+ended with. `uv run python report.py runs/<run>` rebuilds the pages. Old runs (before this
+layout) are in `archive/runs_until_2026-11-18/`.
 
 **Tuning set.** Pilots and prompt changes run on 9 other test parts (same strata, none of the
 60 evaluation parts), so the evaluation parts stay unseen until the final run:
 
 ```sh
 uv run python cadrille_init.py tune                 # -> data/fusion360/tuning.txt (+ tuning_meta.json)
-uv run python data/fusion360_targets.py --split data/fusion360/tuning.txt --out out/targets/fusion360_tuning
-uv run python cadrille_init.py convert --tag rl --targets out/targets/fusion360_tuning --out out/init/cadrille_rl_tuning
+uv run python data/fusion360_targets.py --split data/fusion360/tuning.txt --out data/generated/targets/fusion360_tuning
+uv run python cadrille_init.py convert --tag rl --targets data/generated/targets/fusion360_tuning --out data/generated/init/cadrille_rl_tuning
 ```
 
 Dry run without any model: `--backend echo` (a fake agent that perturbs one number per round).
@@ -146,10 +159,12 @@ Files:
 - `cq_reference.py` — short CadQuery reference entries (real signatures) picked per prompt for the local model.
 - `sandbox.py` — optional bwrap sandbox for builds (`--sandbox`).
 - `geo_check.py` — weighted score and acceptance rule. `view_weights.py` — view confidence.
-- `vlm.py` — backends (`ollama`, `echo`), prompts, verification questions, reply parsing.
+- `vertex_ai.py` — Gemini on Vertex AI backend; reads `.env` (project, location, model).
+- `vlm.py` — backends (`vertex`, `ollama`, `echo`), prompts, verification questions, reply parsing.
 - `cadrille_init.py` — stratified split, cadrille programs -> starting programs, placement fit.
 - `data/fusion360_targets.py` — targets from the GT meshes.
 - `eval3d.py` — offline scores: 3D IoU, IoGT, Chamfer, Hausdorff, F1@1%, normal consistency, and
   cadrille-protocol IoU/CD (round 0 reproduces `cadrille/results/fusion360_test.md`).
-- `summarize_runs.py`, `figures.py` — tables and plots.
+- `summarize_runs.py`, `figures.py` — tables and plots; `report.py` — a run's README, results.md and
+  per-part pages (called by refine.py); `progress.py` — the round-by-round figures. `layout.py` — where files live in a rendered-solid folder.
 - `archive/procedural/` — the old random-part generator used to test the renderer.

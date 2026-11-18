@@ -7,7 +7,7 @@ The program is plain CadQuery code with the numbers written in, ending in
     uv run python part_generators.py --n 5                       # 5 of each family
     uv run python part_generators.py --family bracket --n 10 --seed 3
 
-Output: out/parts/<family>_<NNN>/{part.py, params.json, ...renders from generate_solid}
+Output: data/generated/parts/<family>_<NNN>/{part.py, params.json, ...renders from generate_solid}
 All sizes are in mm and rounded to 0.5 mm so programs stay readable.
 """
 import argparse
@@ -152,7 +152,7 @@ def main():
     ap.add_argument("--family", choices=[*GENERATORS, "all"], default="all")
     ap.add_argument("--n", type=int, default=5, help="parts per family")
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--out", type=Path, default=Path("out/parts"))
+    ap.add_argument("--out", type=Path, default=Path("data/generated/parts"))
     ap.add_argument("--no-render", action="store_true", help="only write the programs")
     args = ap.parse_args()
 

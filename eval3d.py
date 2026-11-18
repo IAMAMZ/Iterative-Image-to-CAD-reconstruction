@@ -3,7 +3,7 @@
 Only the experiment uses this, to score runs afterwards. The agent and the acceptance
 rules never see it (at test time there is no 3D model).
 
-    uv run python eval3d.py out/targets/fusion360/<part> out/refine/<part>/geo/round_02
+    uv run python eval3d.py data/generated/targets/fusion360/<part> runs/<run>/parts/<part>/geo/final
 
 The target dir holds the hidden shape as solid.step (+ solid.stl), from generate_solid.py,
 or as gt.stl only (mesh datasets such as Fusion360). The candidate is a generate_solid.py
@@ -33,6 +33,8 @@ import cadquery as cq
 import numpy as np
 import trimesh
 from scipy.spatial import cKDTree
+
+import layout
 
 N_POINTS = 8192          # cadrille protocol
 N_SURFACE = 30000        # fixed-frame surface metrics; 8192 is too sparse for F1 at 1%
@@ -114,7 +116,7 @@ def cadrille_protocol(gt, cand, n=N_POINTS, seed=0):
 
 def evaluate(target_dir: Path, cand_dir: Path) -> dict:
     target_dir, cand_dir = Path(target_dir), Path(cand_dir)
-    scale = json.loads((target_dir / "info.json").read_text())["normalization"]["scale"]
+    scale = json.loads(layout.info(target_dir).read_text())["normalization"]["scale"]
     gt_mesh_path = target_dir / "gt.stl"
     if not gt_mesh_path.exists():
         gt_mesh_path = target_dir / "solid.stl"
