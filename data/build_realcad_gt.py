@@ -21,7 +21,7 @@ SRC = RC / "cad_json"
 
 def main():
     built, failed, missing = {}, {}, []
-    jobs = [(split, pid) for split in ("dev", "test")
+    jobs = [(split, pid) for split in ("dev", "test", "test50")
             for pid in (l.strip() for l in open(RC / split / "ids.txt")) if pid]
     for split, pid in jobs:
         OUT = RC / split / "meshes"

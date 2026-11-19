@@ -2,8 +2,10 @@
   "seed": 2529,
   "n_built_meshes": 389,
   "n_dev": 100,
-  "n_test": 289,
+  "n_test": 239,
   "source": "sorted(built ids in gt_manifest.json), rng.sample(ids, 200); dev = sorted(first 100), test = sorted(rest)",
   "poses": "none (real photos, camera poses unknown)",
-  "note": "test = 100 seeded picks + the 189 remaining built meshes (formerly realcad/unassigned), 289 total; dev unchanged"
+  "note": "test = 100 seeded picks + the 189 remaining built meshes (formerly realcad/unassigned), 289 total; dev unchanged",
+  "n_test50": 50,
+  "test50": "the first 50 parts of the former 289-part test split (in ids.txt order), moved out on 2026-11-19 because they have image-only masks (SAM 3), cameras and depth (VGGT); test keeps the other 239 (masks only)"
 }
