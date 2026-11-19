@@ -1,0 +1,18 @@
+{
+ "method": "Visual check of every built GT mesh against its photos: photos 1 and 3 next to the mesh rendered from two corners above and one below (data/realcad_gt_sheets.py -> out/gt_check/sheet_*.jpg, gt_stats.csv). Checked 2026-11-18, 389 parts (dev 100, test 289).",
+ "summary": "384 match the print (up to how the part lies on the table). 1 clear mismatch, 1 uncertain, 2 non-watertight meshes, 1 two-body mesh.",
+ "mismatch": {
+  "dev/00147363": "GT = open tray with dividers (matches) PLUS a thin rod 0.46 long sticking out sideways that the print does not have. The rod is in the source cad_json (its bounding_box includes it), so it is not a build bug. It sets the bbox, so bbox-normalised scores shrink the tray to about half size: treat scores on this part as unreliable."
+ },
+ "uncertain": {
+  "test/00115681": "Flat plate; GT has a thin rib along one face that is not visible in the photos (the print may lie rib-down). The rib raises the bbox height from about 0.02 to 0.056 of the plate size."
+ },
+ "mesh_not_watertight": {
+  "test/00147229": "Disc with curved vanes; shape matches the print, but the mesh is not watertight (gt_manifest watertight=false): volume and boolean IoU are unreliable.",
+  "test/00446108": "Shape matches the print; mesh not watertight (gt_manifest watertight=false): volume and boolean IoU are unreliable."
+ },
+ "notes": {
+  "test/00219557": "GT is two touching bodies (box + lid); printed as one. Harmless for Chamfer; IoU uses the union.",
+  "orientation": "Many prints lie on the table upside down or on their side relative to the CAD frame (e.g. dev/00017301); this is expected and is why RealCAD scoring here searches rotations."
+ }
+}

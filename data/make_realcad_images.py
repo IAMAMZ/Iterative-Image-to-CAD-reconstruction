@@ -24,7 +24,7 @@ def main():
     ap.add_argument("--quality", type=int, default=90)
     a = ap.parse_args()
     n = 0
-    for split in ("dev", "test"):
+    for split in ("dev", "test", "test50"):
         for pid in (l.strip() for l in (RC / split / "ids.txt").read_text().split() if l.strip()):
             part = pid.split("/")[-1]
             for k in (1, 2, 3, 4):

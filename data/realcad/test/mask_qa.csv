@@ -1,0 +1,957 @@
+id,view,prompt,best_score,n_found,n_kept,area_frac,flags
+00115681,1,,0.0,0,0,0.0,none
+00115681,2,object,0.365,1,1,0.204,fallback
+00115681,3,,0.0,0,0,0.0,none
+00115681,4,,0.0,0,0,0.0,none
+00119795,1,object,0.541,1,1,0.0249,fallback
+00119795,2,object,0.531,1,1,0.0237,fallback
+00119795,3,object,0.53,1,1,0.0248,fallback
+00119795,4,3D printed part,0.492,1,1,0.0241,
+00122741,1,object,0.618,1,1,0.1686,fallback
+00122741,2,object,0.607,1,1,0.164,fallback
+00122741,3,3D printed part,0.402,1,1,0.1556,
+00122741,4,object,0.624,1,1,0.1581,fallback
+00130895,1,3D printed part,0.435,1,1,0.1443,
+00130895,2,3D printed part,0.683,1,1,0.1467,
+00130895,3,object,0.621,1,1,0.1416,fallback
+00130895,4,3D printed part,0.631,1,1,0.1349,
+00132322,1,3D printed part,0.675,1,1,0.0711,
+00132322,2,3D printed part,0.705,1,1,0.0698,
+00132322,3,3D printed part,0.674,2,1,0.0613,
+00132322,4,3D printed part,0.657,1,1,0.0672,
+00138643,1,plastic object,0.598,3,3,0.3022,multi fallback
+00138643,2,plastic object,0.688,2,1,0.2857,fallback
+00138643,3,plastic object,0.76,1,1,0.2848,fallback
+00138643,4,plastic object,0.679,2,2,0.322,multi fallback
+00138922,1,3D printed part,0.584,1,1,0.0318,
+00138922,2,3D printed part,0.32,1,1,0.0185,
+00138922,3,plastic object,0.797,1,1,0.0235,fallback
+00138922,4,3D printed part,0.714,1,1,0.0229,
+00143592,1,plastic object,0.325,1,1,0.2272,fallback
+00143592,2,object,0.35,1,1,0.2194,fallback
+00143592,3,plastic object,0.64,1,1,0.2308,fallback
+00143592,4,object,0.361,1,1,0.2343,fallback
+00143857,1,plastic object,0.42,1,1,0.1674,fallback
+00143857,2,3D printed part,0.9,1,1,0.1633,
+00143857,3,3D printed part,0.741,1,1,0.1679,
+00143857,4,3D printed part,0.775,1,1,0.1637,
+00143958,1,object,0.384,1,1,0.1886,fallback
+00143958,2,plastic object,0.618,1,1,0.1965,fallback
+00143958,3,object,0.402,1,1,0.1785,fallback
+00143958,4,plastic object,0.516,1,1,0.1759,fallback
+00144548,1,plastic object,0.497,1,1,0.1094,fallback
+00144548,2,plastic object,0.577,1,1,0.1175,fallback
+00144548,3,plastic object,0.533,1,1,0.1164,fallback
+00144548,4,plastic object,0.548,1,1,0.1025,fallback
+00144677,1,plastic object,0.636,1,1,0.0747,fallback
+00144677,2,3D printed part,0.48,1,1,0.0664,
+00144677,3,plastic object,0.799,1,1,0.0774,fallback
+00144677,4,3D printed part,0.41,1,1,0.0706,
+00144730,1,object,0.574,1,1,0.0651,fallback
+00144730,2,object,0.603,1,1,0.0596,fallback
+00144730,3,object,0.655,1,1,0.0677,fallback
+00144730,4,object,0.491,1,1,0.0597,fallback
+00145909,1,3D printed part,0.412,1,1,0.1926,
+00145909,2,object,0.605,1,1,0.2015,fallback
+00145909,3,3D printed part,0.418,1,1,0.2253,
+00145909,4,3D printed part,0.653,1,1,0.2141,
+00145936,1,3D printed part,0.691,1,1,0.0911,
+00145936,2,3D printed part,0.591,1,1,0.0944,
+00145936,3,3D printed part,0.677,1,1,0.0934,
+00145936,4,3D printed part,0.623,1,1,0.0984,
+00146596,1,3D printed part,0.635,1,1,0.0823,
+00146596,2,3D printed part,0.828,1,1,0.0785,
+00146596,3,plastic object,0.57,1,1,0.0657,fallback
+00146596,4,3D printed part,0.492,1,1,0.0875,
+00146958,1,3D printed part,0.809,1,1,0.0883,
+00146958,2,3D printed part,0.843,1,1,0.0984,
+00146958,3,3D printed part,0.813,1,1,0.0867,
+00146958,4,3D printed part,0.752,1,1,0.0975,
+00147229,1,3D printed part,0.606,1,1,0.2648,
+00147229,2,3D printed part,0.551,1,1,0.2455,
+00147229,3,3D printed part,0.652,1,1,0.2607,
+00147229,4,3D printed part,0.463,1,1,0.2679,
+00147310,1,plastic object,0.617,1,1,0.0521,fallback
+00147310,2,plastic object,0.435,1,1,0.0462,fallback
+00147310,3,object,0.505,1,1,0.0555,fallback
+00147310,4,3D printed part,0.421,1,1,0.0435,
+00147835,1,object,0.301,1,1,0.1791,fallback
+00147835,2,plastic object,0.353,1,1,0.183,fallback
+00147835,3,object,0.315,1,1,0.18,fallback
+00147835,4,object,0.455,1,1,0.1721,fallback
+00150023,1,3D printed part,0.572,1,1,0.0822,
+00150023,2,3D printed part,0.548,1,1,0.0807,
+00150023,3,3D printed part,0.707,1,1,0.0781,
+00150023,4,3D printed part,0.692,1,1,0.0781,
+00158940,1,3D printed part,0.381,1,1,0.1683,
+00158940,2,object,0.393,1,1,0.1577,fallback
+00158940,3,object,0.379,1,1,0.1547,fallback
+00158940,4,3D printed part,0.373,1,1,0.1606,
+00166398,1,3D printed part,0.754,1,1,0.1323,
+00166398,2,3D printed part,0.599,1,1,0.1495,
+00166398,3,3D printed part,0.829,1,1,0.1357,
+00166398,4,3D printed part,0.694,1,1,0.1156,
+00166885,1,3D printed part,0.65,1,1,0.0254,
+00166885,2,3D printed part,0.65,1,1,0.0294,
+00166885,3,3D printed part,0.706,1,1,0.028,
+00166885,4,3D printed part,0.838,1,1,0.0278,
+00187279,1,3D printed part,0.818,1,1,0.2326,
+00187279,2,3D printed part,0.869,1,1,0.2399,
+00187279,3,3D printed part,0.874,1,1,0.2179,
+00187279,4,3D printed part,0.897,1,1,0.2286,
+00189052,1,3D printed part,0.615,1,1,0.0868,
+00189052,2,3D printed part,0.548,1,1,0.0818,
+00189052,3,3D printed part,0.448,1,1,0.0794,
+00189052,4,3D printed part,0.542,1,1,0.0825,
+00191700,1,3D printed part,0.518,1,1,0.2754,
+00191700,2,3D printed part,0.419,1,1,0.252,
+00191700,3,3D printed part,0.637,1,1,0.3138,
+00191700,4,,0.0,0,0,0.0,none
+00195853,1,plastic object,0.634,1,1,0.3117,fallback
+00195853,2,plastic object,0.677,1,1,0.3281,fallback
+00195853,3,plastic object,0.6,1,1,0.3361,fallback
+00195853,4,plastic object,0.566,1,1,0.3044,fallback
+00201504,1,3D printed part,0.906,1,1,0.0836,
+00201504,2,3D printed part,0.864,1,1,0.0797,
+00201504,3,3D printed part,0.766,1,1,0.1003,
+00201504,4,3D printed part,0.875,1,1,0.0902,
+00203369,1,3D printed part,0.409,1,1,0.0961,
+00203369,2,3D printed part,0.592,1,1,0.1113,
+00203369,3,3D printed part,0.584,1,1,0.1066,
+00203369,4,3D printed part,0.659,1,1,0.1009,
+00203990,1,3D printed part,0.571,1,1,0.0415,
+00203990,2,3D printed part,0.424,1,1,0.0434,
+00203990,3,3D printed part,0.533,1,1,0.0389,
+00203990,4,3D printed part,0.42,1,1,0.0386,
+00205199,1,3D printed part,0.493,1,1,0.2295,
+00205199,2,object,0.393,1,1,0.2391,fallback
+00205199,3,3D printed part,0.401,1,1,0.2109,
+00205199,4,object,0.409,1,1,0.2493,fallback
+00208627,1,3D printed part,0.743,1,1,0.1827,
+00208627,2,3D printed part,0.701,1,1,0.2177,
+00208627,3,3D printed part,0.704,1,1,0.2307,
+00208627,4,3D printed part,0.63,1,1,0.2125,
+00209921,1,3D printed part,0.349,1,1,0.2183,
+00209921,2,object,0.539,1,1,0.2067,fallback
+00209921,3,object,0.516,1,1,0.2022,fallback
+00209921,4,object,0.519,1,1,0.2129,fallback
+00214920,1,3D printed part,0.9,1,1,0.1186,
+00214920,2,3D printed part,0.502,1,1,0.1259,
+00214920,3,3D printed part,0.43,1,1,0.1353,
+00214920,4,3D printed part,0.832,1,1,0.1219,
+00218343,1,3D printed part,0.31,1,1,0.0824,
+00218343,2,3D printed part,0.327,1,1,0.0765,
+00218343,3,3D printed part,0.319,1,1,0.0789,
+00218343,4,3D printed part,0.312,1,1,0.0864,
+00218958,1,3D printed part,0.672,1,1,0.085,
+00218958,2,3D printed part,0.861,1,1,0.0789,
+00218958,3,3D printed part,0.592,1,1,0.0861,
+00218958,4,3D printed part,0.658,1,1,0.081,
+00219557,1,object,0.552,1,1,0.1524,fallback
+00219557,2,object,0.542,1,1,0.1469,fallback
+00219557,3,object,0.464,1,1,0.1559,fallback
+00219557,4,object,0.44,1,1,0.1586,fallback
+00221191,1,plastic object,0.437,1,1,0.1012,fallback
+00221191,2,plastic object,0.426,1,1,0.1021,fallback
+00221191,3,plastic object,0.424,1,1,0.0971,fallback
+00221191,4,plastic object,0.527,1,1,0.0967,fallback
+00222356,1,3D printed part,0.526,1,1,0.0515,
+00222356,2,plastic object,0.84,1,1,0.0515,fallback
+00222356,3,3D printed part,0.379,1,1,0.0432,
+00222356,4,3D printed part,0.816,1,1,0.0439,
+00226255,1,3D printed part,0.876,1,1,0.0898,
+00226255,2,3D printed part,0.699,1,1,0.0631,
+00226255,3,3D printed part,0.664,1,1,0.0604,
+00226255,4,3D printed part,0.813,1,1,0.0873,
+00229197,1,3D printed part,0.652,1,1,0.0419,
+00229197,2,3D printed part,0.681,1,1,0.0397,
+00229197,3,3D printed part,0.808,1,1,0.0458,
+00229197,4,3D printed part,0.773,1,1,0.0354,
+00238818,1,3D printed part,0.447,1,1,0.1687,
+00238818,2,3D printed part,0.747,1,1,0.1853,
+00238818,3,3D printed part,0.791,1,1,0.1935,
+00238818,4,3D printed part,0.769,1,1,0.2113,
+00243077,1,3D printed part,0.64,1,1,0.0881,
+00243077,2,3D printed part,0.847,1,1,0.0896,
+00243077,3,3D printed part,0.645,1,1,0.0931,
+00243077,4,3D printed part,0.821,1,1,0.0915,
+00254988,1,3D printed part,0.655,1,1,0.097,
+00254988,2,3D printed part,0.504,1,1,0.1081,
+00254988,3,3D printed part,0.48,1,1,0.0916,
+00254988,4,3D printed part,0.33,1,1,0.0859,
+00256738,1,plastic object,0.591,1,1,0.2015,fallback
+00256738,2,plastic object,0.332,1,1,0.2083,fallback
+00256738,3,plastic object,0.421,1,1,0.2238,fallback
+00256738,4,plastic object,0.335,1,1,0.2119,fallback
+00268485,1,3D printed part,0.442,1,1,0.2326,
+00268485,2,3D printed part,0.458,1,1,0.2336,
+00268485,3,3D printed part,0.352,1,1,0.226,
+00268485,4,plastic object,0.502,2,2,0.2269,multi fallback
+00270766,1,3D printed part,0.742,1,1,0.0492,
+00270766,2,3D printed part,0.852,1,1,0.0394,
+00270766,3,3D printed part,0.612,1,1,0.0456,
+00270766,4,3D printed part,0.745,1,1,0.0346,
+00272091,1,3D printed part,0.453,1,1,0.1572,
+00272091,2,3D printed part,0.331,1,1,0.1465,
+00272091,3,3D printed part,0.419,1,1,0.1488,
+00272091,4,3D printed part,0.653,1,1,0.1707,
+00273617,1,3D printed part,0.552,1,1,0.1469,
+00273617,2,plastic object,0.382,1,1,0.1432,fallback
+00273617,3,3D printed part,0.446,1,1,0.1507,
+00273617,4,plastic object,0.374,1,1,0.1526,fallback
+00274107,1,3D printed part,0.537,1,1,0.1109,
+00274107,2,3D printed part,0.756,1,1,0.1186,
+00274107,3,3D printed part,0.435,1,1,0.1141,
+00274107,4,3D printed part,0.401,1,1,0.1124,
+00275106,1,3D printed part,0.746,1,1,0.1828,
+00275106,2,3D printed part,0.739,1,1,0.1945,
+00275106,3,3D printed part,0.815,1,1,0.1929,
+00275106,4,3D printed part,0.461,1,1,0.1672,
+00278961,1,3D printed part,0.726,1,1,0.0865,
+00278961,2,3D printed part,0.614,1,1,0.0877,
+00278961,3,3D printed part,0.856,1,1,0.0841,
+00278961,4,3D printed part,0.679,1,1,0.0817,
+00281964,1,3D printed part,0.456,1,1,0.0434,
+00281964,2,3D printed part,0.629,1,1,0.0559,
+00281964,3,3D printed part,0.866,1,1,0.0351,
+00281964,4,3D printed part,0.336,1,1,0.0513,
+00282768,1,3D printed part,0.57,1,1,0.0373,
+00282768,2,3D printed part,0.662,1,1,0.0251,
+00282768,3,3D printed part,0.62,1,1,0.0423,
+00282768,4,3D printed part,0.419,1,1,0.0239,
+00285580,1,object,0.64,1,1,0.0542,fallback
+00285580,2,3D printed part,0.358,1,1,0.0516,
+00285580,3,plastic object,0.561,1,1,0.0506,fallback
+00285580,4,object,0.57,1,1,0.0559,fallback
+00287949,1,3D printed part,0.621,1,1,0.063,
+00287949,2,3D printed part,0.759,1,1,0.0613,
+00287949,3,3D printed part,0.745,1,1,0.0631,
+00287949,4,3D printed part,0.877,1,1,0.0599,
+00296136,1,3D printed part,0.642,1,1,0.2629,
+00296136,2,3D printed part,0.551,1,1,0.2984,
+00296136,3,3D printed part,0.685,1,1,0.263,
+00296136,4,3D printed part,0.711,1,1,0.2501,
+00299037,1,3D printed part,0.695,1,1,0.1593,
+00299037,2,3D printed part,0.855,1,1,0.1492,
+00299037,3,3D printed part,0.834,1,1,0.1622,
+00299037,4,3D printed part,0.844,1,1,0.1447,
+00301325,1,3D printed part,0.396,1,1,0.1382,
+00301325,2,object,0.426,1,1,0.1651,fallback
+00301325,3,3D printed part,0.676,1,1,0.1561,
+00301325,4,3D printed part,0.591,1,1,0.152,
+00301338,1,3D printed part,0.9,1,1,0.0477,
+00301338,2,object,0.503,1,1,0.0526,fallback
+00301338,3,3D printed part,0.564,1,1,0.0444,
+00301338,4,3D printed part,0.442,1,1,0.0511,
+00302191,1,3D printed part,0.544,1,1,0.2202,
+00302191,2,3D printed part,0.65,1,1,0.2131,
+00302191,3,3D printed part,0.684,1,1,0.2398,
+00302191,4,plastic object,0.433,1,1,0.2441,fallback
+00306373,1,plastic object,0.87,1,1,0.1587,fallback
+00306373,2,plastic object,0.868,1,1,0.163,fallback
+00306373,3,plastic object,0.88,1,1,0.1607,fallback
+00306373,4,plastic object,0.85,1,1,0.1721,fallback
+00307293,1,3D printed part,0.79,1,1,0.1704,
+00307293,2,3D printed part,0.821,1,1,0.1708,
+00307293,3,3D printed part,0.725,1,1,0.1761,
+00307293,4,3D printed part,0.568,1,1,0.1969,
+00307496,1,3D printed part,0.701,1,1,0.1909,
+00307496,2,3D printed part,0.669,1,1,0.1713,
+00307496,3,3D printed part,0.775,1,1,0.1581,
+00307496,4,3D printed part,0.686,1,1,0.1655,
+00309108,1,3D printed part,0.848,1,1,0.1901,
+00309108,2,3D printed part,0.719,1,1,0.181,
+00309108,3,3D printed part,0.725,1,1,0.1687,
+00309108,4,3D printed part,0.835,1,1,0.1642,
+00309965,1,3D printed part,0.748,1,1,0.1098,
+00309965,2,3D printed part,0.755,1,1,0.0937,
+00309965,3,3D printed part,0.705,1,1,0.0995,
+00309965,4,3D printed part,0.84,1,1,0.0871,
+00310463,1,plastic object,0.836,1,1,0.2887,fallback
+00310463,2,plastic object,0.781,1,1,0.2736,fallback
+00310463,3,plastic object,0.78,1,1,0.2723,fallback
+00310463,4,plastic object,0.671,1,1,0.2926,fallback
+00313419,1,3D printed part,0.374,1,1,0.1419,
+00313419,2,3D printed part,0.575,1,1,0.171,
+00313419,3,plastic object,0.316,1,1,0.2234,fallback
+00313419,4,3D printed part,0.629,1,1,0.2037,
+00318505,1,object,0.613,1,1,0.1525,fallback
+00318505,2,3D printed part,0.799,1,1,0.1385,
+00318505,3,3D printed part,0.382,1,1,0.1576,
+00318505,4,3D printed part,0.821,1,1,0.1107,
+00321555,1,3D printed part,0.455,1,1,0.0976,
+00321555,2,3D printed part,0.551,1,1,0.0954,
+00321555,3,3D printed part,0.441,1,1,0.1074,
+00321555,4,3D printed part,0.455,1,1,0.0969,
+00325388,1,3D printed part,0.362,1,1,0.18,
+00325388,2,,0.0,0,0,0.0,none
+00325388,3,object,0.408,1,1,0.1931,fallback
+00325388,4,,0.0,0,0,0.0,none
+00328554,1,3D printed part,0.427,1,1,0.0548,
+00328554,2,3D printed part,0.782,1,1,0.0388,
+00328554,3,3D printed part,0.445,1,1,0.0545,
+00328554,4,object,0.632,1,1,0.0407,fallback
+00333503,1,3D printed part,0.32,1,1,0.0301,
+00333503,2,3D printed part,0.619,1,1,0.0298,
+00333503,3,3D printed part,0.428,1,1,0.0279,
+00333503,4,3D printed part,0.477,1,1,0.0267,
+00335899,1,3D printed part,0.701,1,1,0.1591,
+00335899,2,3D printed part,0.674,1,1,0.1579,
+00335899,3,3D printed part,0.761,1,1,0.1406,
+00335899,4,3D printed part,0.531,1,1,0.1436,
+00339583,1,3D printed part,0.458,1,1,0.0712,
+00339583,2,plastic object,0.312,1,1,0.0668,fallback
+00339583,3,plastic object,0.348,1,1,0.0741,fallback
+00339583,4,3D printed part,0.442,1,1,0.0668,
+00342946,1,3D printed part,0.757,1,1,0.0996,
+00342946,2,3D printed part,0.752,1,1,0.0922,
+00342946,3,3D printed part,0.855,1,1,0.0929,
+00342946,4,3D printed part,0.841,1,1,0.1034,
+00347457,1,3D printed part,0.787,1,1,0.1011,
+00347457,2,3D printed part,0.778,1,1,0.107,
+00347457,3,3D printed part,0.791,1,1,0.1064,
+00347457,4,3D printed part,0.603,1,1,0.1009,
+00357129,1,3D printed part,0.608,1,1,0.1098,
+00357129,2,plastic object,0.379,1,1,0.0848,fallback
+00357129,3,3D printed part,0.484,1,1,0.0957,
+00357129,4,3D printed part,0.612,1,1,0.1211,
+00357185,1,3D printed part,0.479,1,1,0.1434,
+00357185,2,3D printed part,0.567,1,1,0.1474,
+00357185,3,3D printed part,0.523,1,1,0.1553,
+00357185,4,3D printed part,0.718,1,1,0.1233,
+00357537,1,3D printed part,0.399,1,1,0.0524,
+00357537,2,3D printed part,0.56,1,1,0.0458,
+00357537,3,3D printed part,0.691,1,1,0.0486,
+00357537,4,3D printed part,0.561,1,1,0.042,
+00359117,1,3D printed part,0.694,1,1,0.1044,
+00359117,2,3D printed part,0.662,1,1,0.1082,
+00359117,3,plastic object,0.47,1,1,0.11,fallback
+00359117,4,3D printed part,0.666,1,1,0.1061,
+00362952,1,3D printed part,0.525,1,1,0.0745,
+00362952,2,3D printed part,0.474,1,1,0.0669,
+00362952,3,3D printed part,0.357,1,1,0.0688,
+00362952,4,3D printed part,0.354,1,1,0.0734,
+00364911,1,3D printed part,0.602,1,1,0.141,
+00364911,2,3D printed part,0.497,1,1,0.1423,
+00364911,3,3D printed part,0.418,1,1,0.1442,
+00364911,4,3D printed part,0.405,1,1,0.1405,
+00368540,1,3D printed part,0.556,1,1,0.1106,
+00368540,2,3D printed part,0.742,1,1,0.1052,
+00368540,3,3D printed part,0.593,1,1,0.1165,
+00368540,4,3D printed part,0.549,1,1,0.1253,
+00369267,1,object,0.518,1,1,0.0667,fallback
+00369267,2,plastic object,0.313,1,1,0.0702,fallback
+00369267,3,plastic object,0.354,1,1,0.0667,fallback
+00369267,4,plastic object,0.314,1,1,0.0795,fallback
+00374892,1,3D printed part,0.712,1,1,0.0562,
+00374892,2,3D printed part,0.582,1,1,0.0711,
+00374892,3,3D printed part,0.747,1,1,0.04,
+00374892,4,3D printed part,0.755,1,1,0.0733,
+00379362,1,3D printed part,0.785,1,1,0.0959,
+00379362,2,3D printed part,0.812,1,1,0.0979,
+00379362,3,3D printed part,0.645,1,1,0.0929,
+00379362,4,3D printed part,0.771,1,1,0.094,
+00386883,1,3D printed part,0.413,1,1,0.0371,
+00386883,2,3D printed part,0.641,1,1,0.0369,
+00386883,3,plastic object,0.811,1,1,0.0331,fallback
+00386883,4,plastic object,0.798,1,1,0.0302,fallback
+00388261,1,plastic object,0.666,1,1,0.0825,fallback
+00388261,2,3D printed part,0.411,1,1,0.0832,
+00388261,3,plastic object,0.631,1,1,0.0808,fallback
+00388261,4,3D printed part,0.325,1,1,0.0769,
+00389727,1,3D printed part,0.795,1,1,0.119,
+00389727,2,3D printed part,0.883,1,1,0.0885,
+00389727,3,3D printed part,0.807,1,1,0.11,
+00389727,4,3D printed part,0.686,3,3,0.1184,multi
+00391788,1,3D printed part,0.37,1,1,0.2638,
+00391788,2,3D printed part,0.328,1,1,0.2833,
+00391788,3,3D printed part,0.475,1,1,0.3099,
+00391788,4,plastic object,0.459,1,1,0.3197,fallback
+00399722,1,3D printed part,0.818,1,1,0.1292,
+00399722,2,3D printed part,0.849,1,1,0.1502,
+00399722,3,3D printed part,0.854,1,1,0.1437,
+00399722,4,3D printed part,0.876,1,1,0.1307,
+00403478,1,3D printed part,0.873,1,1,0.1918,
+00403478,2,3D printed part,0.88,1,1,0.1797,
+00403478,3,3D printed part,0.856,1,1,0.1866,
+00403478,4,3D printed part,0.86,1,1,0.2095,
+00411382,1,plastic object,0.663,1,1,0.0302,fallback
+00411382,2,plastic object,0.732,2,1,0.0228,fallback
+00411382,3,plastic object,0.455,1,1,0.0302,fallback
+00411382,4,plastic object,0.808,2,1,0.0234,fallback
+00411574,1,3D printed part,0.938,1,1,0.2045,
+00411574,2,3D printed part,0.933,1,1,0.233,
+00411574,3,3D printed part,0.917,1,1,0.2334,
+00411574,4,3D printed part,0.925,1,1,0.2067,
+00417243,1,3D printed part,0.684,1,1,0.1788,
+00417243,2,3D printed part,0.751,1,1,0.1771,
+00417243,3,3D printed part,0.771,1,1,0.169,
+00417243,4,3D printed part,0.797,1,1,0.1715,
+00417409,1,3D printed part,0.556,1,1,0.2265,
+00417409,2,3D printed part,0.521,1,1,0.2276,
+00417409,3,3D printed part,0.52,1,1,0.2542,
+00417409,4,3D printed part,0.331,1,1,0.2448,
+00418031,1,plastic object,0.553,1,1,0.1642,fallback
+00418031,2,plastic object,0.428,1,1,0.1692,fallback
+00418031,3,plastic object,0.493,1,1,0.1582,fallback
+00418031,4,plastic object,0.301,1,1,0.1516,fallback
+00419591,1,3D printed part,0.619,1,1,0.026,
+00419591,2,3D printed part,0.654,1,1,0.0225,
+00419591,3,3D printed part,0.759,1,1,0.0247,
+00419591,4,3D printed part,0.709,1,1,0.0207,
+00424433,1,,0.0,0,0,0.0,none
+00424433,2,plastic object,0.385,1,1,0.0885,fallback
+00424433,3,,0.0,0,0,0.0,none
+00424433,4,plastic object,0.371,1,1,0.079,fallback
+00424969,1,3D printed part,0.745,1,1,0.1866,
+00424969,2,3D printed part,0.9,1,1,0.1592,
+00424969,3,3D printed part,0.528,1,1,0.1589,
+00424969,4,3D printed part,0.811,2,2,0.2063,multi
+00424973,1,3D printed part,0.655,3,3,0.073,multi
+00424973,2,3D printed part,0.818,1,1,0.0633,
+00424973,3,3D printed part,0.671,1,1,0.0622,
+00424973,4,3D printed part,0.563,2,2,0.0707,multi
+00425176,1,3D printed part,0.372,1,1,0.0855,
+00425176,2,object,0.633,1,1,0.0798,fallback
+00425176,3,3D printed part,0.451,1,1,0.0727,
+00425176,4,3D printed part,0.457,1,1,0.0799,
+00426077,1,3D printed part,0.488,1,1,0.1237,
+00426077,2,3D printed part,0.767,1,1,0.1257,
+00426077,3,3D printed part,0.496,1,1,0.1328,
+00426077,4,3D printed part,0.606,1,1,0.1423,
+00426095,1,3D printed part,0.701,1,1,0.0729,
+00426095,2,3D printed part,0.691,1,1,0.0892,
+00426095,3,3D printed part,0.544,1,1,0.0632,
+00426095,4,3D printed part,0.665,1,1,0.0824,
+00426105,1,3D printed part,0.846,1,1,0.0818,
+00426105,2,3D printed part,0.862,1,1,0.0862,
+00426105,3,3D printed part,0.813,1,1,0.0862,
+00426105,4,3D printed part,0.64,1,1,0.0901,
+00426502,1,object,0.563,1,1,0.2249,fallback
+00426502,2,object,0.524,1,1,0.2201,fallback
+00426502,3,object,0.459,1,1,0.2254,fallback
+00426502,4,3D printed part,0.333,1,1,0.2342,
+00426594,1,3D printed part,0.781,1,1,0.26,
+00426594,2,3D printed part,0.764,1,1,0.2693,
+00426594,3,3D printed part,0.652,1,1,0.2748,
+00426594,4,3D printed part,0.837,1,1,0.2775,
+00426847,1,3D printed part,0.949,1,1,0.2784,
+00426847,2,3D printed part,0.944,1,1,0.2848,
+00426847,3,3D printed part,0.945,1,1,0.2888,
+00426847,4,3D printed part,0.944,1,1,0.287,
+00426890,1,3D printed part,0.851,1,1,0.1338,
+00426890,2,3D printed part,0.864,1,1,0.1308,
+00426890,3,3D printed part,0.886,1,1,0.131,
+00426890,4,3D printed part,0.903,1,1,0.135,
+00427048,1,3D printed part,0.852,1,1,0.0559,
+00427048,2,3D printed part,0.897,1,1,0.0557,
+00427048,3,3D printed part,0.832,1,1,0.0537,
+00427048,4,3D printed part,0.853,1,1,0.0518,
+00427124,1,3D printed part,0.407,1,1,0.1685,
+00427124,2,,0.0,0,0,0.0,none
+00427124,3,3D printed part,0.488,1,1,0.1535,
+00427124,4,,0.0,0,0,0.0,none
+00427410,1,3D printed part,0.35,1,1,0.1423,
+00427410,2,3D printed part,0.307,1,1,0.1387,
+00427410,3,object,0.448,1,1,0.1526,fallback
+00427410,4,object,0.43,1,1,0.1693,fallback
+00427927,1,3D printed part,0.904,1,1,0.077,
+00427927,2,3D printed part,0.817,1,1,0.0867,
+00427927,3,3D printed part,0.774,1,1,0.0785,
+00427927,4,3D printed part,0.724,1,1,0.0936,
+00428008,1,3D printed part,0.551,1,1,0.1514,
+00428008,2,3D printed part,0.839,1,1,0.1539,
+00428008,3,3D printed part,0.845,1,1,0.1218,
+00428008,4,3D printed part,0.688,1,1,0.1232,
+00428022,1,3D printed part,0.9,1,1,0.1824,
+00428022,2,3D printed part,0.865,1,1,0.1956,
+00428022,3,3D printed part,0.907,1,1,0.1399,
+00428022,4,3D printed part,0.817,1,1,0.152,
+00428195,1,3D printed part,0.636,1,1,0.2278,
+00428195,2,3D printed part,0.411,1,1,0.2253,
+00428195,3,object,0.539,1,1,0.2433,fallback
+00428195,4,3D printed part,0.723,1,1,0.2518,
+00429307,1,3D printed part,0.85,1,1,0.1896,
+00429307,2,3D printed part,0.861,1,1,0.1892,
+00429307,3,3D printed part,0.818,1,1,0.2113,
+00429307,4,3D printed part,0.841,1,1,0.2186,
+00433838,1,3D printed part,0.825,1,1,0.1448,
+00433838,2,3D printed part,0.886,1,1,0.1502,
+00433838,3,3D printed part,0.835,1,1,0.1518,
+00433838,4,3D printed part,0.856,1,1,0.1469,
+00437331,1,3D printed part,0.395,1,1,0.0391,
+00437331,2,3D printed part,0.301,1,1,0.0395,
+00437331,3,3D printed part,0.58,1,1,0.0383,
+00437331,4,3D printed part,0.306,1,1,0.0448,
+00439331,1,3D printed part,0.755,1,1,0.0377,
+00439331,2,3D printed part,0.841,1,1,0.0408,
+00439331,3,3D printed part,0.758,1,1,0.0402,
+00439331,4,3D printed part,0.84,1,1,0.0381,
+00446108,1,3D printed part,0.813,1,1,0.1101,
+00446108,2,3D printed part,0.841,1,1,0.1024,
+00446108,3,3D printed part,0.842,1,1,0.1176,
+00446108,4,3D printed part,0.803,1,1,0.1119,
+00449514,1,3D printed part,0.888,1,1,0.1136,
+00449514,2,3D printed part,0.885,1,1,0.1267,
+00449514,3,3D printed part,0.872,1,1,0.1256,
+00449514,4,3D printed part,0.883,1,1,0.1281,
+00450380,1,3D printed part,0.815,1,1,0.2461,
+00450380,2,3D printed part,0.732,1,1,0.2462,
+00450380,3,3D printed part,0.635,1,1,0.2257,
+00450380,4,3D printed part,0.607,1,1,0.2393,
+00451903,1,3D printed part,0.84,1,1,0.1628,
+00451903,2,3D printed part,0.857,1,1,0.1785,
+00451903,3,3D printed part,0.849,1,1,0.1848,
+00451903,4,3D printed part,0.861,1,1,0.1679,
+00457902,1,3D printed part,0.522,1,1,0.2355,
+00457902,2,3D printed part,0.805,1,1,0.2207,
+00457902,3,object,0.347,1,1,0.2508,fallback
+00457902,4,3D printed part,0.81,1,1,0.2162,
+00459368,1,object,0.331,1,1,0.2005,fallback
+00459368,2,3D printed part,0.753,1,1,0.1768,
+00459368,3,,0.0,0,0,0.0,none
+00459368,4,3D printed part,0.727,1,1,0.1716,
+00459507,1,plastic object,0.523,1,1,0.1635,fallback
+00459507,2,object,0.307,1,1,0.1106,fallback
+00459507,3,object,0.447,1,1,0.1801,fallback
+00459507,4,plastic object,0.519,1,1,0.0922,fallback
+00462797,1,3D printed part,0.54,1,1,0.1185,
+00462797,2,3D printed part,0.56,1,1,0.106,
+00462797,3,3D printed part,0.597,1,1,0.114,
+00462797,4,3D printed part,0.594,1,1,0.1138,
+00463031,1,3D printed part,0.739,1,1,0.1421,
+00463031,2,3D printed part,0.789,1,1,0.1291,
+00463031,3,3D printed part,0.57,1,1,0.1446,
+00463031,4,3D printed part,0.626,1,1,0.1111,
+00463817,1,3D printed part,0.311,1,1,0.1563,
+00463817,2,3D printed part,0.479,1,1,0.1613,
+00463817,3,3D printed part,0.368,1,1,0.1363,
+00463817,4,3D printed part,0.377,1,1,0.152,
+00466076,1,3D printed part,0.556,1,1,0.0556,
+00466076,2,3D printed part,0.742,1,1,0.0498,
+00466076,3,3D printed part,0.79,1,1,0.0527,
+00466076,4,3D printed part,0.614,1,1,0.0515,
+00470427,1,3D printed part,0.608,1,1,0.0294,
+00470427,2,3D printed part,0.593,1,1,0.0312,
+00470427,3,3D printed part,0.614,1,1,0.0299,
+00470427,4,3D printed part,0.626,1,1,0.031,
+00482647,1,3D printed part,0.809,1,1,0.1249,
+00482647,2,3D printed part,0.793,1,1,0.119,
+00482647,3,3D printed part,0.763,1,1,0.1411,
+00482647,4,3D printed part,0.865,1,1,0.1141,
+00487635,1,3D printed part,0.762,1,1,0.0432,
+00487635,2,3D printed part,0.779,1,1,0.042,
+00487635,3,3D printed part,0.582,1,1,0.0456,
+00487635,4,3D printed part,0.818,1,1,0.0404,
+00488419,1,3D printed part,0.714,1,1,0.0494,
+00488419,2,3D printed part,0.62,1,1,0.0463,
+00488419,3,3D printed part,0.72,1,1,0.0481,
+00488419,4,3D printed part,0.648,1,1,0.0369,
+00490506,1,3D printed part,0.597,1,1,0.1575,
+00490506,2,3D printed part,0.427,1,1,0.1531,
+00490506,3,3D printed part,0.573,1,1,0.1589,
+00490506,4,3D printed part,0.404,1,1,0.1623,
+00491284,1,plastic object,0.846,1,1,0.1318,fallback
+00491284,2,3D printed part,0.484,1,1,0.1437,
+00491284,3,3D printed part,0.425,1,1,0.1456,
+00491284,4,3D printed part,0.481,1,1,0.1266,
+00502250,1,3D printed part,0.725,1,1,0.134,
+00502250,2,3D printed part,0.596,1,1,0.134,
+00502250,3,3D printed part,0.738,1,1,0.144,
+00502250,4,3D printed part,0.711,1,1,0.1425,
+00508268,1,3D printed part,0.752,1,1,0.1588,
+00508268,2,3D printed part,0.896,1,1,0.1715,
+00508268,3,3D printed part,0.766,1,1,0.1552,
+00508268,4,3D printed part,0.738,1,1,0.1493,
+00510920,1,3D printed part,0.843,1,1,0.2096,
+00510920,2,3D printed part,0.881,1,1,0.1922,
+00510920,3,3D printed part,0.877,1,1,0.1837,
+00510920,4,3D printed part,0.892,1,1,0.2362,
+00512874,1,3D printed part,0.429,1,1,0.0401,
+00512874,2,3D printed part,0.371,1,1,0.0297,
+00512874,3,3D printed part,0.393,1,1,0.0485,
+00512874,4,object,0.626,1,1,0.0294,fallback
+00514734,1,3D printed part,0.617,1,1,0.1355,
+00514734,2,3D printed part,0.911,1,1,0.1316,
+00514734,3,3D printed part,0.878,1,1,0.1458,
+00514734,4,3D printed part,0.911,1,1,0.1482,
+00515500,1,3D printed part,0.774,1,1,0.1838,
+00515500,2,3D printed part,0.611,1,1,0.1879,
+00515500,3,3D printed part,0.686,1,1,0.167,
+00515500,4,3D printed part,0.698,1,1,0.173,
+00516071,1,,0.0,0,0,0.0,none
+00516071,2,plastic object,0.449,1,1,0.0864,fallback
+00516071,3,plastic object,0.409,1,1,0.0774,fallback
+00516071,4,,0.0,0,0,0.0,none
+00518528,1,3D printed part,0.623,1,1,0.0266,
+00518528,2,3D printed part,0.662,1,1,0.0233,
+00518528,3,3D printed part,0.346,1,1,0.0254,
+00518528,4,3D printed part,0.654,1,1,0.0272,
+00522533,1,plastic object,0.45,1,1,0.2279,fallback
+00522533,2,plastic object,0.687,1,1,0.2085,fallback
+00522533,3,plastic object,0.665,1,1,0.2236,fallback
+00522533,4,plastic object,0.519,1,1,0.2315,fallback
+00529156,1,plastic object,0.482,1,1,0.1489,fallback
+00529156,2,plastic object,0.428,1,1,0.1358,fallback
+00529156,3,plastic object,0.492,1,1,0.1365,fallback
+00529156,4,plastic object,0.417,1,1,0.1473,fallback
+00531792,1,3D printed part,0.813,1,1,0.1306,
+00531792,2,3D printed part,0.879,1,1,0.0962,
+00531792,3,3D printed part,0.884,1,1,0.1187,
+00531792,4,3D printed part,0.823,1,1,0.1038,
+00533761,1,3D printed part,0.854,1,1,0.2058,
+00533761,2,3D printed part,0.877,1,1,0.2185,
+00533761,3,3D printed part,0.915,1,1,0.2501,
+00533761,4,3D printed part,0.839,1,1,0.2292,
+00534891,1,3D printed part,0.858,1,1,0.205,
+00534891,2,3D printed part,0.825,1,1,0.2158,
+00534891,3,3D printed part,0.819,1,1,0.223,
+00534891,4,3D printed part,0.71,2,2,0.2237,multi
+00537568,1,3D printed part,0.583,1,1,0.1431,
+00537568,2,3D printed part,0.6,1,1,0.1436,
+00537568,3,3D printed part,0.545,1,1,0.1393,
+00537568,4,3D printed part,0.498,1,1,0.1361,
+00540161,1,3D printed part,0.415,1,1,0.1437,
+00540161,2,3D printed part,0.809,1,1,0.0779,
+00540161,3,3D printed part,0.581,1,1,0.1378,
+00540161,4,3D printed part,0.854,1,1,0.0606,
+00541138,1,3D printed part,0.742,2,2,0.1655,multi
+00541138,2,3D printed part,0.762,3,3,0.1802,multi
+00541138,3,3D printed part,0.773,2,2,0.1797,multi
+00541138,4,3D printed part,0.904,1,1,0.1956,
+00544492,1,3D printed part,0.941,1,1,0.2582,
+00544492,2,3D printed part,0.942,1,1,0.2493,
+00544492,3,3D printed part,0.933,1,1,0.2346,
+00544492,4,3D printed part,0.947,1,1,0.257,
+00548664,1,3D printed part,0.576,1,1,0.191,
+00548664,2,3D printed part,0.477,1,1,0.1887,
+00548664,3,3D printed part,0.462,1,1,0.2121,
+00548664,4,3D printed part,0.301,1,1,0.2186,
+00550041,1,3D printed part,0.654,1,1,0.1974,
+00550041,2,3D printed part,0.708,1,1,0.1996,
+00550041,3,3D printed part,0.591,1,1,0.2047,
+00550041,4,3D printed part,0.657,1,1,0.1999,
+00564267,1,3D printed part,0.361,1,1,0.2464,
+00564267,2,3D printed part,0.85,1,1,0.2218,
+00564267,3,3D printed part,0.378,1,1,0.2408,
+00564267,4,3D printed part,0.834,1,1,0.2485,
+00583695,1,3D printed part,0.64,1,1,0.0254,
+00583695,2,3D printed part,0.784,1,1,0.0238,
+00583695,3,3D printed part,0.823,1,1,0.0255,
+00583695,4,3D printed part,0.85,1,1,0.0286,
+00590377,1,3D printed part,0.857,1,1,0.2004,
+00590377,2,3D printed part,0.891,1,1,0.2228,
+00590377,3,3D printed part,0.696,1,1,0.2148,
+00590377,4,3D printed part,0.895,1,1,0.2199,
+00597929,1,3D printed part,0.719,1,1,0.0545,
+00597929,2,3D printed part,0.863,1,1,0.037,
+00597929,3,3D printed part,0.672,1,1,0.0499,
+00597929,4,3D printed part,0.816,1,1,0.0458,
+00598784,1,3D printed part,0.304,1,1,0.0826,
+00598784,2,3D printed part,0.338,1,1,0.077,
+00598784,3,object,0.588,1,1,0.0804,fallback
+00598784,4,object,0.548,1,1,0.0847,fallback
+00612294,1,object,0.494,1,1,0.0657,fallback
+00612294,2,object,0.464,1,1,0.0639,fallback
+00612294,3,object,0.464,1,1,0.0667,fallback
+00612294,4,object,0.495,1,1,0.068,fallback
+00621712,1,3D printed part,0.515,1,1,0.2564,
+00621712,2,object,0.508,1,1,0.2763,fallback
+00621712,3,3D printed part,0.517,1,1,0.2613,
+00621712,4,3D printed part,0.579,1,1,0.2738,
+00627483,1,3D printed part,0.418,1,1,0.2937,
+00627483,2,3D printed part,0.609,1,1,0.3067,
+00627483,3,object,0.48,1,1,0.323,fallback
+00627483,4,3D printed part,0.52,1,1,0.3299,
+00628426,1,3D printed part,0.738,1,1,0.0295,
+00628426,2,3D printed part,0.308,1,1,0.0286,
+00628426,3,3D printed part,0.565,1,1,0.0297,
+00628426,4,3D printed part,0.657,1,1,0.0297,
+00632277,1,3D printed part,0.327,1,1,0.2216,
+00632277,2,3D printed part,0.641,1,1,0.1966,
+00632277,3,3D printed part,0.489,1,1,0.224,
+00632277,4,3D printed part,0.815,1,1,0.201,
+00637199,1,3D printed part,0.5,1,1,0.0937,
+00637199,2,3D printed part,0.451,1,1,0.1006,
+00637199,3,3D printed part,0.436,1,1,0.0996,
+00637199,4,3D printed part,0.52,1,1,0.0861,
+00637617,1,3D printed part,0.518,1,1,0.1613,
+00637617,2,3D printed part,0.643,1,1,0.1624,
+00637617,3,3D printed part,0.523,1,1,0.1535,
+00637617,4,3D printed part,0.513,1,1,0.1555,
+00643106,1,plastic object,0.589,1,1,0.0205,fallback
+00643106,2,plastic object,0.618,1,1,0.0187,fallback
+00643106,3,3D printed part,0.478,1,1,0.021,
+00643106,4,plastic object,0.567,1,1,0.0201,fallback
+00652758,1,3D printed part,0.883,1,1,0.1516,
+00652758,2,3D printed part,0.897,1,1,0.1637,
+00652758,3,3D printed part,0.879,1,1,0.1511,
+00652758,4,3D printed part,0.898,1,1,0.1347,
+00681401,1,3D printed part,0.816,1,1,0.1908,
+00681401,2,3D printed part,0.843,1,1,0.1949,
+00681401,3,3D printed part,0.884,1,1,0.1911,
+00681401,4,3D printed part,0.883,1,1,0.1742,
+00692735,1,3D printed part,0.702,2,2,0.2265,multi
+00692735,2,3D printed part,0.702,2,2,0.2331,multi
+00692735,3,3D printed part,0.739,2,2,0.2364,multi
+00692735,4,3D printed part,0.636,2,2,0.2276,multi
+00694095,1,3D printed part,0.693,1,1,0.2692,
+00694095,2,3D printed part,0.685,1,1,0.2889,
+00694095,3,3D printed part,0.615,1,1,0.333,
+00694095,4,3D printed part,0.664,1,1,0.3258,
+00706469,1,3D printed part,0.538,1,1,0.3118,
+00706469,2,3D printed part,0.768,1,1,0.297,
+00706469,3,3D printed part,0.653,1,1,0.3205,
+00706469,4,3D printed part,0.823,1,1,0.3371,
+00709287,1,3D printed part,0.89,1,1,0.0496,
+00709287,2,3D printed part,0.803,1,1,0.0385,
+00709287,3,3D printed part,0.812,1,1,0.0523,
+00709287,4,3D printed part,0.859,1,1,0.0347,
+00725355,1,3D printed part,0.372,1,1,0.0531,
+00725355,2,3D printed part,0.568,1,1,0.0555,
+00725355,3,3D printed part,0.376,1,1,0.053,
+00725355,4,3D printed part,0.625,1,1,0.0495,
+00738797,1,3D printed part,0.653,1,1,0.2231,
+00738797,2,3D printed part,0.751,1,1,0.2468,
+00738797,3,3D printed part,0.635,1,1,0.223,
+00738797,4,3D printed part,0.68,1,1,0.1982,
+00739055,1,3D printed part,0.781,1,1,0.0283,
+00739055,2,3D printed part,0.489,1,1,0.0282,
+00739055,3,3D printed part,0.673,1,1,0.0299,
+00739055,4,3D printed part,0.488,1,1,0.028,
+00739344,1,3D printed part,0.851,1,1,0.1121,
+00739344,2,3D printed part,0.865,1,1,0.1162,
+00739344,3,3D printed part,0.843,1,1,0.1233,
+00739344,4,3D printed part,0.878,1,1,0.1245,
+00742605,1,object,0.34,1,1,0.2609,fallback
+00742605,2,object,0.423,1,1,0.269,fallback
+00742605,3,object,0.391,1,1,0.269,fallback
+00742605,4,,0.0,0,0,0.0,none
+00742870,1,3D printed part,0.749,1,1,0.2871,
+00742870,2,3D printed part,0.677,1,1,0.2815,
+00742870,3,3D printed part,0.794,1,1,0.259,
+00742870,4,3D printed part,0.727,1,1,0.2844,
+00742989,1,3D printed part,0.711,1,1,0.3056,
+00742989,2,3D printed part,0.726,1,1,0.3169,
+00742989,3,3D printed part,0.758,1,1,0.2907,
+00742989,4,3D printed part,0.784,1,1,0.2792,
+00743083,1,3D printed part,0.703,1,1,0.0853,
+00743083,2,3D printed part,0.68,1,1,0.087,
+00743083,3,3D printed part,0.679,1,1,0.0695,
+00743083,4,3D printed part,0.741,1,1,0.0789,
+00743461,1,3D printed part,0.317,1,1,0.1247,
+00743461,2,plastic object,0.359,1,1,0.1202,fallback
+00743461,3,3D printed part,0.341,1,1,0.1324,
+00743461,4,plastic object,0.329,1,1,0.1288,fallback
+00743462,1,3D printed part,0.819,1,1,0.092,
+00743462,2,3D printed part,0.859,1,1,0.0979,
+00743462,3,3D printed part,0.72,1,1,0.0995,
+00743462,4,3D printed part,0.703,1,1,0.0933,
+00743646,1,3D printed part,0.616,1,1,0.059,
+00743646,2,3D printed part,0.398,1,1,0.0549,
+00743646,3,3D printed part,0.67,1,1,0.059,
+00743646,4,3D printed part,0.775,1,1,0.0599,
+00743844,1,3D printed part,0.82,1,1,0.0528,
+00743844,2,3D printed part,0.839,1,1,0.0607,
+00743844,3,3D printed part,0.862,1,1,0.0618,
+00743844,4,3D printed part,0.873,1,1,0.0547,
+00743860,1,3D printed part,0.722,1,1,0.1033,
+00743860,2,3D printed part,0.696,1,1,0.0907,
+00743860,3,3D printed part,0.692,1,1,0.1063,
+00743860,4,3D printed part,0.692,1,1,0.0905,
+00744085,1,3D printed part,0.531,1,1,0.0835,
+00744085,2,3D printed part,0.446,1,1,0.0806,
+00744085,3,3D printed part,0.592,1,1,0.0777,
+00744085,4,3D printed part,0.509,1,1,0.0789,
+00744348,1,3D printed part,0.578,1,1,0.0161,
+00744348,2,3D printed part,0.381,1,1,0.0155,
+00744348,3,plastic object,0.538,1,1,0.0153,fallback
+00744348,4,3D printed part,0.379,1,1,0.0145,
+00744539,1,plastic object,0.327,1,1,0.2309,fallback
+00744539,2,3D printed part,0.681,1,1,0.1736,
+00744539,3,3D printed part,0.495,1,1,0.1562,
+00744539,4,3D printed part,0.383,1,1,0.1218,
+00744636,1,3D printed part,0.563,3,3,0.3253,multi
+00744636,2,3D printed part,0.565,3,3,0.3376,multi
+00744636,3,3D printed part,0.551,3,3,0.3426,multi
+00744636,4,3D printed part,0.579,3,3,0.3337,multi
+00749697,1,3D printed part,0.778,1,1,0.0731,
+00749697,2,3D printed part,0.751,1,1,0.0757,
+00749697,3,3D printed part,0.694,1,1,0.0758,
+00749697,4,3D printed part,0.71,1,1,0.0765,
+00749721,1,3D printed part,0.756,1,1,0.2163,
+00749721,2,3D printed part,0.717,1,1,0.2281,
+00749721,3,3D printed part,0.768,1,1,0.2312,
+00749721,4,3D printed part,0.725,1,1,0.2128,
+00749788,1,3D printed part,0.81,1,1,0.1403,
+00749788,2,3D printed part,0.84,1,1,0.1413,
+00749788,3,3D printed part,0.855,1,1,0.1928,
+00749788,4,3D printed part,0.774,1,1,0.1138,
+00750330,1,3D printed part,0.334,1,1,0.0297,
+00750330,2,3D printed part,0.347,1,1,0.0359,
+00750330,3,3D printed part,0.321,1,1,0.0296,
+00750330,4,3D printed part,0.423,1,1,0.0355,
+00750502,1,3D printed part,0.626,1,1,0.2804,
+00750502,2,3D printed part,0.663,1,1,0.2891,
+00750502,3,3D printed part,0.535,1,1,0.2734,
+00750502,4,3D printed part,0.729,1,1,0.2636,
+00751427,1,plastic object,0.415,1,1,0.2013,fallback
+00751427,2,plastic object,0.393,1,1,0.1876,fallback
+00751427,3,plastic object,0.394,1,1,0.1834,fallback
+00751427,4,plastic object,0.39,1,1,0.1979,fallback
+00751800,1,3D printed part,0.605,1,1,0.1437,
+00751800,2,plastic object,0.553,1,1,0.1505,fallback
+00751800,3,3D printed part,0.574,1,1,0.1471,
+00751800,4,3D printed part,0.558,1,1,0.1407,
+00752221,1,3D printed part,0.346,1,1,0.2248,
+00752221,2,plastic object,0.67,2,2,0.2371,multi fallback
+00752221,3,plastic object,0.734,2,2,0.2689,multi fallback
+00752221,4,plastic object,0.616,2,2,0.2542,multi fallback
+00752252,1,3D printed part,0.63,1,1,0.0621,
+00752252,2,3D printed part,0.788,1,1,0.0635,
+00752252,3,3D printed part,0.676,1,1,0.0607,
+00752252,4,3D printed part,0.694,1,1,0.0612,
+00752500,1,3D printed part,0.851,1,1,0.291,
+00752500,2,3D printed part,0.883,1,1,0.3028,
+00752500,3,3D printed part,0.86,1,1,0.2862,
+00752500,4,3D printed part,0.847,1,1,0.2986,
+00752806,1,plastic object,0.466,1,1,0.0604,fallback
+00752806,2,3D printed part,0.469,1,1,0.0609,
+00752806,3,3D printed part,0.653,1,1,0.0594,
+00752806,4,3D printed part,0.336,1,1,0.0552,
+00752987,1,3D printed part,0.75,1,1,0.1413,
+00752987,2,3D printed part,0.607,1,1,0.136,
+00752987,3,3D printed part,0.655,1,1,0.1442,
+00752987,4,3D printed part,0.552,1,1,0.1288,
+00764500,1,3D printed part,0.407,1,1,0.2174,
+00764500,2,object,0.43,1,1,0.2817,fallback
+00764500,3,object,0.55,1,1,0.2545,fallback
+00764500,4,object,0.471,1,1,0.2053,fallback
+00770520,1,3D printed part,0.456,1,1,0.0649,
+00770520,2,3D printed part,0.371,1,1,0.0657,
+00770520,3,3D printed part,0.538,1,1,0.0622,
+00770520,4,3D printed part,0.482,1,1,0.063,
+00777897,1,3D printed part,0.885,1,1,0.1559,
+00777897,2,3D printed part,0.896,1,1,0.2056,
+00777897,3,3D printed part,0.873,1,1,0.2304,
+00777897,4,3D printed part,0.906,1,1,0.1896,
+00783444,1,3D printed part,0.343,1,1,0.2183,
+00783444,2,3D printed part,0.437,1,1,0.1991,
+00783444,3,3D printed part,0.737,1,1,0.2058,
+00783444,4,3D printed part,0.36,1,1,0.2206,
+00783533,1,3D printed part,0.888,1,1,0.1627,
+00783533,2,3D printed part,0.303,1,1,0.1654,
+00783533,3,3D printed part,0.754,1,1,0.1509,
+00783533,4,3D printed part,0.905,1,1,0.1603,
+00787967,1,3D printed part,0.808,1,1,0.196,
+00787967,2,3D printed part,0.848,1,1,0.1937,
+00787967,3,3D printed part,0.755,1,1,0.2139,
+00787967,4,3D printed part,0.836,1,1,0.2374,
+00791221,1,3D printed part,0.778,1,1,0.0598,
+00791221,2,3D printed part,0.558,1,1,0.0651,
+00791221,3,3D printed part,0.659,1,1,0.0626,
+00791221,4,3D printed part,0.536,1,1,0.0599,
+00809229,1,3D printed part,0.676,1,1,0.2105,
+00809229,2,object,0.553,1,1,0.2253,fallback
+00809229,3,3D printed part,0.455,1,1,0.2021,
+00809229,4,3D printed part,0.492,1,1,0.187,
+00827476,1,3D printed part,0.578,1,1,0.1232,
+00827476,2,3D printed part,0.895,1,1,0.0822,
+00827476,3,3D printed part,0.863,1,1,0.0923,
+00827476,4,3D printed part,0.759,1,1,0.1327,
+00831864,1,3D printed part,0.532,1,1,0.3037,
+00831864,2,object,0.326,1,1,0.2974,fallback
+00831864,3,3D printed part,0.398,1,1,0.3019,
+00831864,4,,0.0,0,0,0.0,none
+00864479,1,3D printed part,0.617,1,1,0.1073,
+00864479,2,object,0.547,1,1,0.1349,fallback
+00864479,3,3D printed part,0.713,1,1,0.0941,
+00864479,4,object,0.633,1,1,0.1221,fallback
+00866303,1,3D printed part,0.557,1,1,0.0248,
+00866303,2,3D printed part,0.449,1,1,0.0242,
+00866303,3,3D printed part,0.492,1,1,0.0235,
+00866303,4,3D printed part,0.669,1,1,0.0235,
+00880217,1,object,0.661,1,1,0.0248,fallback
+00880217,2,3D printed part,0.385,1,1,0.0258,
+00880217,3,3D printed part,0.357,1,1,0.0269,
+00880217,4,3D printed part,0.466,1,1,0.0254,
+00894573,1,3D printed part,0.493,1,1,0.2111,
+00894573,2,3D printed part,0.32,1,1,0.2084,
+00894573,3,3D printed part,0.383,1,1,0.2133,
+00894573,4,3D printed part,0.408,1,1,0.2349,
+00896733,1,3D printed part,0.331,1,1,0.0716,
+00896733,2,3D printed part,0.66,1,1,0.0671,
+00896733,3,3D printed part,0.458,1,1,0.0687,
+00896733,4,3D printed part,0.632,1,1,0.0671,
+00907205,1,3D printed part,0.747,4,2,0.0999,multi
+00907205,2,3D printed part,0.699,4,4,0.0912,multi
+00907205,3,3D printed part,0.403,3,3,0.105,multi
+00907205,4,3D printed part,0.743,4,4,0.1101,multi
+00923336,1,object,0.605,1,1,0.0718,fallback
+00923336,2,object,0.629,1,1,0.0713,fallback
+00923336,3,object,0.521,1,1,0.0706,fallback
+00923336,4,object,0.56,1,1,0.0711,fallback
+00954846,1,object,0.651,1,1,0.0488,fallback
+00954846,2,object,0.602,1,1,0.0402,fallback
+00954846,3,object,0.646,1,1,0.0453,fallback
+00954846,4,3D printed part,0.495,1,1,0.0386,
+00992586,1,3D printed part,0.614,1,1,0.0747,
+00992586,2,3D printed part,0.499,1,1,0.0729,
+00992586,3,3D printed part,0.521,1,1,0.0689,
+00992586,4,3D printed part,0.653,1,1,0.068,
+00992676,1,3D printed part,0.421,1,1,0.1043,
+00992676,2,plastic object,0.52,1,1,0.0358,fallback
+00992676,3,plastic object,0.335,1,1,0.107,fallback
+00992676,4,3D printed part,0.515,1,1,0.0592,
+00992691,1,plastic object,0.434,1,1,0.0894,fallback
+00992691,2,3D printed part,0.3,1,1,0.0822,
+00992691,3,plastic object,0.454,1,1,0.0794,fallback
+00992691,4,plastic object,0.534,1,1,0.0873,fallback
+00992816,1,plastic object,0.468,1,1,0.0362,fallback
+00992816,2,plastic object,0.384,1,1,0.0335,fallback
+00992816,3,3D printed part,0.373,1,1,0.0298,
+00992816,4,3D printed part,0.331,1,1,0.0315,
+00992885,1,3D printed part,0.731,1,1,0.0974,
+00992885,2,3D printed part,0.504,1,1,0.1098,
+00992885,3,3D printed part,0.748,1,1,0.0913,
+00992885,4,3D printed part,0.449,1,1,0.0831,
+00993146,1,3D printed part,0.814,1,1,0.0215,
+00993146,2,3D printed part,0.688,1,1,0.0235,
+00993146,3,3D printed part,0.704,1,1,0.0224,
+00993146,4,3D printed part,0.42,1,1,0.0231,
+00993147,1,3D printed part,0.411,1,1,0.0892,
+00993147,2,3D printed part,0.597,1,1,0.0949,
+00993147,3,3D printed part,0.84,1,1,0.0721,
+00993147,4,3D printed part,0.39,1,1,0.0658,
+00993185,1,3D printed part,0.788,1,1,0.0527,
+00993185,2,3D printed part,0.592,1,1,0.0447,
+00993185,3,3D printed part,0.702,1,1,0.0517,
+00993185,4,3D printed part,0.735,1,1,0.0514,
+00998817,1,3D printed part,0.619,1,1,0.104,
+00998817,2,3D printed part,0.506,1,1,0.1115,
+00998817,3,3D printed part,0.615,1,1,0.1078,
+00998817,4,3D printed part,0.654,1,1,0.1003,
+00999079,1,3D printed part,0.307,1,1,0.0122,
+00999079,2,3D printed part,0.501,1,1,0.0123,
+00999079,3,object,0.525,1,1,0.0119,fallback
+00999079,4,3D printed part,0.369,1,1,0.0127,
+00999145,1,plastic object,0.577,1,1,0.0851,fallback
+00999145,2,object,0.487,1,1,0.076,fallback
+00999145,3,3D printed part,0.308,1,1,0.0749,
+00999145,4,object,0.493,1,1,0.078,fallback
+00999154,1,3D printed part,0.457,1,1,0.014,
+00999154,2,3D printed part,0.617,1,1,0.0142,
+00999154,3,3D printed part,0.663,1,1,0.0137,
+00999154,4,3D printed part,0.33,1,1,0.0139,
+00999173,1,3D printed part,0.614,1,1,0.0589,
+00999173,2,3D printed part,0.303,1,1,0.0586,
+00999173,3,3D printed part,0.305,1,1,0.0616,
+00999173,4,plastic object,0.576,1,1,0.0598,fallback
+00999415,1,plastic object,0.617,1,1,0.0207,fallback
+00999415,2,plastic object,0.544,1,1,0.021,fallback
+00999415,3,plastic object,0.546,1,1,0.0194,fallback
+00999415,4,plastic object,0.483,1,1,0.0187,fallback
+00999792,1,3D printed part,0.619,1,1,0.2102,
+00999792,2,plastic object,0.34,1,1,0.193,fallback
+00999792,3,3D printed part,0.701,1,1,0.1713,
+00999792,4,3D printed part,0.359,1,1,0.202,
