@@ -29,7 +29,7 @@ judge vetoed a good edit).
 ## 2. Data flow
 
 ```
-cadrille/results/fusion360_test_gt/<part>.stl        cadrille/work_dirs/f360_rl/py/<part>.py
+cadrille/results/fusion360_test_gt/<part>.stl        cadrille/work_dirs/f360_rl_test/py/<part>.py
    (GT mesh, unit cube)                                (cadrille's predicted program)  + scores.json
           │                                                          │
           │  cadrille_init.py split  ──► data/fusion360/stage1.txt (+ stage1_meta.json)
@@ -101,7 +101,7 @@ pulled). `--backend echo` replaces the model with a fake agent for dry runs.
 | `data/fusion360_targets.py` | For each part in the split: map the GT to the cadrille frame (`to_target_frame`), render with `render_mesh`, write `data/generated/targets/fusion360/<part>/` with `gt.stl` (offline scoring only) and `info.json` (source, units, watertight flag, face/vertex counts). |
 | `cadrille_init.py split` | Stratified 60-part subset: cadrille-RL IoU bin (low < 0.6, mid 0.6–0.9, high ≥ 0.9) × mesh complexity (faces + vertices vs. median 1512), 10 per cell, seed 2529. Writes `data/fusion360/stage1.txt` and `stage1_meta.json` (strata used by the summaries). |
 | `cadrille_init.py tune` | **Tuning set** for pilots and prompt changes: 3 parts per IoU bin (9), same strata, drawn only from test parts outside Stage 1 (seed 2530) → `data/fusion360/tuning.txt` + `tuning_meta.json`. Build with `fusion360_targets.py --split data/fusion360/tuning.txt --out data/generated/targets/fusion360_tuning` and `convert --targets data/generated/targets/fusion360_tuning --out data/generated/init/cadrille_rl_tuning`. The first three pilots used 3 Stage 1 parts (127274_6484a80b_0000, 135654_34a24e52_0000, 22011_0832eefe_0013); report them as seen during development. |
-| `cadrille_init.py convert` | Turns `cadrille/work_dirs/f360_<tag>/py/<part>.py` into a refine program (`to_refine_program`: adds `result = r`), builds it, then the **placement fit**: isotropic scale `s ∈ [0.7, 1.4]` by a 13-point log grid + golden-section search, maximising the weighted geo score against the target renders (GT-free). Applied only if `|s−1| > 0.005` and the score gains > 1e-3, as a visible code line `result = cq.Workplane(obj=result.val().scale(s))`. Logs to `init_log.json`. `--no-placement` ablates it. |
+| `cadrille_init.py convert` | Turns `cadrille/work_dirs/f360_<tag>_test/py/<part>.py` into a refine program (`to_refine_program`: adds `result = r`), builds it, then the **placement fit**: isotropic scale `s ∈ [0.7, 1.4]` by a 13-point log grid + golden-section search, maximising the weighted geo score against the target renders (GT-free). Applied only if `|s−1| > 0.005` and the score gains > 1e-3, as a visible code line `result = cq.Workplane(obj=result.val().scale(s))`. Logs to `init_log.json`. `--no-placement` ablates it. |
 
 ### The geometric checker (contribution 2)
 

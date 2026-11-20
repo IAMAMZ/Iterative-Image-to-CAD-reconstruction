@@ -83,7 +83,7 @@ picture, so only the shape counts.
 ## Refinement loop (Stage 1)
 
 Data: 345 Fusion360 test parts. Their ground-truth meshes and cadrille's predicted CadQuery
-programs are committed (`cadrille/results/fusion360_test_gt/`, `cadrille/work_dirs/f360_rl/`; the SFT outputs are archived).
+programs are committed (`cadrille/results/fusion360_test_gt/`, `cadrille/work_dirs/f360_rl_test/`; the SFT outputs are archived).
 Stage 1 uses a stratified subset of 60 parts (cadrille-IoU bin x mesh complexity).
 
 The agent runs on Gemini through Vertex AI by default: `cp .env.example .env`, set

@@ -54,7 +54,7 @@ def test_sandbox_blocks_files_network_and_writes(tmp_path):
 
 
 def test_sandboxed_build_matches_plain_build(f360_target, tmp_path):
-    src = (ROOT / "cadrille" / "work_dirs" / "f360_rl" / "py" / f"{f360_target.name}.py").read_text()
+    src = (ROOT / "cadrille" / "work_dirs" / "f360_rl_test" / "py" / f"{f360_target.name}.py").read_text()
     src += "\nresult = r\n"
     center = [0.0, 0.0, 0.0]
     assert refine.build(src, tmp_path / "plain", f360_target, center) is None

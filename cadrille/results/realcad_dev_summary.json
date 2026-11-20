@@ -1,0 +1,13 @@
+{
+ "rl_dev": {
+  "parts": 20,
+  "valid": 20,
+  "IR %": 0.0,
+  "mean IoU % aligned (valid)": 34.99287771273568,
+  "mean IoU % aligned (invalid = 0)": 34.99287771273568,
+  "median IoU % aligned": 35.68522515812841,
+  "median CD x1000 aligned": 21.267529837263098,
+  "mean IoU % raw (valid)": 26.673936783332962,
+  "median CD x1000 raw": 44.65949132666177
+ }
+}

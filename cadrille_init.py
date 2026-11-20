@@ -53,6 +53,11 @@ IOU_BINS = ((0.0, 0.6, "low"), (0.6, 0.9, "mid"), (0.9, 1.01, "high"))
 PLACEMENT_MARK = "# placement:"
 
 
+def cadrille_run(tag: str) -> Path:
+    """cadrille's outputs on the Fusion360 test split (Stage 1 parts are test parts)."""
+    return CADRILLE / "work_dirs" / f"f360_{tag}_test"
+
+
 # ------------------------------------------------------------------ program text
 def to_refine_program(src: str) -> str:
     """cadrille program (solid in `r`) -> program that defines `result`."""
@@ -133,14 +138,14 @@ def build_mesh(src: str, work: Path, sandboxed=False):
 
 def convert(args):
     from rig import load_rig
-    src_dir = CADRILLE / "work_dirs" / f"f360_{args.tag}" / "py"
+    src_dir = cadrille_run(args.tag) / "py"
     if not src_dir.is_dir():          # SFT outputs were moved to the git-ignored archive/
         raise SystemExit(f"{src_dir} not found: only the RL outputs are in the repo "
                          "(SFT is archived, see archive/MANIFEST.jsonl); use --tag rl")
     out = args.out or ROOT / "data" / "generated" / "init" / f"cadrille_{args.tag}"
     out.mkdir(parents=True, exist_ok=True)
     scores = {r["id"]: r for r in json.loads(
-        (CADRILLE / "work_dirs" / f"f360_{args.tag}" / "scores.json").read_text())}
+        (cadrille_run(args.tag) / "scores.json").read_text())}
     parts = [p.name for p in sorted(args.targets.iterdir()) if layout.info(p).exists()]
     parts = parts[:args.limit]
     rig = load_rig()
@@ -182,7 +187,7 @@ def convert(args):
 def split(args, out_name="stage1", exclude=(), seed=SEED):
     """Stratified subset of the test parts -> data/fusion360/<name>.txt + <name>_meta.json."""
     scores = {r["id"]: r for r in json.loads(
-        (CADRILLE / "work_dirs" / "f360_rl" / "scores.json").read_text())}
+        (cadrille_run("rl") / "scores.json").read_text())}
     test = [l.strip() for l in (SPLITS / "test" / "ids.txt").read_text().split() if l.strip()]
     rows = []
     for p in test:

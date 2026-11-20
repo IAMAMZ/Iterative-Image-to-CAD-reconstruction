@@ -1,0 +1,3 @@
+import cadquery as cq
+w0=cq.Workplane('ZX',origin=(0,-50,0))
+r=w0.sketch().push([(-78,-0.5)]).rect(5,5.5).push([(-60.5,-59.5)]).rect(5,5).push([(-60.5,59.5)]).rect(5,5.5).push([(59.5,-59.5)]).rect(5.5,5).push([(59.5,59.5)]).rect(5.5,7).finalize().extrude(-50).union(w0.workplane(offset=150/2).moveTo(0,0).box(188.5,152,150)).union(w0.workplane(offset=-49/2).moveTo(-87.5,0.5).box(5.5,1.5,49.5)).union(w0.workplane(offset=150/2).moveTo(90,7.5).box(6,1.5,1))

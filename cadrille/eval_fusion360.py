@@ -1,8 +1,8 @@
 """Run cadrille (4-view image mode, CPU) over the Fusion360 test split and score every instance.
 
-  python eval_fusion360.py gen   --ckpt checkpoints/cadrille-rl --tag rl  [--bs 8] [--limit N]
-  python eval_fusion360.py score --tag rl [--jobs 8]
-  python eval_fusion360.py table --tags rl sft            # -> results/fusion360_test.{csv,md}
+  python eval_fusion360.py gen   --ckpt checkpoints/cadrille-rl --tag rl_test [--split test|dev] [--bs 8] [--limit N]
+  python eval_fusion360.py score --tag rl_test [--split test|dev] [--jobs 8]
+  python eval_fusion360.py table --tags rl_test           # -> results/fusion360_test.{csv,md}
 
 Input : data/raw/fusion360_test_mesh/<part>.stl for the parts in data/fusion360/<split>/ids.txt
 Gen   : batched, resumable; one predicted CadQuery program per part -> work_dirs/f360_<tag>/py/<part>.py
@@ -15,6 +15,7 @@ import argparse
 import csv
 import json
 import multiprocessing as mp
+import os
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -25,7 +26,8 @@ import batch_eval as be
 
 HERE = Path(__file__).parent
 DATA = HERE.parent / 'data'
-SRC = DATA / 'raw' / 'fusion360_test_mesh'
+# F360_SRC overrides the raw-mesh folder (data/raw is git-ignored, so a worktree may point at another checkout)
+SRC = Path(os.environ.get('F360_SRC', DATA / 'raw' / 'fusion360_test_mesh'))
 MAX_NEW_TOKENS = 768
 SCORE_TIMEOUT_S = 120
 

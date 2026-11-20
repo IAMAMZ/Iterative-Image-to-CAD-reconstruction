@@ -15,8 +15,8 @@ from rig import load_rig
 from view_weights import measure_bbox, view_weights
 
 ROOT = Path(__file__).resolve().parents[1]
-CADRILLE_PY = ROOT / "cadrille" / "work_dirs" / "f360_rl" / "py"
-CADRILLE_SCORES = ROOT / "cadrille" / "work_dirs" / "f360_rl" / "scores.json"
+CADRILLE_PY = ROOT / "cadrille" / "work_dirs" / "f360_rl_test" / "py"
+CADRILLE_SCORES = ROOT / "cadrille" / "work_dirs" / "f360_rl_test" / "scores.json"
 
 
 def _as_candidate(mesh, target, out):

@@ -14,7 +14,7 @@ def test_refine_all_arms_with_echo(f360_target, tmp_path):
     init.mkdir()
     name = f360_target.name
     (init / f"{name}.py").write_text(to_refine_program(
-        (ROOT / "cadrille" / "work_dirs" / "f360_rl" / "py" / f"{name}.py").read_text()))
+        (ROOT / "cadrille" / "work_dirs" / "f360_rl_test" / "py" / f"{name}.py").read_text()))
     out = tmp_path / "run"
     refine.main([str(f360_target), "--init", str(init), "--backend", "echo", "--arm", "all",
                  "--rounds", "2", "--budget-seconds", "600", "--out", str(out)])

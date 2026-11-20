@@ -13,7 +13,9 @@ __pycache__/
 .pytest_cache/
 cadrille/checkpoints/
 cadrille/work_dirs/*
-!cadrille/work_dirs/f360_rl/
+!cadrille/work_dirs/f360_rl_test/
+!cadrille/work_dirs/f360_rl_dev/
+cadrille/work_dirs/f360_rl_dev/**/*_raw.stl
 cadrille/dl.log
 .conda/
 
