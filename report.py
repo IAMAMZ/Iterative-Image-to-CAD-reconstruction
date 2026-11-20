@@ -37,7 +37,7 @@ VIEWS = ("front", "right", "top", "iso_fr")
 ARM_TEXT = {
     "premise": "renders only; the VLM judge decides (3D-Premise-style baseline)",
     "vlm": "renders + failed verification questions; the VLM judge decides (CADCodeVerify-style)",
-    "geo": "renders + silhouette/depth residuals; the geometric check decides (ours)",
+    "geo": "main method (ours): renders + silhouette/depth residuals; the geometric check decides",
     "hybrid": "ablation: geo + CADCodeVerify-style questions and judge; check AND judge must agree",
     "oracle": "as geo, but kept only if the hidden 3D IoU goes up (analysis upper bound)",
     "gsolver": "as vlm + GT geometric properties, every edit kept (CADCodeVerify geometric solver*)",

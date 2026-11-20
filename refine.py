@@ -11,7 +11,8 @@ whether an edit is kept:
   vlm       + failed verification questions (CADCodeVerify-style visual review)
                                                            the VLM judge prefers it
   geo       + silhouette/depth residual images, a zoom on   the weighted forward-rendering
-  (ours)    the largest residual, per-view table with        check passes (geo_check.py)
+  (main     the largest residual, per-view table with        check passes (geo_check.py)
+  method)
             view weights
   hybrid    everything geo and vlm see                     the check passes AND the judge
             (ablation: geo + CADCodeVerify-style review)   prefers it; if the check is
@@ -61,7 +62,6 @@ import vlm
 from compare import compare, largest_residual, load_views
 from eval3d import evaluate, properties
 from geo_check import geo_accept, geo_score, residual_table, weighted_means
-import cq_reference
 import layout
 import report
 import sandbox
@@ -73,8 +73,7 @@ RUNS = ROOT / "runs"          # default home of run folders (git-ignored)
 GRID_VIEWS = ("front", "right", "top", "iso_fr")
 BUILD_TIMEOUT = 180  # seconds; model-written code can be pathological
 BENEFIT = 0.005      # 3D IoU change that counts as a real improvement / harm (offline label)
-TEMPERATURE = 0.4    # first attempt
-REPAIR_TEMPERATURE = 0.8   # repairs: small models otherwise resend the same failed program
+TEMPERATURE = 1.0    # Gemini 3's recommended setting
 ALL_YES_IOU = 0.98   # arms with geometric evidence only stop on "all questions Yes" when the
                      # weighted silhouette IoU is already this good
 
@@ -197,16 +196,16 @@ def gsolver_table(target_dir: Path, cand_dir: Path) -> str:
 
 # ------------------------------------------------------------------ agent
 class Agent:
-    def __init__(self, model, think, repairs, backend=vlm.DEFAULT_BACKEND, sandboxed=False, reference=True):
+    def __init__(self, model, think, repairs, backend=vlm.DEFAULT_BACKEND, sandboxed=False):
         self.model, self.think, self.repairs, self.backend = model, think, repairs, backend
-        self.sandboxed, self.reference = sandboxed, reference
+        self.sandboxed = sandboxed
         self.llm_seconds = 0.0
         self.calls = 0
         self.prompt_tokens = 0
         self.output_tokens = 0
 
-    def ask(self, messages, temperature=TEMPERATURE):
-        text, st = vlm.chat(messages, self.model, self.think, temperature=temperature,
+    def ask(self, messages):
+        text, st = vlm.chat(messages, self.model, self.think, temperature=TEMPERATURE,
                             backend=self.backend)
         self.llm_seconds += st["seconds"]
         self.calls += 1
@@ -218,42 +217,28 @@ class Agent:
         return {"llm_seconds": round(self.llm_seconds, 1), "calls": self.calls,
                 "prompt_tokens": self.prompt_tokens, "output_tokens": self.output_tokens}
 
-    def write_program(self, user_msg, images, cand_dir, target_dir, center, allow_no_change=False,
-                      base=None):
+    def write_program(self, user_msg, images, cand_dir, target_dir, center, allow_no_change=False):
         """Ask for a program; on build errors feed the error (with the CAD kernel's
-        diagnosis) back up to `repairs` times. `base` is the program being edited: top-level
-        definitions the reply uses but dropped (e.g. `w0 = cq.Workplane(...)`) are restored
-        from it (vlm.restore_definitions), and repairs quote them.
+        diagnosis) back up to `repairs` times.
         -> (status, attempts, transcript, change) with status "ok" | "failed" | "no_change"."""
         messages = [{"role": "system", "content": vlm.SYSTEM},
                     {"role": "user", "content": user_msg, "images": images}]
-        transcript, change, prev_src = [], (None, None), None
+        transcript, change = [], (None, None)
         for attempt in range(1, self.repairs + 2):
-            text, st = self.ask(messages, TEMPERATURE if attempt == 1 else REPAIR_TEMPERATURE)
+            text, st = self.ask(messages)
             transcript.append({"attempt": attempt, "reply": text, **st})
-            tag = vlm.parse_change(text)
             if attempt == 1:
-                change = tag
-                if allow_no_change and tag[0] == "no_change":
+                change = vlm.parse_change(text)
+                if allow_no_change and change[0] == "no_change":
                     return "no_change", attempt, transcript, change
             src = vlm.extract_code(text)
-            repeated = src is not None and src == prev_src
-            prev_src = src
-            if src is None:
-                err = "the reply had no ```python code block"
-            else:
-                src, restored = vlm.restore_definitions(src, base)
-                if restored:
-                    transcript[-1]["restored"] = restored
-                err = build(src, cand_dir, target_dir, center, self.sandboxed)
+            err = "the reply had no ```python code block" if src is None else \
+                build(src, cand_dir, target_dir, center, self.sandboxed)
             transcript[-1]["error"] = err
-            transcript[-1]["repeated"] = repeated
             if err is None:
                 return "ok", attempt, transcript, change
             messages += [{"role": "assistant", "content": text},
-                         {"role": "user", "content": vlm.repair_prompt(
-                             err, base, repeated,
-                             cq_reference.for_error(err, src) if self.reference else None)}]
+                         {"role": "user", "content": vlm.repair_prompt(err)}]
         return "failed", attempt, transcript, change
 
     def judge(self, target_img, cur_img, new_img, rng):
@@ -415,14 +400,11 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
             detail=detail, kernel=vlm.kernel_report(cur["info"]) if opts.kernel else None,
             qa_feedback=None if qa is None or not qa.get("feedback") else
             vlm.qa_text(qa["questions"], qa["answers"], only_failed=True) + "\n" + qa["feedback"],
-            gsolver=gsolver_table(target_dir, cur["dir"]) if spec["gsolver"] else None,
-            reference=cq_reference.for_program(cur["src"]) if opts.reference else None)
+            gsolver=gsolver_table(target_dir, cur["dir"]) if spec["gsolver"] else None)
         status, attempts, tr, (tag, why) = agent.write_program(
-            msg, images, rd, target_dir, center, allow_no_change=True, base=cur["src"])
+            msg, images, rd, target_dir, center, allow_no_change=True)
         row.update(status=status, attempts=attempts, repairs_used=attempts - 1,
-                   change_tag=tag, change=why,
-                   restored=sorted({n for t in tr for n in t.get("restored", [])}),
-                   repeated_replies=sum(bool(t.get("repeated")) for t in tr))
+                   change_tag=tag, change=why)
         decision = {}
         if status == "no_change":
             stop = "no_change"
@@ -521,11 +503,6 @@ def prepare_init(args, agent, target, part_out, lo, hi, center, target_img):
         err = build(f.read_text(), d, target, center, args.sandbox)
     meta.parent.mkdir(parents=True, exist_ok=True)
     meta.write_text(json.dumps({"ok": err is None, "error": err, "source": str(f)}))
-    if err is not None and args.fallback == "agent":
-        print(f"  starting program failed ({err.splitlines()[-1] if err else ''}); "
-              "agent writes the first program", flush=True)
-        meta.unlink()
-        return initial(agent, target, part_out, lo, hi, center, target_img)
     return err is None
 
 
@@ -546,8 +523,6 @@ def main(argv=None):
     ap.add_argument("--init", type=Path, default=None,
                     help="dir of <part>.py starting programs (e.g. cadrille_init.py output); "
                          "default: the agent writes the first program")
-    ap.add_argument("--fallback", choices=["skip", "agent"], default="skip",
-                    help="when a starting program does not build")
     ap.add_argument("--shadow-judge", action="store_true",
                     help="also run the VLM judge in arms that don't use it (costs calls)")
     # ablations (each one switches a component off)
@@ -563,8 +538,6 @@ def main(argv=None):
                     help="no zoom on the largest residual")
     ap.add_argument("--no-images", dest="images", action="store_false",
                     help="refine from text only (CADCodeVerify ablation)")
-    ap.add_argument("--no-reference", dest="reference", action="store_false",
-                    help="ablation: no CadQuery reference entries in edit/repair prompts")
     ap.add_argument("--sandbox", action="store_true",
                     help="build model-written programs inside a bubblewrap sandbox "
                          "(Linux only: no network, no home dir, only the output dir writable)")
@@ -614,8 +587,7 @@ def main(argv=None):
             weights = view_weights(target, rig)
             (part_out / layout.INTERNAL / "view_weights.json").write_text(
                 json.dumps(weights, indent=2))
-            agent = Agent(args.model, args.think, args.repairs, args.backend, args.sandbox,
-                          args.reference)
+            agent = Agent(args.model, args.think, args.repairs, args.backend, args.sandbox)
             print(f"{target.name}: measured bbox {np.round(hi - lo, 1).tolist()} units",
                   flush=True)
             try:

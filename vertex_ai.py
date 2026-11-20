@@ -7,7 +7,7 @@ Configuration comes from the environment, filled from a `.env` file at the repo 
   VERTEX_MODEL              model id, e.g. gemini-3.8-flash
   VERTEX_THINKING_LEVEL     optional: minimal | low | medium | high (unset = model default;
                             --think forces high)
-  VERTEX_MAX_OUTPUT_TOKENS  optional cap on reply + thinking tokens (default 16384)
+  VERTEX_MAX_OUTPUT_TOKENS  optional cap on reply + thinking tokens (default 32768)
 
 Authentication is Application Default Credentials; run once in a terminal:
     gcloud auth application-default login
@@ -18,7 +18,7 @@ from pathlib import Path
 
 ENV_FILE = Path(__file__).resolve().parent / ".env"
 DEFAULT_LOCATION = "global"
-DEFAULT_MAX_OUTPUT_TOKENS = 16384
+DEFAULT_MAX_OUTPUT_TOKENS = 32768
 RETRIES = 4          # on 429 / 5xx, with exponential backoff
 RETRY_STATUS = {429, 500, 502, 503, 504}
 EMPTY_RETRIES = 2    # re-ask when the reply has no text (e.g. a hallucinated function_call)

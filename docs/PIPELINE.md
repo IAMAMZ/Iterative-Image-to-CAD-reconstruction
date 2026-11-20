@@ -20,7 +20,8 @@ Our three contributions relative to CADCodeVerify and GATOR:
 3. **CAD-kernel diagnostics** (per-operation OpenCascade checks, no-op / split warnings) fed back
    to the agent, also when the build succeeds.
 
-The method is the `geo` arm: the geometric checker alone informs and gates every edit. `hybrid`
+The main method is the `geo` arm (arm names are unchanged; "main method" / "ablation" are
+labels only): the geometric checker alone informs and gates every edit. `hybrid`
 (geo + CADCodeVerify-style verification questions and VLM judge) is an ablation that asks whether
 adding visual review on top helps; on the pilot it did not (all-Yes stops ended runs early, the
 judge vetoed a good edit).
@@ -122,15 +123,13 @@ pulled). `--backend echo` replaces the model with a fake agent for dry runs.
   answer / feedback prompts in the right format).
 - **Code safety.** `extract_code` pulls the fenced block; `check_code` allows only `cadquery` and
   `math` imports, forbids `open/exec/eval/__import__/...`, and requires `result`.
-- **System prompt** (`SYSTEM`): units, the cadrille Sketch API (`segment`, `arc`, `close`,
-  `assemble`, `push`, `circle(mode='s')`, `finalize`, `Workplane(plane, origin=)`), GATOR-style
+- **System prompt** (`SYSTEM`): units, workplane frames, GATOR-style
   rules (current program is the scaffold, keep frame and scale, local targeted edits), and the
   reply format: first line `CHANGE: <structural|dimensional|positional> — <reason>` or exactly
   `NO_CHANGE`.
-- **Prompts.** `initial_prompt` (from scratch), `refine_prompt` (program shown via
-  `format_program`, which breaks cadrille's one-line chains for display and checks the AST is
-  unchanged; optional residual table, detail tile note, kernel report, QA feedback, gsolver table),
-  `repair_prompt` (build error + op_checker hint), `kernel_report` (solid count, volume,
+- **Prompts.** `initial_prompt` (from scratch), `refine_prompt` (current program; optional
+  residual table, detail tile note, kernel report, QA feedback, gsolver table),
+  `repair_prompt` (the build error, including op_checker's diagnosis), `kernel_report` (solid count, volume,
   per-operation warnings), `VLM_JUDGE` (A/B with randomised order → `KEEP A|B`).
 - **CADCodeVerify-style questions.** `QUESTIONS_PROMPT` (2–5 yes/no questions from the target),
   `ANSWER_PROMPT` (Yes / No / Unclear + reasoning per question), `FEEDBACK_PROMPT` (turn
@@ -143,8 +142,7 @@ pulled). `--backend echo` replaces the model with a fake agent for dry runs.
 1. **Setup.** Load the rig, measure the target bbox and centre from depth, compute view weights,
    render the target grid (`front right top iso_fr`, 2×2).
 2. **Round 0** (`prepare_init`). Build the `--init` program into `<part>/init/`. If it fails,
-   `--fallback skip` (default) drops the part, `--fallback agent` lets the agent write one.
-   Without `--init` the agent always writes the first program.
+   the part is skipped. Without `--init` the agent writes the first program.
 3. **Questions** (`part_questions`, question arms only). Written once from the target and cached
    in `questions.json`. **Sanity filter:** they are also answered on the target itself, and only
    those answered "Yes" there are kept.
@@ -154,26 +152,11 @@ pulled). `--backend echo` replaces the model with a fake agent for dry runs.
       on the No/Unclear ones. All "Yes" → stop (`all_questions_yes`) in `vlm`/`gsolver`
       (CADCodeVerify). Arms that also see the geometric evidence (`hybrid`) stop only if the
       weighted silhouette IoU is ≥ `ALL_YES_IOU` (0.98) too; otherwise they continue without
-      question feedback (`qa_all_yes_continued`). A 7B model answers vague questions "Yes"
-      while a view is plainly wrong (pilot: top-view IoU 0.41);
+      question feedback (`qa_all_yes_continued`);
    3. collect evidence: target grid + candidate grid, and for residual arms the overlay grid,
       depth-error grid, zoomed detail strip and the weighted residual table;
    4. `Agent.write_program`: send the prompt, check the code, build; on a build error send the
-      error back (up to `--repairs`, default 2). `NO_CHANGE` → stop. Guidance for small models:
-      - **restored definitions:** top-level definitions the reply uses but dropped (cadrille's
-        `w0 = cq.Workplane(...)`) are copied back from the current program before building
-        (`vlm.restore_definitions`, logged as `restored`);
-      - **repair prompt** quotes the missing definition for a `NameError`, and says so when the
-        reply is a copy of the previous failed one (`repeated_replies`);
-      - repairs sample at temperature 0.8 (first attempt 0.4), so the model does not resend
-        the same program;
-      - **CadQuery reference entries** (`cq_reference.py`, ablate with `--no-reference`): the
-        edit prompt gets entries for the methods the current program uses (call chains are
-        followed, so methods between `.sketch()` and `.finalize()` count as Sketch methods),
-        about 700 tokens; a repair gets the failing method, what it needs (e.g. `cutBlind` →
-        `faces` + `rect`, `fillet` → `edges`) or, for a method the object lacks, what to use
-        instead (`Sketch.moveTo` → `push`). Each entry = real signature read with `inspect`
-        from the installed CadQuery + a one-line rule + an example; a test builds every example;
+      error back (up to `--repairs`, default 2). `NO_CHANGE` → stop.
    5. score the new candidate (`score`: compare + geo score + offline `eval3d`);
    6. decide (table below). The geo decision is computed and logged for **every** arm (shadow);
       the judge runs where the rule needs it, or everywhere with `--shadow-judge`;
@@ -185,7 +168,7 @@ pulled). `--backend echo` replaces the model with a fake agent for dry runs.
 |---|---|---|
 | `premise` | — (just target and candidate grids) | VLM judge prefers the new version |
 | `vlm` | failed verification questions + feedback | VLM judge |
-| `geo` (ours) | residual images, detail tile, weighted table | `geo_accept` |
+| `geo` (main method) | residual images, detail tile, weighted table | `geo_accept` |
 | `hybrid` (ablation) | everything above | `geo_accept` **and** judge; judge alone if the geo gain is inconclusive |
 | `oracle` | as `geo` | hidden 3D IoU rises (analysis only) |
 | `gsolver` | as `vlm` + GT-vs-candidate properties (size, volume, area, pieces, through-holes, centroid) | always (CADCodeVerify's geometric-solver* upper bound; uses GT) |
@@ -206,7 +189,7 @@ passes it and can write anywhere (`tests/test_sandbox.py` shows this). Renders a
 (masks and depth identical, shading within 1 grey level).
 
 **Flags.** `--rounds` (4), `--budget-seconds`, `--repairs` (2), `--backend`, `--model`, `--think`,
-`--init`, `--fallback`, `--shadow-judge`, `--sandbox`, `--no-reference`, `--seed`, `--out`, and ablations `--no-weights`,
+`--init`, `--shadow-judge`, `--sandbox`, `--seed`, `--name`, `--out`, and ablations `--no-weights`,
 `--no-kernel`, `--no-residuals`, `--no-residual-images`, `--no-detail`, `--no-images`.
 
 ### Evaluation and reporting
@@ -254,15 +237,14 @@ mean_iou, w_iou, depth_mae, geo_score, kernel_warnings`, all `eval3d` metrics, `
 
 ## 6. Tests
 
-`uv run pytest` (115 tests, `testpaths = ["tests"]`).
+`uv run pytest` (70 tests, `testpaths = ["tests"]`).
 
 | Test file | Checks |
 |---|---|
 | `test_fusion360_pipeline.py` | GT rendered as a candidate is perfect; cadrille programs build; round-0 cadrille-protocol IoU matches `scores.json`; placement recovers a known scale. |
 | `test_view_weights_and_geo_check.py` | Clean views weigh 1; a corrupted view is the only one down-weighted; low-weight views cannot veto; trusted views can. |
-| `test_vlm_parsing.py` | `CHANGE:` / `NO_CHANGE`, questions, answers, `KEEP`, code checks, kernel report, `format_program` keeps the AST. |
+| `test_vlm_parsing.py` | `CHANGE:` / `NO_CHANGE`, questions, answers, `KEEP`, code checks, kernel report, repair prompt. |
 | `test_sandbox.py` | Sandbox blocks other files, network and writes; a program that passes `check_code` but exports a file is contained; sandboxed renders match plain ones. Skipped off Linux. |
-| `test_cq_reference.py` | Every reference entry exists in the installed CadQuery and its example builds a valid solid; methods are attributed to Workplane/Sketch correctly; error → entry selection; reference stays < 1200 tokens for cadrille programs. |
 | `test_vertex_ai.py` | Vertex backend with a stubbed Gemini client: `.env` parsing (shell wins), config errors, message/image conversion, token stats incl. thinking, cut-off, thinking level, retry on 429 only, `vlm` defaults to vertex, `refine` errors on missing config. |
 | `test_refine_echo.py` | Every arm end to end with the echo agent; shadow decisions and usage logged; round folders named by outcome, `final` link, README / results.md / compare.png written; a failing start program is skipped; default run folder is `runs/<date>_<name>`. |
 | `test_compare.py`, `test_compare_image.py`, `test_illegal_shapes.py` | Checker scores/colours, image checker, op_checker catches illegal operations at the right step. |

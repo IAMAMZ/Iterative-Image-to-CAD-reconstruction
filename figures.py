@@ -18,10 +18,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
+from progress import ARM_COLORS as COLORS  # noqa: E402  (one colour per arm everywhere)
 from summarize_runs import load, outcome  # noqa: E402
-
-COLORS = {"premise": "#8c8c8c", "vlm": "#2a6fdb", "geo": "#e07b00", "hybrid": "#1a9e5a",
-          "oracle": "#7a3fb8", "gsolver": "#c23b3b"}
 
 
 def kept_trajectories(rows):

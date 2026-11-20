@@ -156,7 +156,6 @@ scratch), `--shadow-judge` (judge every edit in every arm for agreement statisti
 Files:
 - `refine.py` — the loop, arms and logging (every edit logs the geometric check's decision, the
   judge's where it ran, and what it really did to the hidden shape).
-- `cq_reference.py` — short CadQuery reference entries (real signatures) picked per prompt for the local model.
 - `sandbox.py` — optional bwrap sandbox for builds (`--sandbox`).
 - `geo_check.py` — weighted score and acceptance rule. `view_weights.py` — view confidence.
 - `vertex_ai.py` — Gemini on Vertex AI backend; reads `.env` (project, location, model).

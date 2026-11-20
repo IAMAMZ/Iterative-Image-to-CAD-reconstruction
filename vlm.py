@@ -7,9 +7,7 @@ Backends (pick with `backend=`):
           program, answers judge/question prompts deterministically, never calls a model
 Every backend returns (reply text, stats) with token counts, so runs can be costed.
 """
-import ast
 import base64
-import builtins
 import hashlib
 import json
 import random
@@ -22,38 +20,21 @@ OLLAMA_URL = "http://localhost:11434/api/chat"
 
 # ------------------------------------------------------------------ backends
 def _ollama(messages, model, think, temperature, num_ctx, max_tokens, deadline):
-    """Streams the reply so a model stuck repeating itself is cut off after `max_tokens`
-    tokens or `deadline` seconds, whichever comes first (stats["cut_off"] says which)."""
-    msgs = []
-    for m in messages:
-        m = dict(m)
-        if m.get("images"):
-            m["images"] = [base64.b64encode(b).decode() for b in m["images"]]
-        msgs.append(m)
-    body = {"model": model, "messages": msgs, "stream": True, "think": think,
+    msgs = [{**m, "images": [base64.b64encode(b).decode() for b in m["images"]]}
+            if m.get("images") else m for m in messages]
+    body = {"model": model, "messages": msgs, "stream": False, "think": think,
             "options": {"temperature": temperature, "num_ctx": num_ctx,
-                        "num_predict": max_tokens, "repeat_penalty": 1.1}}
+                        "num_predict": max_tokens}}
     req = urllib.request.Request(OLLAMA_URL, json.dumps(body).encode(),
                                  {"Content-Type": "application/json"})
     t0 = time.time()
-    parts, last, cut = [], {}, None
     with urllib.request.urlopen(req, timeout=deadline) as r:
-        for line in r:
-            if not line.strip():
-                continue
-            last = json.loads(line)
-            parts.append(last.get("message", {}).get("content", ""))
-            if last.get("done"):
-                if last.get("done_reason") == "length":
-                    cut = "max_tokens"
-                break
-            if time.time() - t0 > deadline:
-                cut = "deadline"
-                break  # closing the connection makes Ollama stop generating
+        out = json.loads(r.read())
     stats = {"seconds": round(time.time() - t0, 1),
-             "prompt_tokens": last.get("prompt_eval_count"),
-             "output_tokens": last.get("eval_count"), "cut_off": cut}
-    return "".join(parts), stats
+             "prompt_tokens": out.get("prompt_eval_count"),
+             "output_tokens": out.get("eval_count"),
+             "cut_off": "max_tokens" if out.get("done_reason") == "length" else None}
+    return out.get("message", {}).get("content", ""), stats
 
 
 _NUM = re.compile(r"(?<![\w.])(\d+\.?\d*)(?![\w.])")
@@ -121,7 +102,7 @@ def default_model(backend: str) -> str:
     return OLLAMA_MODEL if backend == "ollama" else "echo"
 
 
-def chat(messages, model=None, think=False, temperature=0.4, num_ctx=16384,
+def chat(messages, model=None, think=False, temperature=1.0, num_ctx=16384,
          max_tokens=2500, deadline=480, backend=DEFAULT_BACKEND):
     """messages: [{"role", "content", "images": [png bytes, ...]}] -> (reply text, stats)."""
     if backend not in BACKENDS:
@@ -158,52 +139,6 @@ def check_code(src: str) -> str | None:
     return None
 
 
-_BREAK_BEFORE = (".union(", ".cut(", ".intersect(", ".extrude(", ".sketch(", ".push(",
-                 ".finalize(", ".workplane(")
-
-
-def format_program(src: str, width=100) -> str:
-    """Display only: break long one-line method chains (cadrille writes whole parts on one
-    line) into one call per line inside parentheses. The result is checked to parse to the
-    same AST; if anything is off the original text is returned unchanged."""
-    out = []
-    for line in src.splitlines():
-        m = re.match(r"^(\s*)([A-Za-z_]\w*)\s*=\s*(.+)$", line)
-        if not m or len(line) <= width:
-            out.append(line)
-            continue
-        indent, name, expr = m.groups()
-        pieces, depth, start, i, quote = [], 0, 0, 0, None
-        while i < len(expr):
-            ch = expr[i]
-            if quote:
-                if ch == quote:
-                    quote = None
-            elif ch in "'\"":
-                quote = ch
-            elif ch in "([{":
-                depth += 1
-            elif ch in ")]}":
-                depth -= 1
-            elif depth == 0 and any(expr.startswith(b, i) for b in _BREAK_BEFORE) and i > start:
-                pieces.append(expr[start:i])
-                start = i
-            i += 1
-        pieces.append(expr[start:])
-        if len(pieces) == 1:
-            out.append(line)
-            continue
-        pad = indent + " " * (len(name) + 4)
-        out.append(f"{indent}{name} = (" + pieces[0] + "".join("\n" + pad + p for p in pieces[1:]) + ")")
-    new = "\n".join(out) + ("\n" if src.endswith("\n") else "")
-    try:
-        if ast.dump(ast.parse(new)) != ast.dump(ast.parse(src)):
-            return src
-    except SyntaxError:
-        return src
-    return new
-
-
 def parse_change(text: str):
     """-> ("no_change", None) | (tag, sentence) | (None, None). Tag is structural,
     dimensional or positional (CADCodeVerify's feedback types)."""
@@ -214,78 +149,6 @@ def parse_change(text: str):
     if m:
         return m.group(1).lower(), m.group(2).strip()[:300]
     return None, None
-
-
-_BUILTINS = set(dir(builtins))
-
-
-def _definitions(tree):
-    """Top-level `name = ...` statements of a module, in order: {name: stmt}."""
-    defs = {}
-    for st in tree.body:
-        if isinstance(st, ast.Assign) and len(st.targets) == 1 and isinstance(st.targets[0], ast.Name):
-            defs.setdefault(st.targets[0].id, st)
-    return defs
-
-
-def _loaded(node):
-    return {n.id for n in ast.walk(node) if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load)}
-
-
-def undefined_names(src: str) -> set[str]:
-    """Names a program reads but never assigns or imports (None if it does not parse)."""
-    try:
-        tree = ast.parse(src)
-    except SyntaxError:
-        return None
-    bound = {n.id for n in ast.walk(tree) if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store)}
-    for n in ast.walk(tree):
-        if isinstance(n, (ast.Import, ast.ImportFrom)):
-            bound |= {(a.asname or a.name).split(".")[0] for a in n.names}
-        elif isinstance(n, (ast.FunctionDef, ast.Lambda)):
-            bound |= {a.arg for a in n.args.args}
-            if isinstance(n, ast.FunctionDef):
-                bound.add(n.name)
-    return _loaded(tree) - bound - _BUILTINS
-
-
-def restore_definitions(src: str, base: str | None):
-    """Small models often copy an edited program without the lines that define the
-    workplanes it uses (cadrille's `w0 = cq.Workplane(...)`), so it fails with NameError.
-    Put back, right after the imports, every top-level definition from the program being
-    edited (`base`) that the new program uses but does not define, plus whatever those
-    definitions need in turn. -> (program, [restored names])."""
-    if not base:
-        return src, []
-    missing = undefined_names(src)
-    if not missing:
-        return src, []
-    try:
-        base_tree = ast.parse(base)
-    except SyntaxError:
-        return src, []
-    defs = _definitions(base_tree)
-    need, todo = set(), [m for m in missing if m in defs]
-    while todo:
-        name = todo.pop()
-        if name in need:
-            continue
-        need.add(name)
-        todo += [d for d in _loaded(defs[name].value) if d in defs and d not in need]
-    if not need:
-        return src, []
-    order = [n for n in defs if n in need]                      # keep the base program's order
-    block = "\n".join(ast.get_source_segment(base, defs[n]) for n in order)
-    lines = src.splitlines()
-    at = 0
-    for i, l in enumerate(lines):                               # after the last leading import
-        if l.startswith(("import ", "from ")):
-            at = i + 1
-        elif l.strip() and not l.startswith("#"):
-            break
-    out = lines[:at] + ["# restored from the current program (the reply used but did not define it)",
-                        block] + lines[at:]
-    return "\n".join(out) + "\n", order
 
 
 # ------------------------------------------------------------------ prompts
@@ -303,7 +166,6 @@ its own: keep every line it needs, including the lines that create workplanes \
 When you edit an existing program:
 - Treat the current program as the scaffold: keep its coordinate frame, orientation and \
 scale, and keep every feature the pictures confirm. Make a targeted, local change.
-- Do not throw the program away and remodel the part from generic boxes and cylinders.
 - Do not add features the pictures do not show, and do not remove features they do show.
 - Start your reply with one line `CHANGE: <structural|dimensional|positional> - <what you \
 change, one sentence>`, then the code block. If nothing worthwhile is left to fix, reply \
@@ -314,32 +176,6 @@ Coordinate frames of the workplanes:
 - cq.Workplane("XZ"): local x = +X, local y = +Z, extrudes towards -Y (use both=True to centre on Y=0).
 - cq.Workplane("YZ"): local x = +Y, local y = +Z, extrudes towards +X.
 - cq.Workplane("XY", origin=(x, y, z)) moves the workplane's origin.
-
-CadQuery methods you can use (only real ones; do not invent methods):
-  .box(x, y, z, centered=(True, True, False))   .cylinder(height, radius)
-  .rect(w, h)  .circle(r)  .polyline([(x, y), ...]).close()  .slot2D(length, diameter)
-  .extrude(distance, both=False)   .revolve(360, (0, 0, 0), (0, 1, 0))
-  .center(x, y)   .moveTo(x, y)   .pushPoints([(x, y), ...])
-  .rarray(x_spacing, y_spacing, nx, ny)   .polarArray(radius, 0, 360, count)
-  .hole(diameter)   .cboreHole(d, cbore_d, cbore_depth)   .cutBlind(-depth)   .cutThruAll()
-  .faces(">Z").workplane()   .edges("|Z").fillet(r)   .edges(">Z").chamfer(d)
-  .translate((x, y, z))   .rotate((0, 0, 0), (0, 0, 1), angle_deg)
-  .union(other)   .cut(other)   .intersect(other)
-Sketch API (2D profiles, as in the programs you will be given):
-  wp.sketch().segment((x0, y0), (x1, y1)).segment((x2, y2)).arc((xm, ym), (x3, y3)).close()
-    .assemble()   .push([(x, y), ...]).circle(r, mode='s')   .rect(w, h, mode='s')
-    .finalize().extrude(depth)          (mode='s' subtracts, the default mode adds)
-  cq.Workplane(obj=shape.val().scale(f)) rescales a whole solid about the origin.
-
-Example:
-```python
-import cadquery as cq
-
-base = cq.Workplane("XY").box(120, 80, 16, centered=(True, True, False))
-boss = cq.Workplane("XY").workplane(offset=16).circle(20).extrude(24)
-result = base.union(boss).faces(">Z").workplane().hole(16)
-result = result.faces("<Z").workplane().rarray(88, 48, 2, 2).hole(10)
-```
 """
 
 VIEWS_TEXT = """The picture is a 2x2 grid of the same part seen by 4 calibrated cameras:
@@ -380,7 +216,7 @@ def kernel_report(info: dict) -> str:
 
 
 def refine_prompt(program, lo, hi, cand_size=None, *, n_images=2, residual_table=None,
-                  detail=False, kernel=None, qa_feedback=None, gsolver=None, reference=None):
+                  detail=False, kernel=None, qa_feedback=None, gsolver=None):
     """The edit request. Which evidence goes in is decided by the arm (see refine.ARMS)."""
     lines = []
     if n_images:
@@ -412,63 +248,16 @@ def refine_prompt(program, lo, hi, cand_size=None, *, n_images=2, residual_table
                   qa_feedback]
     if gsolver:
         lines += ["", "Geometric properties, target vs current:", gsolver]
-    if reference:
-        lines += ["", reference]
-    lines += ["", "Current program:", f"```python\n{format_program(program).strip()}\n```", "",
+    lines += ["", "Current program:", f"```python\n{program.strip()}\n```", "",
               "Find the single biggest geometric difference between the target and the current "
               "reconstruction, fix it, and reply in the format from the rules (CHANGE line, then "
               "the complete revised program in one ```python block), or NO_CHANGE."]
     return "\n".join(lines)
 
 
-_NAME_ERROR = re.compile(r"NameError: name '(\w+)' is not defined")
-
-# Sketch vs Workplane mix-ups seen in the pilot (qwen2.5vl:7b): error pattern -> how to fix it
-API_HINTS = [
-    (r"'Sketch' object has no attribute 'extrude'",
-     "A sketch must be closed with .finalize() before extruding: "
-     "wp.sketch()....finalize().extrude(depth)."),
-    (r"'Sketch' object has no attribute '(moveTo|center|pushPoints|hole|box|cylinder|workplane)'",
-     "Inside .sketch() ... .finalize() only Sketch methods work: place shapes with "
-     ".push([(x, y)]) then .circle(r) / .rect(w, h) (mode='s' to subtract). Workplane methods "
-     "such as moveTo/center/pushPoints/hole come after .finalize()."),
-    (r"Sketch\.circle\(\) got an unexpected keyword argument",
-     "Sketch.circle takes the radius positionally: .circle(r) or .circle(r, mode='s')."),
-    (r"'Workplane' object has no attribute 'scale'",
-     "Scale a whole solid with cq.Workplane(obj=result.val().scale(f)), not result.scale(f)."),
-    (r"'Workplane' object has no attribute '(segment|arc|assemble)'",
-     "segment/arc/assemble are Sketch methods: start with wp.sketch() and end with .finalize()."),
-]
-
-
-def repair_prompt(error, base=None, repeated=False, reference=None):
-    """Build-error feedback. For an undefined name the current program defines, quote its
-    definition; if the reply was a copy of the previous failed one, say so."""
-    lines = ["That program failed:", error.strip()]
-    m = _NAME_ERROR.search(error)
-    if m and base:
-        try:
-            d = _definitions(ast.parse(base)).get(m.group(1))
-        except SyntaxError:
-            d = None
-        if d is not None:
-            lines += ["", f"`{m.group(1)}` is defined in the current program as:",
-                      f"```python\n{ast.get_source_segment(base, d)}\n```",
-                      "Include that line (and the import) in your program."]
-        else:
-            lines += ["", f"`{m.group(1)}` is used but never defined: define it before use."]
-    for pat, hint in API_HINTS:
-        if re.search(pat, error):
-            lines += ["", "How to fix it: " + hint]
-            break
-    if reference:
-        lines += ["", reference]
-    if repeated:
-        lines += ["", "Your reply was identical to the previous failed program. Change the code "
-                      "so that this error cannot happen again."]
-    lines += ["", "Fix it and reply with the complete corrected program in one ```python block. "
-                  "Use only the CadQuery methods listed."]
-    return "\n".join(lines)
+def repair_prompt(error):
+    return ("That program failed:\n" + error.strip() + "\n\nFix it and reply with the complete "
+            "corrected program in one ```python block.")
 
 
 VLM_JUDGE = """Image 1 is the TARGET part. Image 2 is reconstruction A. Image 3 is \
