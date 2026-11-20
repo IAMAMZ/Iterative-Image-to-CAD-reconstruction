@@ -74,7 +74,7 @@ WARNINGS = {
 
 
 def read_log(out):
-    return [json.loads(l) for l in (out / "ops_log.jsonl").read_text().splitlines()]
+    return [json.loads(l) for l in (out / "internal" / "ops_log.jsonl").read_text().splitlines()]
 
 
 @pytest.fixture(scope="module")
@@ -133,7 +133,7 @@ def test_legal_shape_still_works(tmp_path, rig):
     assert info["valid"] and info["n_solids"] == 1
     assert info["volume"] == pytest.approx(10 * 20 * 5 - 4 * (1 - 3.14159265 / 4) * 5, rel=1e-4)
     for cam in info["views"]:
-        assert (tmp_path / "out" / f"{cam}.png").exists()
+        assert (tmp_path / "out" / "renders" / f"{cam}.png").exists()
 
 
 def test_cli_exits_with_error_on_illegal_shape(tmp_path):

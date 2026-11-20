@@ -1,0 +1,444 @@
+{
+ "seed": 2529,
+ "per_bin": 20,
+ "complexity_median": 1512.0,
+ "iou_bins": [
+  [
+   0.0,
+   0.6,
+   "low"
+  ],
+  [
+   0.6,
+   0.9,
+   "mid"
+  ],
+  [
+   0.9,
+   1.01,
+   "high"
+  ]
+ ],
+ "parts": {
+  "116646_96f3ebb8_0000": {
+   "cadrille_rl_iou": 0.92870427956169,
+   "cadrille_rl_cd": 1.8357287759163745,
+   "complexity": 2316,
+   "iou_bin": "high",
+   "mesh": "complex"
+  },
+  "119553_c436b288_0013": {
+   "cadrille_rl_iou": 0.965047021899043,
+   "cadrille_rl_cd": 0.06771268176047338,
+   "complexity": 2284,
+   "iou_bin": "high",
+   "mesh": "complex"
+  },
+  "127274_6484a80b_0000": {
+   "cadrille_rl_iou": 0.10379878591675745,
+   "cadrille_rl_cd": 0.16569771987879559,
+   "complexity": 440,
+   "iou_bin": "low",
+   "mesh": "simple"
+  },
+  "128043_9f8cd69e_0000": {
+   "cadrille_rl_iou": 0.2652661950356196,
+   "cadrille_rl_cd": 1.2700374999919304,
+   "complexity": 884,
+   "iou_bin": "low",
+   "mesh": "simple"
+  },
+  "128656_22e204c6_0005": {
+   "cadrille_rl_iou": 0.9944977646163697,
+   "cadrille_rl_cd": 0.1602620903632157,
+   "complexity": 1704,
+   "iou_bin": "high",
+   "mesh": "complex"
+  },
+  "130757_fc4d165e_0001": {
+   "cadrille_rl_iou": 0.9561569624231058,
+   "cadrille_rl_cd": 1.81562529831908,
+   "complexity": 2885,
+   "iou_bin": "high",
+   "mesh": "complex"
+  },
+  "131066_7943a19c_0000": {
+   "cadrille_rl_iou": 0.8741044156888379,
+   "cadrille_rl_cd": 0.05586663850629117,
+   "complexity": 20,
+   "iou_bin": "mid",
+   "mesh": "simple"
+  },
+  "133402_47273d61_0020": {
+   "cadrille_rl_iou": 0.9506237870163096,
+   "cadrille_rl_cd": 0.016855734774899978,
+   "complexity": 20,
+   "iou_bin": "high",
+   "mesh": "simple"
+  },
+  "135654_34a24e52_0000": {
+   "cadrille_rl_iou": 0.6640024941788676,
+   "cadrille_rl_cd": 0.7647378072210369,
+   "complexity": 444,
+   "iou_bin": "mid",
+   "mesh": "simple"
+  },
+  "136804_03742933_0000": {
+   "cadrille_rl_iou": 0.7943403477855289,
+   "cadrille_rl_cd": 0.9903344969017791,
+   "complexity": 848,
+   "iou_bin": "mid",
+   "mesh": "simple"
+  },
+  "137403_81c69c1f_0000": {
+   "cadrille_rl_iou": 0.9424138877851637,
+   "cadrille_rl_cd": 0.10232624460110622,
+   "complexity": 32,
+   "iou_bin": "high",
+   "mesh": "simple"
+  },
+  "138242_d520d083_0000": {
+   "cadrille_rl_iou": 0.865139281843763,
+   "cadrille_rl_cd": 0.23748038474620814,
+   "complexity": 52,
+   "iou_bin": "mid",
+   "mesh": "simple"
+  },
+  "140391_46e0f895_0000": {
+   "cadrille_rl_iou": 0.5657392281240652,
+   "cadrille_rl_cd": 3.4076355993623517,
+   "complexity": 160,
+   "iou_bin": "low",
+   "mesh": "simple"
+  },
+  "140600_a065e504_0004": {
+   "cadrille_rl_iou": 0.3990899788324842,
+   "cadrille_rl_cd": 1.4015815114989663,
+   "complexity": 3072,
+   "iou_bin": "low",
+   "mesh": "complex"
+  },
+  "142315_5c796497_0000": {
+   "cadrille_rl_iou": 0.9825955100593774,
+   "cadrille_rl_cd": 0.12731350838349278,
+   "complexity": 20,
+   "iou_bin": "high",
+   "mesh": "simple"
+  },
+  "146317_5c5baff8_0000": {
+   "cadrille_rl_iou": 0.8592110778799391,
+   "cadrille_rl_cd": 0.12044691302562197,
+   "complexity": 11628,
+   "iou_bin": "mid",
+   "mesh": "complex"
+  },
+  "21604_520e1ae2_0009": {
+   "cadrille_rl_iou": 0.9403823313881098,
+   "cadrille_rl_cd": 0.04504865376333746,
+   "complexity": 2284,
+   "iou_bin": "high",
+   "mesh": "complex"
+  },
+  "21893_0500d043_0038": {
+   "cadrille_rl_iou": 0.8656452318447161,
+   "cadrille_rl_cd": 1.341625990882067,
+   "complexity": 44,
+   "iou_bin": "mid",
+   "mesh": "simple"
+  },
+  "22011_0832eefe_0013": {
+   "cadrille_rl_iou": 0.982317375824234,
+   "cadrille_rl_cd": 0.10797170155161409,
+   "complexity": 788,
+   "iou_bin": "high",
+   "mesh": "simple"
+  },
+  "22124_6f71410e_0010": {
+   "cadrille_rl_iou": 0.8512129515677919,
+   "cadrille_rl_cd": 0.2902624695814383,
+   "complexity": 3906,
+   "iou_bin": "mid",
+   "mesh": "complex"
+  },
+  "22447_4062c6cb_0011": {
+   "cadrille_rl_iou": 0.8979481357714165,
+   "cadrille_rl_cd": 0.7607132973591453,
+   "complexity": 2264,
+   "iou_bin": "mid",
+   "mesh": "complex"
+  },
+  "22624_7af10d7d_0008": {
+   "cadrille_rl_iou": 0.6454908762325864,
+   "cadrille_rl_cd": 0.36095379952553214,
+   "complexity": 10464,
+   "iou_bin": "mid",
+   "mesh": "complex"
+  },
+  "23083_fdb942ac_0000": {
+   "cadrille_rl_iou": 0.13461876140519788,
+   "cadrille_rl_cd": 0.37694324133398527,
+   "complexity": 9912,
+   "iou_bin": "low",
+   "mesh": "complex"
+  },
+  "23093_e3cd7cbe_0000": {
+   "cadrille_rl_iou": 0.5287548171257087,
+   "cadrille_rl_cd": 0.09624429764872687,
+   "complexity": 1823,
+   "iou_bin": "low",
+   "mesh": "complex"
+  },
+  "23393_d47067ad_0005": {
+   "cadrille_rl_iou": 0.25325389661953995,
+   "cadrille_rl_cd": 0.02088718951956409,
+   "complexity": 772,
+   "iou_bin": "low",
+   "mesh": "simple"
+  },
+  "23573_ec33e368_0000": {
+   "cadrille_rl_iou": 0.7523464899522856,
+   "cadrille_rl_cd": 0.909713057825524,
+   "complexity": 11422,
+   "iou_bin": "mid",
+   "mesh": "complex"
+  },
+  "23881_bec7f38c_0003": {
+   "cadrille_rl_iou": 0.9504842659313979,
+   "cadrille_rl_cd": 0.06279653300660216,
+   "complexity": 1512,
+   "iou_bin": "high",
+   "mesh": "simple"
+  },
+  "24425_0dc4b306_0000": {
+   "cadrille_rl_iou": 1.0256887072044136e-06,
+   "cadrille_rl_cd": 0.7213386604512898,
+   "complexity": 2710,
+   "iou_bin": "low",
+   "mesh": "complex"
+  },
+  "24849_f328b6fc_0001": {
+   "cadrille_rl_iou": 0.5986259816280683,
+   "cadrille_rl_cd": 0.4804434982938817,
+   "complexity": 50,
+   "iou_bin": "low",
+   "mesh": "simple"
+  },
+  "25168_05818e21_0002": {
+   "cadrille_rl_iou": 0.9909497078885583,
+   "cadrille_rl_cd": 0.30792600538346,
+   "complexity": 923,
+   "iou_bin": "high",
+   "mesh": "simple"
+  },
+  "25199_b2422c18_0005": {
+   "cadrille_rl_iou": 0.9363538161716176,
+   "cadrille_rl_cd": 0.0940311084808357,
+   "complexity": 2244,
+   "iou_bin": "high",
+   "mesh": "complex"
+  },
+  "25199_d7aff7a5_0014": {
+   "cadrille_rl_iou": 0.7744203367531121,
+   "cadrille_rl_cd": 0.2838901996709187,
+   "complexity": 362,
+   "iou_bin": "mid",
+   "mesh": "simple"
+  },
+  "25284_3364996e_0000": {
+   "cadrille_rl_iou": 0.4385327983736658,
+   "cadrille_rl_cd": 0.2901460796091421,
+   "complexity": 944,
+   "iou_bin": "low",
+   "mesh": "simple"
+  },
+  "30400_8824ce97_0012": {
+   "cadrille_rl_iou": 0.9523692168675755,
+   "cadrille_rl_cd": 0.1870327698557292,
+   "complexity": 2264,
+   "iou_bin": "high",
+   "mesh": "complex"
+  },
+  "30435_c97330d2_0012": {
+   "cadrille_rl_iou": 0.8186940716173209,
+   "cadrille_rl_cd": 0.02712406190152007,
+   "complexity": 48,
+   "iou_bin": "mid",
+   "mesh": "simple"
+  },
+  "30904_54099e05_0016": {
+   "cadrille_rl_iou": 0.33966464140088704,
+   "cadrille_rl_cd": 0.06526424772511775,
+   "complexity": 1584,
+   "iou_bin": "low",
+   "mesh": "complex"
+  },
+  "37040_ecbcd25e_0033": {
+   "cadrille_rl_iou": 0.11375099474553267,
+   "cadrille_rl_cd": 5.450191676360136,
+   "complexity": 72,
+   "iou_bin": "low",
+   "mesh": "simple"
+  },
+  "37377_90529181_0005": {
+   "cadrille_rl_iou": 0.39137296850031383,
+   "cadrille_rl_cd": 0.06247873381906678,
+   "complexity": 3024,
+   "iou_bin": "low",
+   "mesh": "complex"
+  },
+  "38675_6e07d74b_0004": {
+   "cadrille_rl_iou": 0.5609338819743953,
+   "cadrille_rl_cd": 0.06333591107274048,
+   "complexity": 578,
+   "iou_bin": "low",
+   "mesh": "simple"
+  },
+  "40887_454ffc48_0014": {
+   "cadrille_rl_iou": 0.9899999691051654,
+   "cadrille_rl_cd": 0.15098665835548022,
+   "complexity": 1512,
+   "iou_bin": "high",
+   "mesh": "simple"
+  },
+  "41501_b627682a_0007": {
+   "cadrille_rl_iou": 0.7742405647857512,
+   "cadrille_rl_cd": 0.020085237677324706,
+   "complexity": 2284,
+   "iou_bin": "mid",
+   "mesh": "complex"
+  },
+  "43529_4804941b_0002": {
+   "cadrille_rl_iou": 0.939428552990722,
+   "cadrille_rl_cd": 0.5616142275208609,
+   "complexity": 3020,
+   "iou_bin": "high",
+   "mesh": "complex"
+  },
+  "43562_004c6cea_0003": {
+   "cadrille_rl_iou": 0.29870484097007605,
+   "cadrille_rl_cd": 0.726926548049969,
+   "complexity": 9602,
+   "iou_bin": "low",
+   "mesh": "complex"
+  },
+  "44522_a7c79550_0007": {
+   "cadrille_rl_iou": 0.8775331377907328,
+   "cadrille_rl_cd": 0.010783033152300545,
+   "complexity": 752,
+   "iou_bin": "mid",
+   "mesh": "simple"
+  },
+  "45359_1768ab3f_0016": {
+   "cadrille_rl_iou": 0.9658973582430193,
+   "cadrille_rl_cd": 0.053883902246582085,
+   "complexity": 752,
+   "iou_bin": "high",
+   "mesh": "simple"
+  },
+  "51736_e8b2b138_0010": {
+   "cadrille_rl_iou": 0.8396828172278363,
+   "cadrille_rl_cd": 0.24924300627040857,
+   "complexity": 1508,
+   "iou_bin": "mid",
+   "mesh": "simple"
+  },
+  "51777_87ff5835_0004": {
+   "cadrille_rl_iou": 0.8691760162809649,
+   "cadrille_rl_cd": 0.1783356715189649,
+   "complexity": 68,
+   "iou_bin": "mid",
+   "mesh": "simple"
+  },
+  "51925_a4bed832_0002": {
+   "cadrille_rl_iou": 0.3851486792551146,
+   "cadrille_rl_cd": 0.06541266909877784,
+   "complexity": 896,
+   "iou_bin": "low",
+   "mesh": "simple"
+  },
+  "54360_db08c779_0014": {
+   "cadrille_rl_iou": 0.4707047589249679,
+   "cadrille_rl_cd": 2.206845491392386,
+   "complexity": 3654,
+   "iou_bin": "low",
+   "mesh": "complex"
+  },
+  "55057_4fbc0f08_0000": {
+   "cadrille_rl_iou": 0.8910799949537233,
+   "cadrille_rl_cd": 0.3746337980707769,
+   "complexity": 2700,
+   "iou_bin": "mid",
+   "mesh": "complex"
+  },
+  "55336_6181655b_0000": {
+   "cadrille_rl_iou": 0.7584346059390217,
+   "cadrille_rl_cd": 0.09894277555047559,
+   "complexity": 5448,
+   "iou_bin": "mid",
+   "mesh": "complex"
+  },
+  "61899_93eee6e5_0000": {
+   "cadrille_rl_iou": 0.6022640324919288,
+   "cadrille_rl_cd": 2.036256661321792,
+   "complexity": 2144,
+   "iou_bin": "mid",
+   "mesh": "complex"
+  },
+  "63072_c8bc39e6_0001": {
+   "cadrille_rl_iou": 0.47459022811317286,
+   "cadrille_rl_cd": 1.9188379238143463,
+   "complexity": 1912,
+   "iou_bin": "low",
+   "mesh": "complex"
+  },
+  "63132_330141d7_0010": {
+   "cadrille_rl_iou": 0.9731228315357221,
+   "cadrille_rl_cd": 0.09232550820629103,
+   "complexity": 3392,
+   "iou_bin": "high",
+   "mesh": "complex"
+  },
+  "69739_d92d72d2_0000": {
+   "cadrille_rl_iou": 0.2690139000017284,
+   "cadrille_rl_cd": 6.826235092781232,
+   "complexity": 89,
+   "iou_bin": "low",
+   "mesh": "simple"
+  },
+  "77686_d2bfddf4_0000": {
+   "cadrille_rl_iou": 0.9123130532889095,
+   "cadrille_rl_cd": 0.1653536069368992,
+   "complexity": 2337,
+   "iou_bin": "high",
+   "mesh": "complex"
+  },
+  "79098_6d4d6157_0000": {
+   "cadrille_rl_iou": 0.43105199608069805,
+   "cadrille_rl_cd": 0.2199525127221629,
+   "complexity": 3404,
+   "iou_bin": "low",
+   "mesh": "complex"
+  },
+  "79625_8be98a9f_0000": {
+   "cadrille_rl_iou": 0.9996891755632917,
+   "cadrille_rl_cd": 0.2684010306247071,
+   "complexity": 752,
+   "iou_bin": "high",
+   "mesh": "simple"
+  },
+  "83374_f47c70a0_0000": {
+   "cadrille_rl_iou": 0.9739428713177011,
+   "cadrille_rl_cd": 0.17901062127639697,
+   "complexity": 1014,
+   "iou_bin": "high",
+   "mesh": "simple"
+  },
+  "91557_62c39321_0000": {
+   "cadrille_rl_iou": 0.7567286737147172,
+   "cadrille_rl_cd": 1.2931587264204476,
+   "complexity": 2497,
+   "iou_bin": "mid",
+   "mesh": "complex"
+  }
+ }
+}

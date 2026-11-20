@@ -3,7 +3,11 @@ data/raw/
 # full-resolution RealCAD originals (3.3 GB); tracked inputs are the downscaled copies in data/realcad/<split>/images
 data/realcad/src/
 .venv/
+# run folders (refine.py -> runs/<date>_<name>/, tools -> runs/_scratch/); out/ is the old name
+runs/
 out/
+# targets, starting programs, procedural parts built from committed sources
+data/generated/
 __pycache__/
 *.pyc
 .pytest_cache/
@@ -16,4 +20,11 @@ cadrille/dl.log
 .conda/
 
 # obsolete SFT / axis-view data moved out of the way (see archive/MANIFEST.jsonl)
-archive/
+archive/*
+!archive/procedural/
+
+# papers / proposal (not redistributed)
+pdfs/
+
+# local secrets / per-user config
+.env
