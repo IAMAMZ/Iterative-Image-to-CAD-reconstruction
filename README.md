@@ -167,3 +167,21 @@ Files:
 - `summarize_runs.py`, `figures.py` — tables and plots; `report.py` — a run's README, results.md and
   per-part pages (called by refine.py); `progress.py` — the round-by-round figures. `layout.py` — where files live in a rendered-solid folder.
 - `archive/procedural/` — the old random-part generator used to test the renderer.
+
+## Noisy views (Stage 2)
+
+Stage 2 asks how the geometric check holds up when the target masks and depth are wrong.
+`corrupt.py` writes noisy copies of the targets: 8 kinds (erode, dilate, jitter, holes, blobs,
+depth noise, depth scale, one bad view) x 3 levels. Only the masks and depth change; the RGB the
+agent sees stays clean. `checker_eval.py` then measures how often the geometric check keeps the
+right edits on each noisy copy, with and without view weights, without any model calls.
+
+```sh
+uv run python corrupt.py data/generated/targets/fusion360 --split data/fusion360/stage1.txt
+uv run python checker_eval.py data/generated/targets/fusion360 \
+    --init data/generated/init/cadrille_rl --split data/fusion360/stage1.txt --edits 8
+# -> runs/<date>_stage2_checker/README.md
+```
+
+The noisy targets are ordinary target folders, so `refine.py` runs on them as well (the full
+loop). Details, levels and caveats: `docs/STAGE2.md`.
