@@ -36,6 +36,11 @@ The clean target's cached `view_weights.json` is deleted so the weights are reco
 Renders are 512 px; depth is in normalised units (the part fits a unit sphere ~3.5 units
 from the camera). For scale: `DEPTH_TOL` in `view_weights.py` is 0.03, and 2% of 3.5 is 0.07.
 
+![corruption kinds x levels on one part (front view)](figures/stage2_corruptions_preview.png)
+
+*One part, front view. Grey = silhouette kept, red = lost, blue = gained, colour inside = depth
+error against the clean view.*
+
 Levels share their random draws (same blob positions, same field, same bad view), so going up
 a level only makes the *same* corruption stronger and curves over levels are monotone.
 `info.json["corruption"]` records the kind, level, parameters, seed, which views were hit,
@@ -94,6 +99,10 @@ Run `runs/2026-11-20_stage2_checker/` (git-ignored; regenerate with the commands
 The run covered 56 of the 60 Stage 1 parts. The other 4 have non-watertight GT meshes, so
 there is no 3D IoU to label their edits. Each part had 8 edits plus the starting program,
 which gives 2,804 non-neutral edits per condition.
+
+![right decisions per corruption kind and level](figures/stage2_checker_accuracy.png)
+
+![harmful edits kept per corruption kind and level](figures/stage2_checker_harmful_accept.png)
 
 | condition | right decisions | harmful kept | rank corr. | weights help? |
 |---|---|---|---|---|
