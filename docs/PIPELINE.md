@@ -258,4 +258,4 @@ mean_iou, w_iou, depth_mae, geo_score, kernel_warnings`, all `eval3d` metrics, `
 - **cadrille's inputs** were its own 4-view renders (`cadrille/eval_fusion360.py`), not our 8 cameras.
 - cadrille cannot be the editing agent: it is a fine-tuned image→code model, not instruction-following.
 - Echo-backend numbers are meaningless; no real-model run has been done yet.
-- Not yet built: Stage 2 (corrupted views). The Vertex backend has no real run yet.
+- Stage 2 (corrupted views) is in `corrupt.py` and `checker_eval.py`; see `docs/STAGE2.md`. The Vertex backend has no real run yet.
