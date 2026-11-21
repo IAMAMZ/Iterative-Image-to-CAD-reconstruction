@@ -88,10 +88,54 @@ residual images change what the agent proposes; that needs the full loop (sectio
 In the loop the centre comes from the noisy target. That centre is the same for both sides of
 an edit, so it shifts both and barely changes the decision.
 
-## 3. Results
+## 3. Results (checker study, 2026-11-20)
 
-See `runs/<date>_stage2_checker/README.md` for the run's table and figures. Findings are
-summarised in the PR that added this page.
+Run `runs/2026-11-20_stage2_checker/` (git-ignored; regenerate with the commands above).
+The run covered 56 of the 60 Stage 1 parts. The other 4 have non-watertight GT meshes, so
+there is no 3D IoU to label their edits. Each part had 8 edits plus the starting program,
+which gives 2,804 non-neutral edits per condition.
+
+| condition | right decisions | harmful kept | rank corr. | weights help? |
+|---|---|---|---|---|
+| clean | 93% | 4% | 0.89 | (all weights 1) |
+| holes / blobs / depth_noise, L3 | 93% | 4% | 0.87–0.89 | no difference |
+| bad_view L3 (one view shifted 32 px) | 92% on, 91% off | 4% | 0.88 | +1 pt |
+| jitter L3 | 89% on, 88% off | 7% | 0.78 | +1 pt |
+| depth_scale L3 (2% per view) | **87% on**, 93% off | **9% on**, 4% off | 0.75 / 0.86 | **hurts** |
+| erode L3 (6 px) | 75% | 20% | 0.55 | no |
+| dilate L3 (6 px) | **70%** | **23%** | 0.51 | no (weights stay 1.00) |
+
+1. **On clean views the checker is a good judge.** It gets 93% of edit decisions right, keeps
+   only 4% of harmful edits, and ranks programs much like the hidden 3D IoU (Spearman 0.89).
+2. **Random, local damage barely matters.** That covers holes, blobs, smooth depth noise, and
+   even one view shifted by 32 px. Both programs in an edit are compared with the *same* damaged
+   pixels, so most of the damage cancels in the score *difference* that `geo_accept` uses. One
+   bad view out of eight is diluted by the other seven even without weights.
+3. **A systematic boundary bias breaks it.** A silhouette dilated by 6 px makes the checker keep
+   23% of harmful edits instead of 4%, because a fattened target rewards programs that are too
+   big. Erosion does the same in the other direction. The bias points one way, so it does not
+   cancel. The view weights cannot see it either: a uniformly dilated set of views still agrees
+   with itself, so every weight stays 1.00.
+4. **View weights help a little on a bad view and hurt on depth-scale errors.** A per-view depth
+   scale error drives some weights down to ~0.26. The weights then also discount those views'
+   silhouettes, which were perfect, and accuracy drops from 93% to 87%. The weights mix two
+   things that should be separate: whether a view's *depth* is trustworthy and whether its
+   *silhouette* is.
+
+**What this suggests for the noise-tolerant rule** (proposal, Week 4):
+- **Split the weights.** Use a silhouette weight from mask-only consistency and a depth weight
+  from depth consistency, and apply each to its own term in `geo_score`. That should remove the
+  depth-scale regression and keep the bad-view gain.
+- **Tolerate boundary bias.** Ignore a band of a few px around the target boundary in the IoU,
+  or estimate a uniform boundary offset per view and remove it before scoring. This targets
+  erode/dilate, the only corruptions that really hurt.
+- Both can be tested offline with `checker_eval.py`: the candidates are cached, so a new rule
+  only re-runs the 2D comparison. Tune on the tuning set, then report on the 60 parts.
+
+**Caveats.** The edits are random one-number changes, not Gemini's edits. Gemini's edits are
+more structured and may be subtler. The study tests the checker as a judge, not how noisy
+residual images change what the agent proposes. Candidates are centred with the clean bbox
+(section 2).
 
 ## 4. Full loop on noisy targets
 
@@ -116,5 +160,4 @@ the 60 Stage 1 parts.
 - **Estimated observations.** Masks / depth from SAM 3 and VGGT on the RealCAD photos, from
   Metom's `data/realcad/test50`. They need a loader that turns his poses and depth into a
   target folder.
-- **A noise-tolerant acceptance rule** beyond view weights, for corruptions that hit every view
-  (see the results).
+- **A noise-tolerant acceptance rule** (split weights, boundary-bias tolerance; section 3).

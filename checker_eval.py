@@ -99,7 +99,12 @@ def make_candidates(target: Path, init: Path, out: Path, k: int, seed: int, cent
         if d.exists():
             shutil.rmtree(d)
         err = build(src, d, target, center)
+        if err and name == "c00":            # retry once: a transient failure (e.g. the
+            err = build(src, d, target, center)   # machine slept) must not drop the part
         if err:
+            if name == "c00":
+                print(f"  {target.name}: starting program failed to build: {err[-300:]}",
+                      flush=True)
             return None
         e = evaluate(target, d)
         return {"name": name, "edit": desc, "dir": str(d), "iou3d": e.get("iou3d")}
@@ -117,6 +122,10 @@ def make_candidates(target: Path, init: Path, out: Path, k: int, seed: int, cent
     if not meta or meta[0]["name"] != "c00":
         return []                                 # the starting program itself did not build
     meta = [m for m in meta if m["iou3d"] is not None]
+    if len(meta) < 2:
+        print(f"  {target.name}: no 3D IoU for its programs (GT mesh not watertight?)",
+              flush=True)
+        return []
     meta_f.write_text(json.dumps(meta, indent=2) + "\n")
     return meta
 
@@ -359,7 +368,7 @@ def main(argv=None):
                                 out / "candidates" / target.name, args.edits, args.seed,
                                 (lo + hi) / 2, args.jobs)
         if len(cands) < 2:
-            print(f"[{n}/{len(parts)}] {target.name}: skipped (starting program did not build)")
+            print(f"[{n}/{len(parts)}] {target.name}: skipped (see the line above)")
             continue
         for c in cands:
             c["views"] = load_views(Path(c["dir"]))[0]
