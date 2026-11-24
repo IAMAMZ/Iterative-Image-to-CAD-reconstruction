@@ -197,6 +197,26 @@ grid (`ABLATION_PLAN.md`, group G), feedback then appears as removals: `no_feedb
 
 ## 8. Order of work
 
+**Status (2026-11-24):** steps 1–2 done; the ablation flags `--geo-signal`, `--views` and
+`--gate` were built first so the feedback respects them. As built, differing from §6:
+
+- The "do not repeat" rule sits at the end of the feedback block, not in `SYSTEM`, so
+  `--feedback none` sends exactly the old prompt (a clean `fb_none` baseline).
+- Diffs are shown indented, never in a code fence, and ignore whitespace-only changes.
+- Per arm: `geo`, `hybrid`, `oracle` get the checker's numbers (`oracle` gets no reason:
+  it would leak the GT); `premise`/`vlm` get the judge's verdict and reasoning only;
+  `gsolver` (keeps every edit) gets the round history only.
+- With `--gate off` the attempt log shows the last (kept) edit with what the check would
+  have decided and its per-view table.
+- The edit-effect image is masks only (none for `--geo-signal depth`); each tile is
+  labelled with its fixed / broken pixel counts, because small edits are only a few pixels
+  wide at grid size.
+- A blocked repeat with no repair slot left ends the round as `repeat_blocked` (folder
+  `round_NN_repeat-blocked`), counted like a failed build.
+- Logged per round: `feedback_attempts`, `repeat_blocked`, `reject_reason`
+  (`gain` / `view_drop` / `inconclusive` / `judge` / `failed` / `repeat_blocked`);
+  `summarize_runs.py` counts the reject reasons and blocked repeats per arm.
+
 1. Compute the repeat rate on existing runs (no model calls), to measure the problem.
 2. Implement §6 with echo tests.
 3. Pilot `fb_none`, `fb_text` and `fb_image` on the **9 tuning parts** only. Read a few

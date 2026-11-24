@@ -156,6 +156,12 @@ scratch), `--shadow-judge` (judge every edit in every arm for agreement statisti
 `--views worst` (one view, picked from the round-0 program), `--gate off` (keep every built
 edit; the check is still logged). See `docs/ABLATION_PLAN.md`.
 
+**Edit feedback** (`--feedback none|text|image`, default `none` until the feedback pilot):
+the next prompt lists the edits not kept since the last kept one (CHANGE line, diff, why it
+was rejected, per-view deltas), a one-line round history, and blocks exact repeats before
+building them; `image` adds an edit-effect grid (green = fixed, red = broken pixels). See
+`docs/FEEDBACK_PLAN.md`.
+
 Files:
 - `refine.py` — the loop, arms and logging (every edit logs the geometric check's decision, the
   judge's where it ran, and what it really did to the hidden shape).

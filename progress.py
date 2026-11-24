@@ -32,7 +32,8 @@ ARM_COLORS = {"geo": "#2a78d6", "hybrid": "#eb6834", "vlm": "#1baf7a", "premise"
               "oracle": "#e87ba4", "gsolver": "#008300"}
 STATUS = {"kept": ("#0ca30c", "✓ kept"), "rejected": ("#d03b3b", "✗ rejected"),
           "failed": ("#8c8c8c", "did not build"), "no-change": ("#8c8c8c", "no change"),
-          "stopped": ("#8c8c8c", "stopped: all Yes"), "start": ("#5f5e5a", "start")}
+          "stopped": ("#8c8c8c", "stopped: all Yes"), "start": ("#5f5e5a", "start"),
+          "repeat-blocked": ("#8c8c8c", "repeat blocked")}
 INK, MUTED, GRID = "#1f1f1e", "#6b6a64", "#e1e0d9"
 
 plt.rcParams.update({"font.size": 8, "axes.edgecolor": "#c3c2b7", "axes.labelcolor": INK,

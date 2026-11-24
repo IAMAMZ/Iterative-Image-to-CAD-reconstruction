@@ -252,7 +252,8 @@ RESIDUAL_TEXT = {
 
 def refine_prompt(program, lo, hi, cand_size=None, *, n_images=2, residual_table=None,
                   detail=False, kernel=None, qa_feedback=None, gsolver=None,
-                  residual_images=("overlay", "depth"), views=None, detail_kind="residual"):
+                  residual_images=("overlay", "depth"), views=None, detail_kind="residual",
+                  feedback=None):
     """The edit request. Which evidence goes in is decided by the arm (see refine.ARMS) and
     the ablation flags: `residual_images` lists the residual grids sent (images 3, 4, ...),
     `views` the cameras shown (None = all 4)."""
@@ -290,11 +291,113 @@ def refine_prompt(program, lo, hi, cand_size=None, *, n_images=2, residual_table
                   qa_feedback]
     if gsolver:
         lines += ["", "Geometric properties, target vs current:", gsolver]
+    if feedback:
+        lines += ["", feedback]
     lines += ["", "Current program:", f"```python\n{program.strip()}\n```", "",
               "Find the single biggest geometric difference between the target and the current "
               "reconstruction, fix it, and reply in the format from the rules (CHANGE line, then "
               "the complete revised program in one ```python block), or NO_CHANGE."]
     return "\n".join(lines)
+
+
+# --------------------------------------------- edit feedback (docs/FEEDBACK_PLAN.md)
+FEEDBACK_RULE = ("Use these attempts: do not repeat a rejected change. If its feature was right "
+                 "but the size or position was off, try a different size or the other "
+                 "direction; otherwise fix a different difference.")
+_MOSTLY = {"extra": "mostly EXTRA material (blue in the residual image)",
+           "missing": "mostly MISSING material (red in the residual image)",
+           "depth": "mostly surfaces at the wrong depth"}
+
+
+def _reason_text(e):
+    """One line: why the attempt ended the way it did (only what the arm may see)."""
+    out, why = e["outcome"], e.get("reason")
+    if out == "failed":
+        err = (e.get("error") or "").strip().splitlines()[-3:]
+        return "FAILED TO BUILD — " + " / ".join(l.strip() for l in err)[:300]
+    if out == "repeat_blocked":
+        return f"NOT BUILT — the same program as your attempt in round {e.get('repeat_of')}"
+    head = {"rejected": "REJECTED", "kept": "KEPT"}[out]
+    g = e.get("gain")
+    if why == "gain":
+        return f"{head} — the geometric score fell by {-g:.4f} (an edit is kept only if it " \
+               f"rises by more than {e['min_gain']:g})"
+    if why == "view_drop":
+        return (f"{head} — the overall score rose by {g:.4f}, but view {e['worst_view']} lost "
+                f"{-e['worst_view_drop']:.3f} IoU (more than the {e['max_view_drop']:g} allowed): "
+                "it fixed one view and broke another")
+    if why == "inconclusive":
+        return (f"{head} — it changed the geometric score by less than {e['min_gain']:g}: "
+                "the edit had almost no visible effect (no real change of shape, or a change "
+                "no camera sees)")
+    if why == "judge":
+        return f"{head} — the visual reviewer preferred the previous version: {e.get('judge')}"
+    if why == "gate_off":
+        verdict = "would have kept it" if e.get("geo_keep") else "would have rejected it"
+        return f"{head} (every edit is kept in this run) — the geometric check {verdict}; " \
+               f"score change {g:+.4f}"
+    return head                                   # e.g. the oracle arm: no reason given
+
+
+def _delta_table(delta, signal):
+    mask, depth = signal in ("both", "mask"), signal in ("both", "depth")
+    cols = (["IoU", "missing px", "extra px"] if mask else []) + (["depth MAE"] if depth else [])
+    rows = [f"{'view':10s}" + "".join(f"{c:16s}" for c in cols)]
+    for v, m in delta["views"].items():
+        cells = []
+        if mask:
+            cells += [f"{m['iou'][0]:.3f} → {m['iou'][1]:.3f}",
+                      f"{m['missing'][0]} → {m['missing'][1]}",
+                      f"{m['extra'][0]} → {m['extra'][1]}"]
+        if depth:
+            a, b = m["depth"]
+            cells.append("n/a" if a is None or b is None else f"{a:.2f} → {b:.2f}")
+        rows.append(f"{v:10s}" + "".join(f"{c:16s}" for c in cells).rstrip())
+    return rows
+
+
+def feedback_block(attempts, history, signal="both", effect_image=None):
+    """The edit-feedback text (FEEDBACK_PLAN 3.1): the attempts since the last kept edit
+    (newest last, already capped by the caller) and a one-line history of every round.
+    `effect_image` = the image number of the latest attempt's edit-effect grid, or None."""
+    lines = []
+    if attempts:
+        if all(e["outcome"] != "kept" for e in attempts):
+            lines.append("Previous attempts from this same program (none was kept; the program "
+                         "below is unchanged):")
+        else:
+            lines.append("What your last edit did:")
+        for e in attempts:
+            change = e.get("change") or "(no CHANGE line)"
+            lines += ["", f"Attempt in round {e['round']} — you said: "
+                          f"\"{e.get('tag') or '?'} - {change}\""]
+            if e.get("diff"):
+                lines.append("  diff (- removed, + added):")
+                lines += ["    " + l for l in e["diff"]]
+            lines.append("  result: " + _reason_text(e))
+            if e.get("delta"):
+                lines += ["  " + l for l in _delta_table(e["delta"], signal)]
+                d = e["delta"]
+                unit = "lower depth error" if signal == "depth" else "IoU"
+                if d["worst_change"] < -5e-4:          # nothing to point at for a no-op edit
+                    lines.append(f"  worst: {d['worst_view']} {unit} {d['worst_change']:+.3f}, "
+                                 f"{_MOSTLY[d['mostly']]}")
+        if effect_image:
+            lines += ["", f"Image {effect_image} shows what the attempt in round "
+                          f"{attempts[-1]['round']} changed, view by view: GREEN = pixels it "
+                          "fixed, RED = pixels it broke, GREY = right before and after, pale = "
+                          "wrong before and after."]
+        lines += ["", FEEDBACK_RULE]
+    if history:
+        lines += ["", "Round history so far:"] + [f"- {h}" for h in history]
+    return "\n".join(lines) if lines else None
+
+
+def repeat_prompt(round_):
+    return (f"That program is the same as your attempt in round {round_}, which was not kept "
+            "(see the previous attempts above), so it was not built. Propose a different "
+            "change: reply with a CHANGE line and the complete revised program in one "
+            "```python block.")
 
 
 def repair_prompt(error):

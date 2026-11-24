@@ -83,8 +83,38 @@ def geo_accept(cur, new, weights=None, min_gain=1e-3, max_view_drop=0.05, signal
     drop = drops[worst] if worst else 0.0
     guard = signal != "depth"
     keep = gain > min_gain and (not guard or drop >= -max_view_drop)
+    # why: kept | inconclusive (|gain| <= min_gain) | gain (the score fell) | view_drop
+    # (the score rose but a trusted view lost more than max_view_drop IoU)
+    reason = "kept" if keep else "inconclusive" if abs(gain) <= min_gain else \
+        "gain" if gain <= min_gain else "view_drop"
     return keep, {"gain": gain, "worst_view_drop": drop, "worst_view": worst,
-                  "inconclusive": abs(gain) <= min_gain, "keep": keep, "signal": signal}
+                  "inconclusive": abs(gain) <= min_gain, "keep": keep, "signal": signal,
+                  "reason": reason, "min_gain": min_gain, "max_view_drop": max_view_drop}
+
+
+def edit_delta(cur, new, weights=None, signal="both"):
+    """What an edit did, per view, for the agent's feedback (GT-free: compare.py reports of
+    the state it was made from and of the edit). -> {"views": {v: {metric: (before, after)}},
+    "worst_view", "worst_change" (IoU change, or the fall in depth error for "depth"),
+    "best_view", "mostly": "extra" | "missing" | "depth"} for the worst view."""
+    mm = cur.get("mm_per_unit", 1.0)
+    rows = {}
+    for v in cur["views"]:
+        c, n = cur["views"][v], new["views"][v]
+        dep = lambda m: None if m.get("depth_mae") is None else m["depth_mae"] * mm
+        rows[v] = {"iou": (c["iou"], n["iou"]), "missing": (c["missing_px"], n["missing_px"]),
+                   "extra": (c["extra_px"], n["extra_px"]), "depth": (dep(c), dep(n)),
+                   "weight": 1.0 if weights is None else float(weights.get(v, 1.0))}
+    change = {v: _view_change(cur["views"][v], new["views"][v], signal) for v in cur["views"]}
+    worst = min(change, key=change.get)
+    best = max(change, key=change.get)
+    r = rows[worst]
+    d_missing = r["missing"][1] - r["missing"][0]
+    d_extra = r["extra"][1] - r["extra"][0]
+    mostly = "depth" if signal == "depth" or max(d_missing, d_extra) <= 0 else \
+        "extra" if d_extra >= d_missing else "missing"
+    return {"views": rows, "worst_view": worst, "worst_change": change[worst],
+            "best_view": best, "best_change": change[best], "mostly": mostly}
 
 
 def residual_table(report, weights=None, signal="both"):

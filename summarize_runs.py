@@ -257,6 +257,9 @@ def summarize(root: Path) -> dict:
             "change_types": dict(Counter(e.get("change_tag") or "untagged" for e in edits)),
             "stops": dict(Counter(f.get("stop") for f in fin.values())),
             "repeats": repeat_stats(edits),
+            "reject_reasons": dict(Counter(r.get("reject_reason") for r in rs
+                                           if r["round"] > 0 and r.get("reject_reason"))),
+            "repeat_blocked": sum(r.get("repeat_blocked") or 0 for r in rs),
             "kernel_warnings_per_edit": mean([e.get("kernel_warnings") for e in valid]),
             "tokens_per_part": mean([f.get("prompt_tokens", 0) + f.get("output_tokens", 0) for f in fin.values()]),
             "cost_per_part": mean([f.get("cost_usd") for f in fin.values()]),
@@ -290,7 +293,7 @@ def write_csv(root, rows, finals):
              "geo_gain", "geo_inconclusive", "change_tag", "iou3d_before", "iou3d", "w_iou",
              "qa_yes", "qa_n", "kernel_warnings", "repairs_used", "wall_seconds",
              "repeat_eligible", "repeat_rewrite", "repeat_exact", "repeat_near", "repeat_spot",
-             "repeat_of"]
+             "repeat_of", "reject_reason", "feedback_attempts", "repeat_blocked"]
     with open(root / "edits.csv", "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(ekeys)
@@ -326,6 +329,9 @@ def main():
         print(f"  geo-vs-vlm agreement {f(m['geo_vlm_agreement'], 2)}; changes {m['change_types']}")
         print(f"  per part: {f(m['tokens_per_part'], 0)} tokens, {f(m['llm_seconds_per_part'], 0)} s model, "
               f"{f(m['wall_seconds_per_part'], 0)} s wall")
+        if m["reject_reasons"] or m["repeat_blocked"]:
+            print(f"  reject reasons {m['reject_reasons']}; repeats blocked before building "
+                  f"{m['repeat_blocked']}")
         rp = m["repeats"]
         if rp["eligible"]:
             print(f"  repeats: {rp['eligible']} proposals after a failed attempt from the same "

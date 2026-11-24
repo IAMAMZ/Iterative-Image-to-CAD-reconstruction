@@ -108,6 +108,41 @@ def overlay_image(mask_t, mask_c):
     return img
 
 
+FIXED = (30, 160, 60)       # edit-effect image: wrong before the edit, right after
+BROKE = (215, 38, 38)       # right before the edit, wrong after
+STILL_WRONG = (245, 222, 190)
+
+
+def edit_effect_image(mask_t, mask_cur, mask_new):
+    """What an edit changed, relative to the state it was made from (FEEDBACK_PLAN 3.2):
+    green = pixels it fixed, red = pixels it broke, grey = part pixels right before and
+    after, faint = wrong before and after, white = background before and after.
+    -> (rgb image, {"fixed": px, "broke": px})"""
+    ok_cur, ok_new = mask_t == mask_cur, mask_t == mask_new
+    img = np.empty(mask_t.shape + (3,), np.uint8)
+    img[:] = BG
+    img[ok_cur & ok_new & mask_t] = BOTH
+    img[~ok_cur & ~ok_new] = STILL_WRONG
+    fixed, broke = ~ok_cur & ok_new, ok_cur & ~ok_new
+    img[fixed] = FIXED
+    img[broke] = BROKE
+    return img, {"fixed": int(fixed.sum()), "broke": int(broke.sum())}
+
+
+def write_effect_images(target_dir: Path, cur_dir: Path, new_dir: Path, out: Path, views=None):
+    """<out>/<view>_effect.png for every (or the given) view. -> {view: counts}"""
+    tv, _ = load_views(target_dir)
+    cv, _ = load_views(cur_dir)
+    nv, _ = load_views(new_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    counts = {}
+    for v in (views or tv):
+        img, counts[v] = edit_effect_image(tv[v][0], cv[v][0], nv[v][0])
+        Image.fromarray(img).save(out / f"{v}_effect.png")
+    (out / "effect.json").write_text(json.dumps(counts))
+    return counts
+
+
 def depth_error_image(mask_t, depth_t, mask_c, depth_c, vmax):
     img = overlay_image(mask_t, mask_c)
     # dim the red/blue so the heatmap is what stands out
