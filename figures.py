@@ -42,11 +42,15 @@ def kept_trajectories(rows):
 
 def plot_rounds(traj, out):
     fig, ax = plt.subplots(figsize=(5, 3.4))
+    nmax = 1
     for arm, parts in sorted(traj.items()):
         n = max(len(v) for v in parts.values())
         ys = [np.nanmean([v[min(i, len(v) - 1)] if v[min(i, len(v) - 1)] is not None else np.nan
                           for v in parts.values()]) for i in range(n)]
         ax.plot(range(n), ys, "-o", ms=3, color=COLORS.get(arm), label=arm)
+        nmax = max(nmax, n)
+    ax.set_xticks(range(nmax))
+    ax.set_xticklabels(["start"] + [str(i) for i in range(1, nmax)])
     ax.set_xlabel("round")
     ax.set_ylabel("mean 3D IoU (kept program)")
     ax.grid(alpha=0.3)
@@ -73,26 +77,53 @@ def plot_time(traj, times, out):
     plt.close(fig)
 
 
+OUTCOME_COLORS = {"good": "#1a9e5a", "neutral": "#c4c4c0", "bad": "#c23b3b"}
+OUTCOME_LABELS = {"good": "improved 3D IoU", "neutral": "no real change", "bad": "hurt 3D IoU"}
+
+
 def plot_outcomes(rows, out):
+    """Per arm, one bar for kept edits and one for dropped edits, each split by what the
+    edit did to the hidden shape. Good decisions: kept+improved, dropped+hurt."""
     arms = sorted({r["arm"] for r in rows})
-    cats = [("kept", "good", "#1a9e5a"), ("kept", "neutral", "#a6d8b9"), ("kept", "bad", "#c23b3b"),
-            ("dropped", "good", "#f2b6b6"), ("dropped", "neutral", "#dddddd"), ("dropped", "bad", "#7fa7e0")]
-    counts = {a: {c: 0 for c in cats} for a in arms}
+    outs = ["good", "neutral", "bad"]
+    counts = {(a, k): {o: 0 for o in outs} for a in arms for k in ("kept", "dropped")}
     for r in rows:
         if r["round"] > 0 and r.get("status") == "ok":
             k = "kept" if r.get("accepted") else "dropped"
-            o = outcome(r)
-            for c in cats:
-                if c[0] == k and c[1] == o:
-                    counts[r["arm"]][c] += 1
-    fig, ax = plt.subplots(figsize=(5.5, 3.4))
-    left = np.zeros(len(arms))
-    for c in cats:
-        v = np.array([counts[a][c] for a in arms])
-        ax.barh(arms, v, left=left, color=c[2], label=f"{c[0]} {c[1]}")
+            counts[r["arm"], k][outcome(r)] += 1
+
+    # y positions: arms top to bottom, kept above dropped inside each arm
+    ys, labels, keys = [], [], []
+    for i, a in enumerate(arms):
+        for j, k in enumerate(("kept", "dropped")):
+            ys.append(-(i * 3 + j))
+            labels.append(k)
+            keys.append((a, k))
+    fig, ax = plt.subplots(figsize=(5.5, 0.9 + 0.75 * len(arms)))
+    left = np.zeros(len(keys))
+    for o in outs:
+        v = np.array([counts[key][o] for key in keys], dtype=float)
+        ax.barh(ys, v, left=left, height=0.8, color=OUTCOME_COLORS[o],
+                edgecolor="white", linewidth=1.5, label=OUTCOME_LABELS[o])
+        for y, l, n in zip(ys, left, v):
+            if n:
+                ax.text(l + n / 2, y, f"{int(n)}", ha="center", va="center", fontsize=7,
+                        color="white" if o != "neutral" else "#333333")
         left += v
-    ax.set_xlabel("edits")
-    ax.legend(frameon=False, fontsize=7, ncol=2, loc="lower right")
+    for y, key, end in zip(ys, keys, left):
+        ax.text(end + 0.15, y, f"{int(sum(counts[key].values()))} total",
+                va="center", fontsize=7, color="#666666")
+    ax.set_yticks(ys)
+    ax.set_yticklabels(labels, fontsize=8)
+    for i, a in enumerate(arms):  # arm name to the left of its pair of bars
+        ax.text(-0.16, -(i * 3 + 0.5), a, transform=ax.get_yaxis_transform(),
+                ha="right", va="center", fontsize=9, fontweight="bold", color=COLORS.get(a, "#333"))
+    ax.set_xlabel("edits (built and checked)")
+    ax.set_xlim(0, left.max() * 1.15 + 1)
+    ax.xaxis.get_major_locator().set_params(integer=True)
+    for sp in ("top", "right"):
+        ax.spines[sp].set_visible(False)
+    ax.legend(frameon=False, fontsize=7, ncol=3, loc="lower left", bbox_to_anchor=(0, 1.0))
     fig.tight_layout()
     fig.savefig(out / "edit_outcomes.png", dpi=200)
     plt.close(fig)
