@@ -172,8 +172,9 @@ def scores_md(part, part_dir, target, arms, rows, finals, init_iou, cfg):
 # ------------------------------------------------------------------ run pages
 def arm_table(summary, arms):
     lines = ["| arm | parts | 3D IoU start → final (median) | mean | improved / worse | "
-             "invalid edits | kept edits that helped | tokens / part | $ / part | min / part |",
-             "|---|---|---|---|---|---|---|---|---|---|"]
+             "invalid edits | kept edits that helped | repeats after a rejection | tokens / part | "
+             "$ / part | min / part |",
+             "|---|---|---|---|---|---|---|---|---|---|---|"]
     for arm in [a for a in arms if a in summary]:
         m = summary[arm]
         q = m["quality"]["iou3d"]
@@ -182,10 +183,13 @@ def arm_table(summary, arms):
         helped = "–" if not acc["n"] else \
             f"{acc['counts'].get('kept-good', 0)} / {sum(v for k, v in acc['counts'].items() if k.startswith('kept'))}"
         wall = m.get("wall_seconds_per_part")
+        rp = m.get("repeats") or {}
+        rep = "–" if not rp.get("eligible") else \
+            f"{round(rp['any'] * rp['eligible'])} / {rp['eligible']}"
         lines.append(
             f"| {arm} | {m['parts']} | {_f(mi(q['init']))} → **{_f(mi(q['final']))}** | "
             f"{_f(mi(q['init'], 'mean'))} → {_f(mi(q['final'], 'mean'))} | "
-            f"{m['parts_improved']} / {m['parts_worse']} | {_f(m['invalid_rate'], 2)} | {helped} | "
+            f"{m['parts_improved']} / {m['parts_worse']} | {_f(m['invalid_rate'], 2)} | {helped} | {rep} | "
             f"{_f(m['tokens_per_part'], 0)} | {_f(m.get('cost_per_part'), 3)} | "
             f"{_f(None if wall is None else wall / 60, 1)} |")
     costs = [summary[a].get("cost_total") for a in arms if a in summary]
@@ -199,7 +203,10 @@ def results_md(root, cfg, summary, parts, arms, init_iou, finals):
     lines = [f"# Results: {root.name}", "",
              "3D IoU against the hidden ground-truth shape (1 = identical). The agent never "
              "sees it; it is the offline score.", "", "## Per arm", "", *arm_table(summary, arms),
-             "", "*kept edits that helped*: kept edits that raised 3D IoU / all kept edits.", "",
+             "", "*kept edits that helped*: kept edits that raised 3D IoU / all kept edits. "
+             "*repeats after a rejection*: proposals that changed the same spot of the program "
+             "as an attempt already rejected from that program (or redid it exactly) / all "
+             "proposals made after such a rejection.", "",
              "## Progress by part", "",
              "![3D IoU by round, per part](results/figures/progress_by_part.png)", "",
              "## Per part", "", "Worst starting program first. Δ = final − start; then why the arm stopped "

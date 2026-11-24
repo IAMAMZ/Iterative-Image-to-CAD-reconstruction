@@ -158,10 +158,25 @@ version is a possible later variant, but it is not part of this plan.
 
 New metrics in `summarize_runs.py`, which also apply to existing runs:
 
-- **repeat rate:** the share of proposals whose program (normalised) or CHANGE line is
-  near-identical to an earlier rejected attempt from the same state (difflib ratio ≥ 0.9 on the
-  program). First compute it on pilot 5 and the coming baseline runs to show the size of the
-  problem.
+- **repeat rate** (built: `summarize_runs.mark_repeats`, column *repeats after a rejection* in
+  `results.md`, `repeat_*` columns in `edits.csv`). Over the proposals made after at least one
+  rejected or failed attempt from the same program (since the last kept edit), the share that
+  repeat one of those attempts. Programs are normalised first (no comments or whitespace,
+  quotes unified, numbers to 3 significant digits) and each proposal's **edit** is its
+  token-level diff against the current program. Similarity of whole programs (the first idea,
+  difflib ratio ≥ 0.9) does not work: any two edits of the same 4–5-line cadrille program are
+  ≥ 0.9 similar. Three levels:
+  - *exact*: the same normalised program;
+  - *near*: the edit's diff text is ≥ 0.9 similar to an earlier one;
+  - *same spot*: ≥ 50% of the edited tokens were edited by an earlier attempt (the same
+    numbers or calls changed, possibly to other values). An edit that rewrites > 75% of the
+    program is a *rewrite* and never counts as same spot, since two rewrites always overlap.
+
+  **Pilot 5 (before feedback):** geo 3 / 4 and hybrid 3 / 3 proposals after a rejection
+  went back to the same spot. None was an exact or near repeat: the agent changes the same
+  number again by a different amount (`extrude(-27)` → `-27.5` twice, holes `±83 → ±85` then
+  `±83.25`). The one geo proposal not counted was a rewrite (115533). Only 7 proposals are
+  eligible, because pilot 5 ran 2 rounds; the coming baseline runs will give a firmer number.
 - acceptance rate, rounds to the first kept edit, and the share of rounds that end on the same
   program;
 - kept-precision and harmful-accept rate (feedback must not make the agent game the checker);
