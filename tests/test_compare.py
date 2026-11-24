@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from compare import BOTH, EXTRA, MISSING, compare, overlay_image, view_metrics
+from compare import BOTH, DEPTH_CAP, EXTRA, MISSING, compare, overlay_image, view_metrics
 from generate_solid import generate
 from rig import load_rig
 
@@ -44,6 +44,36 @@ def test_no_overlap_has_no_depth_error():
     mc, dc = square(5, 7, 5, 7)
     m = view_metrics(mt, dt, mc, dc)
     assert m["iou"] == 0.0 and m["depth_mae"] is None
+
+
+def test_union_depth_error_counts_uncovered_pixels_at_the_cap():
+    mt, dt = square(0, 4, 0, 4, depth=3.0)           # 16 px
+    mc, dc = square(0, 4, 0, 8, depth=3.02)          # 32 px: 16 shared (error 0.02) + 16 extra
+    m = view_metrics(mt, dt, mc, dc)
+    assert m["depth_err"] == pytest.approx((16 * 0.02 + 16 * DEPTH_CAP) / 32, abs=1e-5)
+
+
+def test_union_depth_error_caps_large_errors():
+    mt, dt = square(0, 4, 0, 4, depth=3.0)
+    mc, dc = square(0, 4, 0, 4, depth=4.0)           # full overlap, error 1.0 >> cap
+    assert view_metrics(mt, dt, mc, dc)["depth_err"] == pytest.approx(DEPTH_CAP)
+
+
+def test_union_depth_error_is_defined_without_overlap():
+    mt, dt = square(0, 2, 0, 2)
+    mc, dc = square(5, 7, 5, 7)
+    assert view_metrics(mt, dt, mc, dc)["depth_err"] == pytest.approx(DEPTH_CAP)
+
+
+def test_shrinking_the_overlap_cannot_hide_depth_error():
+    # target: a 4x8 slab; good: same outline, small depth error everywhere;
+    # gamed: only a sliver that matches exactly. The overlap-only MAE prefers the sliver.
+    mt, dt = square(0, 4, 0, 8, depth=3.0)
+    mg, dg = square(0, 4, 0, 8, depth=3.01)
+    ms, ds = square(0, 4, 0, 1, depth=3.0)
+    good, gamed = view_metrics(mt, dt, mg, dg), view_metrics(mt, dt, ms, ds)
+    assert gamed["depth_mae"] < good["depth_mae"]
+    assert good["depth_err"] < gamed["depth_err"]
 
 
 def test_overlay_colours():

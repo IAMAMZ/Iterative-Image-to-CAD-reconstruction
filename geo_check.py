@@ -1,7 +1,8 @@
 """Forward-rendering geometric check: score a candidate against the target views and
 decide whether an edit is kept.
 
-Inputs are compare.py reports (per-view silhouette IoU and depth error) and, optionally,
+Inputs are compare.py reports (per-view silhouette IoU and the union-based, capped depth
+error `depth_err`, defined even when the outlines barely overlap) and, optionally,
 per-view confidence weights from view_weights.py. Views that disagree with the others
 (low weight) count less in the score and cannot veto an edit on their own.
 No 3D ground truth is used anywhere in here.
@@ -18,15 +19,21 @@ def _weights(report, weights):
     return views, np.array([float(weights.get(v, 1.0)) for v in views])
 
 
+def _depth_term(m):
+    """The score's per-view depth error: compare.py's union-based, capped `depth_err`
+    (old reports without it fall back to the MAE on the overlap)."""
+    return m["depth_err"] if "depth_err" in m else m.get("depth_mae")
+
+
 def weighted_means(report, weights=None):
-    """-> (weighted mean silhouette IoU, weighted mean depth MAE or None)."""
+    """-> (weighted mean silhouette IoU, weighted mean depth error or None)."""
     views, w = _weights(report, weights)
     if w.sum() <= 0:
         w = np.ones(len(views))
     iou = np.array([report["views"][v]["iou"] for v in views])
     m_iou = float((w * iou).sum() / w.sum())
-    d = [(wi, report["views"][v]["depth_mae"]) for v, wi in zip(views, w)
-         if report["views"][v]["depth_mae"] is not None]
+    d = [(wi, _depth_term(report["views"][v])) for v, wi in zip(views, w)]
+    d = [(wi, x) for wi, x in d if x is not None]
     dw = sum(wi for wi, _ in d)
     m_d = float(sum(wi * x for wi, x in d) / dw) if d and dw > 0 else None
     return m_iou, m_d

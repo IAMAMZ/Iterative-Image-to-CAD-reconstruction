@@ -107,9 +107,9 @@ pulled). `--backend echo` replaces the model with a fake agent for dry runs.
 
 | File | Role |
 |---|---|
-| `compare.py` | Per view: silhouette IoU, missing / extra pixels, depth MAE on the overlap. Writes overlay images (red = missing, blue = extra) and depth-error heatmaps to `<cand>/diff/`. `largest_residual()` finds the largest connected missing/extra blob for the zoomed detail tile. |
+| `compare.py` | Per view: silhouette IoU, missing / extra pixels, depth MAE on the overlap (shown to the agent), and the score's depth term `depth_err`: over the union of both silhouettes, `min(|Δdepth|, DEPTH_CAP)` where both cover and `DEPTH_CAP` (0.1 normalised units) where only one does, so it is defined without overlap and an edit cannot lower it by shrinking the overlap. Writes overlay images (red = missing, blue = extra) and depth-error heatmaps to `<cand>/diff/`. `largest_residual()` finds the largest connected missing/extra blob for the zoomed detail tile. |
 | `view_weights.py` | Confidence per **target** view. Each view's depth is back-projected to 3D and projected into every other view (space carving): a point must land on the other view's silhouette and must not be in front of its visible surface (`DEPTH_TOL = 0.03`, 3×3 min-filter on depth). `r(v,u)` = symmetric rejection rate; `c_v = 1 − median_u r(v,u)`; `w_v = clip((c_v − 0.6)/(0.98 − 0.6), 0, 1)`. The median means one bad view cannot drag good ones down. Clean renders give exactly 1.0; cached in `<target>/view_weights.json`. |
-| `geo_check.py` | `geo_score` = weighted mean silhouette IoU − weighted mean depth MAE. `geo_accept(cur, new, w)` keeps an edit iff the gain > `min_gain` (1e-3) **and** no *trusted* view (`w ≥ 0.5`) loses more than 0.05 IoU. `|gain| ≤ min_gain` is flagged *inconclusive*. `residual_table` is the per-view table shown to the agent (with the weight column). |
+| `geo_check.py` | `geo_score` = weighted mean silhouette IoU − weighted mean `depth_err` (old reports: depth MAE). `geo_accept(cur, new, w)` keeps an edit iff the gain > `min_gain` (1e-3) **and** no *trusted* view (`w ≥ 0.5`) loses more than 0.05 IoU. `|gain| ≤ min_gain` is flagged *inconclusive*. `residual_table` is the per-view table shown to the agent (with the weight column). |
 
 ### The agent
 

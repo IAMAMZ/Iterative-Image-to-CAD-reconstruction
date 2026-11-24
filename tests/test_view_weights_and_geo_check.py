@@ -58,3 +58,15 @@ def test_tiny_gain_is_inconclusive():
     keep, d = geo_accept(cur, _report({"a": 0.8001, "b": 0.8}))
     assert not keep and d["inconclusive"]
     assert geo_score(_report({"a": 0.9})) > geo_score(_report({"a": 0.8}))
+
+
+def test_score_uses_the_union_depth_error():
+    # same IoU and overlap MAE; the view whose outline misses more carries the larger
+    # union depth error, and the score follows it
+    a = {"views": {"v": {"iou": 0.8, "depth_mae": 0.01, "depth_err": 0.02}}}
+    b = {"views": {"v": {"iou": 0.8, "depth_mae": 0.01, "depth_err": 0.05}}}
+    assert geo_score(a) > geo_score(b)
+
+
+def test_old_reports_fall_back_to_the_overlap_mae():
+    assert weighted_means(_report({"a": 0.9}, depth=0.03))[1] == pytest.approx(0.03)
