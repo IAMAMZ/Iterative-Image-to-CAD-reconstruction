@@ -41,8 +41,8 @@ score that decides whether an edit is kept.
 
 | id | flag | agent sees | edit kept if |
 |---|---|---|---|
-| `mask_only` | `--geo-signal mask` *(new)* | overlay images (missing/extra); table with IoU, missing px, extra px | weighted IoU gain > `min_gain`, per-view IoU guard |
-| `depth_only` | `--geo-signal depth` *(new)* | depth-error heatmaps; table with depth error only | weighted `depth_err` falls by > `min_gain`, no IoU guard |
+| `mask_only` | `--geo-signal mask` *(built)* | overlay images (missing/extra); table with IoU, missing px, extra px | weighted IoU gain > `min_gain`, per-view IoU guard |
+| `depth_only` | `--geo-signal depth` *(built)* | depth-error heatmaps; table with depth error only | weighted `depth_err` falls by > `min_gain`, no IoU guard |
 | `no_weights` | `--no-weights` | as main, weight column = 1 | plain mean over views |
 | `no_resid_img` | `--no-residual-images` | table only, no overlay/heatmap images | as main |
 | `no_detail` | `--no-detail` | no zoomed detail tile | as main |
@@ -61,7 +61,7 @@ implicitly carry the outline", not "pure depth".
 
 | id | flag | change |
 |---|---|---|
-| `one_view` | `--views worst` *(new)* | only the single worst view is used, for the agent's images and table and for the checker |
+| `one_view` | `--views worst` *(built)* | only the single worst view is used, for the agent's images and table and for the checker |
 
 - **Which view.** The view with the lowest geo score of the **round-0** candidate against the
   target. This needs no GT and is the same view `progress.py` already highlights. It is fixed
@@ -77,7 +77,7 @@ implicitly carry the outline", not "pure depth".
 
 | id | flag | change |
 |---|---|---|
-| `no_gate` | `--gate off` *(new)* | geo evidence is shown as in main; **every built edit is kept** |
+| `no_gate` | `--gate off` *(built)* | geo evidence is shown as in main; **every built edit is kept** |
 
 - `geo_accept` still runs and is logged as the shadow decision. Kept-precision and
   harmful-accept rate then show directly what the firewall would have blocked.
@@ -176,6 +176,17 @@ independent per config, so 3–4 configs can run in parallel within the Vertex r
      view. Forces weights off.
    - `--gate {on,off}`: `off` sets `keep = True` for the geo/hybrid rules; the geo decision is
      still logged.
+   - **Built (2026-11-24):** `--geo-signal`, `--views` and `--gate`, with echo tests. Details
+     as built: in `depth` mode the detail tile crops the depth-error image (the blob is still
+     found from the silhouette residual, consistent with the `depth_only` caveat); `--views
+     worst` is allowed only for the `geo` and `oracle` arms (the questions and the judge
+     assume the 4-view grid), writes the chosen view to `parts/<part>/internal/views.json`,
+     and gives the agent the bounding box measured from that view's depth map only (strict; the
+     prompt calls it a lower bound, since one depth map misses hidden surfaces: on the tuning
+     parts 68–100% of the 4-view size per axis). The candidate placement (`--center-at`) and
+     the round-0 program, shared with `main`, still come from all 4 views; with
+     `--gate off` the judge is not called unless `--shadow-judge` is set. `--patience` is
+     still to do.
    - `--patience K`: the anchor/branch logic above, a prompt line in `vlm.refine_prompt`, and
      new outcome labels.
    - `config.json` records all four, so `summarize_runs.py` can label runs.

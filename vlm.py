@@ -178,17 +178,41 @@ Coordinate frames of the workplanes:
 - cq.Workplane("XY", origin=(x, y, z)) moves the workplane's origin.
 """
 
-VIEWS_TEXT = """The picture is a 2x2 grid of the same part seen by 4 calibrated cameras, like \
-photos of a part on a table: each camera is 45 degrees above the table, and they are 90 \
-degrees apart around the part. +Z points up in every image; the underside is never seen.
-- top-left "top_front": from the front (-Y side), above; image right = +X
-- top-right "top_right": from the right (+X side), above; image right = +Y
-- bottom-left "top_back": from the back (+Y side), above; image right = -X
-- bottom-right "top_left": from the left (-X side), above; image right = -Y"""
+VIEW_DESC = {   # rig.py cameras, in grid order
+    "top_front": "from the front (-Y side), above; image right = +X",
+    "top_right": "from the right (+X side), above; image right = +Y",
+    "top_back": "from the back (+Y side), above; image right = -X",
+    "top_left": "from the left (-X side), above; image right = -Y",
+}
+GRID_POS = ("top-left", "top-right", "bottom-left", "bottom-right")
 
 
-def bbox_text(lo, hi):
+def views_text(views=None):
+    """How the pictures are laid out: the 2x2 grid of all 4 cameras, or a single camera
+    (ablation `--views worst`)."""
+    views = list(VIEW_DESC) if views is None else list(views)
+    if len(views) == 1:
+        v = views[0]
+        return (f'The picture shows the part seen by one calibrated camera, "{v}": '
+                f"{VIEW_DESC[v]}. The camera is 45 degrees above the table, like a photo of a "
+                "part on a table. +Z points up in the image; the underside is never seen.")
+    return ("The picture is a 2x2 grid of the same part seen by 4 calibrated cameras, like "
+            "photos of a part on a table: each camera is 45 degrees above the table, and they "
+            "are 90 degrees apart around the part. +Z points up in every image; the underside "
+            "is never seen.\n" + "\n".join(f'- {p} "{v}": {VIEW_DESC[v]}'
+                                           for p, v in zip(GRID_POS, views)))
+
+
+VIEWS_TEXT = views_text()
+
+
+def bbox_text(lo, hi, one_view=False):
     size = [h - l for l, h in zip(lo, hi)]
+    if one_view:      # one depth map sees only the near surfaces: a lower bound
+        return (f"Measured from this camera's depth map, the visible surfaces of the part span "
+                f"about {size[0]:.1f} x {size[1]:.1f} x {size[2]:.1f} units (X x Y x Z). Parts "
+                "the camera cannot see may extend further, so the real size is at least this. "
+                "Its exact position does not matter; only shape and size are compared.")
     return (f"Measured from the calibrated depth maps, the part's bounding box is about "
             f"{size[0]:.1f} x {size[1]:.1f} x {size[2]:.1f} units (X x Y x Z). "
             f"Its exact position does not matter; only shape and size are compared.")
@@ -217,32 +241,48 @@ def kernel_report(info: dict) -> str:
     return "\n".join(lines)
 
 
+RESIDUAL_TEXT = {
+    "overlay": "the silhouette residual for the same {views}: GREY = correct, RED = material "
+               "the target has but we are MISSING, BLUE = EXTRA material we have but the "
+               "target does not.",
+    "depth": "the depth error where both cover the pixel: pale = correct, dark red/purple = "
+             "surface at the wrong depth (wrong thickness or height).",
+}
+
+
 def refine_prompt(program, lo, hi, cand_size=None, *, n_images=2, residual_table=None,
-                  detail=False, kernel=None, qa_feedback=None, gsolver=None):
-    """The edit request. Which evidence goes in is decided by the arm (see refine.ARMS)."""
+                  detail=False, kernel=None, qa_feedback=None, gsolver=None,
+                  residual_images=("overlay", "depth"), views=None, detail_kind="residual"):
+    """The edit request. Which evidence goes in is decided by the arm (see refine.ARMS) and
+    the ablation flags: `residual_images` lists the residual grids sent (images 3, 4, ...),
+    `views` the cameras shown (None = all 4)."""
+    nv = len(VIEW_DESC) if views is None else len(views)
+    cams = "camera" if nv == 1 else f"{nv} cameras"
     lines = []
     if n_images:
         lines += ["Image 1 is the TARGET part. Image 2 is our CURRENT reconstruction, rendered "
-                  "by the same 4 cameras.", VIEWS_TEXT]
-    lines += ["", bbox_text(lo, hi)]
+                  f"by the same {cams}.", views_text(views)]
+    lines += ["", bbox_text(lo, hi, one_view=views is not None and len(views) == 1)]
     if cand_size is not None:
         lines.append("The current reconstruction's bounding box is "
                      f"{cand_size[0]:.1f} x {cand_size[1]:.1f} x {cand_size[2]:.1f} units.")
     if residual_table is not None:
         k = 3
-        if n_images >= 4:
-            lines += ["",
-                      "Image 3 is the silhouette residual for the same 4 views: GREY = correct, "
-                      "RED = material the target has but we are MISSING, BLUE = EXTRA material we "
-                      "have but the target does not.",
-                      "Image 4 is the depth error where both cover the pixel: pale = correct, "
-                      "dark red/purple = surface at the wrong depth (wrong thickness or height)."]
-            k = 5
+        if n_images > 2 and residual_images:
+            lines.append("")
+            for kind in residual_images:
+                lines.append(f"Image {k} is " + RESIDUAL_TEXT[kind].format(
+                    views="view" if nv == 1 else f"{nv} views"))
+                k += 1
         if detail:
-            lines.append(f"Image {k} zooms into the largest residual: target | current | residual.")
-        lines += ["Per-view numbers from all 8 cameras (IoU 1.0 = perfect outline; weight = how "
-                  "much that camera is trusted, views that disagree with the others count less):",
-                  residual_table]
+            lines.append(f"Image {k} zooms into the largest residual: target | current | "
+                         f"{detail_kind}.")
+        what = "IoU 1.0 = perfect outline; " if "IoU" in residual_table.splitlines()[0] else ""
+        trust = "" if nv == 1 else ("weight = how much that camera is trusted, views that "
+                                    "disagree with the others count less")
+        note = f" ({what}{trust})".replace("; )", ")") if what or trust else ""
+        lines += [f"Per-view numbers from {'the camera' if nv == 1 else f'all {nv} cameras'}"
+                  f"{note}:", residual_table]
     if kernel:
         lines += ["", "CAD kernel report for the current program:", kernel]
     if qa_feedback:

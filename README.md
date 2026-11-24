@@ -151,7 +151,10 @@ verification question answered "Yes".
 
 **Ablations:** `--no-weights`, `--no-kernel`, `--no-residuals`, `--no-residual-images`,
 `--no-detail`, `--no-images`, `--no-placement` (cadrille_init), `--init` omitted (agent starts from
-scratch), `--shadow-judge` (judge every edit in every arm for agreement statistics).
+scratch), `--shadow-judge` (judge every edit in every arm for agreement statistics),
+`--geo-signal mask|depth` (check and evidence from the silhouette or the depth error only),
+`--views worst` (one view, picked from the round-0 program), `--gate off` (keep every built
+edit; the check is still logged). See `docs/ABLATION_PLAN.md`.
 
 Files:
 - `refine.py` — the loop, arms and logging (every edit logs the geometric check's decision, the

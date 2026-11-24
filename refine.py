@@ -62,8 +62,9 @@ import vertex_ai
 import vlm
 from compare import compare, largest_residual, load_views
 from eval3d import evaluate, properties
-from geo_check import geo_accept, geo_score, residual_table, weighted_means
+from geo_check import SIGNALS, geo_accept, geo_score, residual_table, restrict, weighted_means
 import layout
+import progress
 import report
 import sandbox
 from rig import load_rig
@@ -98,8 +99,12 @@ def _png(im: Image.Image) -> bytes:
 
 
 def grid(paths, labels, tile=256) -> bytes:
-    """2x2 labelled grid of images -> PNG bytes."""
-    sheet = Image.new("RGB", (2 * tile, 2 * tile), (255, 255, 255))
+    """2x2 labelled grid of images -> PNG bytes. A single image fills the whole sheet
+    (one-view ablation), so it is shown at the same size as the grid."""
+    if len(paths) == 1:
+        tile *= 2
+    sheet = Image.new("RGB", (tile, tile) if len(paths) == 1 else (2 * tile, 2 * tile),
+                      (255, 255, 255))
     for i, (p, lab) in enumerate(zip(paths, labels)):
         im = Image.open(p).convert("RGB").resize((tile, tile), Image.LANCZOS)
         ImageDraw.Draw(im).text((6, 5), lab, fill=(0, 0, 0))
@@ -107,22 +112,26 @@ def grid(paths, labels, tile=256) -> bytes:
     return _png(sheet)
 
 
-def render_grid(d: Path, labels=None):
-    return grid([layout.render(d, v) for v in GRID_VIEWS], labels or list(GRID_VIEWS))
+def render_grid(d: Path, labels=None, views=None):
+    views = views or GRID_VIEWS
+    return grid([layout.render(d, v) for v in views], labels or list(views))
 
 
-def diff_grid(d: Path, kind, labels=None):
+def diff_grid(d: Path, kind, labels=None, views=None):
     """kind: "_overlay" or "_depth_err" (compare.py's images of candidate dir d)."""
-    return grid([layout.diff(d, v, kind) for v in GRID_VIEWS], labels or list(GRID_VIEWS))
+    views = views or GRID_VIEWS
+    return grid([layout.diff(d, v, kind) for v in views], labels or list(views))
 
 
-def detail_strip(target_dir: Path, cand_dir: Path, weights=None, tile=256, margin=24):
-    """Zoom on the largest residual blob over all views (GATOR's detail view):
-    target | candidate | residual overlay. -> (png bytes, view) or (None, None)."""
+def detail_strip(target_dir: Path, cand_dir: Path, weights=None, tile=256, margin=24,
+                 views=None, kind="_overlay"):
+    """Zoom on the largest residual blob over the views (GATOR's detail view):
+    target | candidate | residual (kind "_overlay") or depth error ("_depth_err").
+    -> (png bytes, view) or (None, None)."""
     tv, _ = load_views(target_dir)
     cv, _ = load_views(cand_dir)
     best = (0, None, None)
-    for v in tv:
+    for v in (views or tv):
         area, box = largest_residual(tv[v][0], cv[v][0])
         area *= 1.0 if weights is None else float(weights.get(v, 1.0))
         if box and area > best[0]:
@@ -137,7 +146,7 @@ def detail_strip(target_dir: Path, cand_dir: Path, weights=None, tile=256, margi
     top, left = int(np.clip(cy - side // 2, 0, max(h - side, 0))), int(np.clip(cx - side // 2, 0, max(w - side, 0)))
     crop = (left, top, min(left + side, w), min(top + side, h))
     srcs = [(layout.render(target_dir, v), "target"), (layout.render(cand_dir, v), "current"),
-            (layout.diff(cand_dir, v, "_overlay"), "residual")]
+            (layout.diff(cand_dir, v, kind), "residual" if kind == "_overlay" else "depth error")]
     sheet = Image.new("RGB", (3 * tile, tile), (255, 255, 255))
     for i, (p, lab) in enumerate(srcs):
         im = Image.open(p).convert("RGB").crop(crop).resize((tile, tile), Image.NEAREST)
@@ -170,8 +179,10 @@ def build(src: str, cand_dir: Path, target_dir: Path, center, sandboxed=False):
     return None
 
 
-def score(target_dir: Path, cand_dir: Path, weights=None):
-    rep = compare(target_dir, cand_dir, cand_dir / layout.DIFF)
+def score(target_dir: Path, cand_dir: Path, weights=None, views=None, signal="both"):
+    """Render-compare a built candidate. The checker (geo score, w_iou, table) sees only
+    `views` (None = all) and `signal`; report["mean_iou"] stays the all-view mean."""
+    rep = restrict(compare(target_dir, cand_dir, cand_dir / layout.DIFF), views)
     try:
         e3d = evaluate(target_dir, cand_dir)
     except Exception as e:  # never let offline scoring kill a run
@@ -180,7 +191,7 @@ def score(target_dir: Path, cand_dir: Path, weights=None):
     size = (np.array(info["bbox_max"]) - np.array(info["bbox_min"])).tolist()
     w_iou, w_depth = weighted_means(rep, weights)
     return {"dir": cand_dir, "report": rep, "e3d": e3d, "size": size, "info": info,
-            "geo_score": geo_score(rep, weights), "w_iou": w_iou, "w_depth": w_depth,
+            "geo_score": geo_score(rep, weights, signal=signal), "w_iou": w_iou, "w_depth": w_depth,
             "src": (cand_dir / "program.py").read_text()}
 
 
@@ -318,8 +329,11 @@ def verdict_of(before, after):
 
 
 def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_img, weights,
-                questions, seed):
+                questions, seed, views=None):
+    """views: the cameras the checker and the agent use (None = all; `--views worst` passes
+    the one view picked from the round-0 program)."""
     spec = ARMS[arm]
+    sig = opts.geo_signal
     rng = random.Random(seed)
     run_dir = part_out / arm
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -341,9 +355,10 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
             for k, v in row.items() if k in ("status", "accepted", "w_iou", "iou3d", "verdict",
                                              "stop")), flush=True)
 
-    w = weights if opts.weights else None
-    cur = score(target_dir, part_out / "init", w)
-    log({"round": 0, "status": "ok", "accepted": True, "mean_iou": cur["report"]["mean_iou"],
+    w = weights if opts.weights and views is None else None   # one view: nothing to cross-check
+    cur = score(target_dir, part_out / "init", w, views, sig)
+    log({"round": 0, "status": "ok", "accepted": True, "views": views or list(GRID_VIEWS),
+         "mean_iou": cur["report"]["mean_iou"],
          "w_iou": cur["w_iou"], "depth_mae": cur["report"]["mean_depth_mae"],
          "geo_score": cur["geo_score"], **cur["e3d"]})
     best_geo, best_any = cur, cur          # GT-free and oracle choice of the best state
@@ -356,7 +371,7 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
         rd = run_dir / f"round_{r:02d}"
         rd.mkdir(parents=True, exist_ok=True)
         u_round = agent.usage()
-        cur_img = render_grid(cur["dir"])
+        cur_img = render_grid(cur["dir"], views=views)
         row = {"round": r}
         new = None
         qa = None
@@ -381,19 +396,25 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
 
         # --- evidence for the edit
         images = [target_img, cur_img]
-        table, detail = None, False
+        table, detail, kinds = None, False, []
         if spec["residuals"] and opts.residuals:
-            labels = [f"{v}  IoU {cur['report']['views'][v]['iou']:.3f}" for v in GRID_VIEWS]
-            if opts.residual_images:
-                images += [diff_grid(cur["dir"], "_overlay", labels),
-                           diff_grid(cur["dir"], "_depth_err")]
+            gviews = views or GRID_VIEWS
+            if opts.residual_images:              # only the grids of the active signal
+                if sig in ("both", "mask"):
+                    labels = [f"{v}  IoU {cur['report']['views'][v]['iou']:.3f}" for v in gviews]
+                    images.append(diff_grid(cur["dir"], "_overlay", labels, views))
+                    kinds.append("overlay")
+                if sig in ("both", "depth"):
+                    images.append(diff_grid(cur["dir"], "_depth_err", views=views))
+                    kinds.append("depth")
             if opts.detail:
-                strip, dview = detail_strip(target_dir, cur["dir"], w)
+                strip, dview = detail_strip(target_dir, cur["dir"], w, views=views,
+                                            kind="_depth_err" if sig == "depth" else "_overlay")
                 if strip:
                     images.append(strip)
                     detail = True
                     row["detail_view"] = dview
-            table = residual_table(cur["report"], w)
+            table = residual_table(cur["report"], w, sig)
         if not opts.images:                       # ablation: refine without images
             images = []
         msg = vlm.refine_prompt(
@@ -401,7 +422,9 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
             detail=detail, kernel=vlm.kernel_report(cur["info"]) if opts.kernel else None,
             qa_feedback=None if qa is None or not qa.get("feedback") else
             vlm.qa_text(qa["questions"], qa["answers"], only_failed=True) + "\n" + qa["feedback"],
-            gsolver=gsolver_table(target_dir, cur["dir"]) if spec["gsolver"] else None)
+            gsolver=gsolver_table(target_dir, cur["dir"]) if spec["gsolver"] else None,
+            residual_images=kinds, views=views,
+            detail_kind="depth error" if sig == "depth" else "residual")
         status, attempts, tr, (tag, why) = agent.write_program(
             msg, images, rd, target_dir, center, allow_no_change=True)
         row.update(status=status, attempts=attempts, repairs_used=attempts - 1,
@@ -411,15 +434,16 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
             stop = "no_change"
             row.update(accepted=False, verdict=None, stop=stop)
         elif status == "ok":
-            new = score(target_dir, rd, w)
-            geo_keep, geo_d = geo_accept(cur["report"], new["report"], w)
+            new = score(target_dir, rd, w, views, sig)
+            geo_keep, geo_d = geo_accept(cur["report"], new["report"], w, signal=sig)
             a, b = cur["e3d"].get("iou3d"), new["e3d"].get("iou3d")
             judge_d = None
             mode = spec["accept"]
-            need_judge = mode == "judge" or opts.shadow_judge or \
-                (mode == "hybrid" and (geo_keep or geo_d["inconclusive"]))
+            gate = opts.gate == "on"
+            need_judge = opts.shadow_judge or (gate and (
+                mode == "judge" or (mode == "hybrid" and (geo_keep or geo_d["inconclusive"]))))
             if need_judge:
-                _, judge_d = agent.judge(target_img, cur_img, render_grid(rd), rng)
+                _, judge_d = agent.judge(target_img, cur_img, render_grid(rd, views=views), rng)
             if mode == "judge":
                 keep = judge_d["keep"]
             elif mode == "geo":
@@ -430,7 +454,9 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
                 keep = a is not None and b is not None and b > a
             else:  # always
                 keep = True
-            decision = {"rule": mode, "geo": geo_d, "judge": judge_d}
+            if not gate:                          # ablation: the checker informs, never blocks
+                keep = True
+            decision = {"rule": mode if gate else "gate_off", "geo": geo_d, "judge": judge_d}
             row.update(accepted=keep, verdict=verdict_of(a, b),
                        geo_decision=geo_keep, geo_gain=geo_d["gain"],
                        geo_inconclusive=geo_d["inconclusive"],
@@ -539,6 +565,16 @@ def main(argv=None):
                     help="no zoom on the largest residual")
     ap.add_argument("--no-images", dest="images", action="store_false",
                     help="refine from text only (CADCodeVerify ablation)")
+    ap.add_argument("--geo-signal", default="both", choices=SIGNALS,
+                    help="what the geometric check uses, for both the agent's evidence and the "
+                         "keep decision: silhouette + depth (both), silhouette only (mask) or "
+                         "depth error only (depth; no per-view IoU guard)")
+    ap.add_argument("--views", default="all", choices=["all", "worst"],
+                    help="worst: use only the view where the round-0 program is most wrong, for "
+                         "the agent's images and table and for the check (weights off)")
+    ap.add_argument("--gate", default="on", choices=["on", "off"],
+                    help="off: keep every built edit; the check still runs and is logged "
+                         "(geo_decision), and best_geo still picks a state at the end")
     ap.add_argument("--sandbox", action="store_true",
                     help="build model-written programs inside a bubblewrap sandbox "
                          "(Linux only: no network, no home dir, only the output dir writable)")
@@ -555,6 +591,10 @@ def main(argv=None):
     unknown = [a for a in arms if a not in ARMS]
     if unknown:
         ap.error(f"unknown arm(s) {unknown}")
+    if args.views == "worst" and any(ARMS[a]["qa"] or ARMS[a]["accept"] in ("judge", "hybrid")
+                                     for a in arms):
+        ap.error("--views worst is for the geo and oracle arms (the questions and the judge "
+                 "assume the 4-view grid)")
     if args.sandbox:
         try:
             sandbox.check()
@@ -598,9 +638,20 @@ def main(argv=None):
                     continue
                 questions = part_questions(agent, part_out, target_img) \
                     if any(ARMS[a]["qa"] for a in arms) else []
+                views, arm_img = None, target_img
+                if args.views == "worst":            # fixed for the run, from round 0
+                    init_dir = part_out / "init"
+                    compare(target, init_dir, init_dir / layout.DIFF)
+                    views = [progress.worst_view(init_dir)]
+                    arm_img = render_grid(target, views=views)
+                    lo, hi = measure_bbox(target, rig, views)   # strict: this view's depth only
+                    (part_out / layout.INTERNAL / "views.json").write_text(json.dumps(
+                        {"views": views, "rule": "worst view of the round-0 program",
+                         "bbox_size_one_view": np.round(hi - lo, 1).tolist()}))
+                    print(f"  one view: {views[0]}", flush=True)
                 for i, arm in enumerate(arms):
-                    refine_part(agent, arm, target, part_out, args, lo, hi, center, target_img,
-                                weights, questions, args.seed + i)
+                    refine_part(agent, arm, target, part_out, args, lo, hi, center, arm_img,
+                                weights, questions, args.seed + i, views)
             except Exception:
                 traceback.print_exc(file=sys.stdout)
                 print(f"  {target.name} crashed; continuing with the next part", flush=True)

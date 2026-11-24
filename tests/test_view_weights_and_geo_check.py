@@ -70,3 +70,44 @@ def test_score_uses_the_union_depth_error():
 
 def test_old_reports_fall_back_to_the_overlap_mae():
     assert weighted_means(_report({"a": 0.9}, depth=0.03))[1] == pytest.approx(0.03)
+
+
+# ------------------------------------------------ --geo-signal ablation (mask / depth / both)
+def _rep(iou, depth_err):
+    return {"views": {"a": {"iou": iou, "depth_mae": depth_err, "depth_err": depth_err,
+                            "missing_px": 10, "extra_px": 5}}}
+
+
+def test_signal_picks_what_the_score_sees():
+    better_outline = _rep(0.95, 0.05)
+    better_depth = _rep(0.85, 0.01)
+    assert geo_score(better_outline, signal="mask") > geo_score(better_depth, signal="mask")
+    assert geo_score(better_depth, signal="depth") > geo_score(better_outline, signal="depth")
+    assert geo_score(better_depth) == pytest.approx(0.85 - 0.01)
+
+
+def test_depth_signal_has_no_iou_guard():
+    cur = {"views": {"a": _rep(0.9, 0.05)["views"]["a"], "b": _rep(0.9, 0.05)["views"]["a"]}}
+    new = {"views": {"a": _rep(0.9, 0.01)["views"]["a"], "b": _rep(0.80, 0.04)["views"]["a"]}}
+    keep_both, _ = geo_accept(cur, new)                     # b's IoU drops by 0.10: vetoed
+    keep_depth, d = geo_accept(cur, new, signal="depth")    # depth error fell in both views
+    keep_mask, _ = geo_accept(cur, new, signal="mask")      # outline only got worse
+    assert not keep_both and keep_depth and not keep_mask
+    assert d["signal"] == "depth" and d["worst_view"] == "b"
+
+
+def test_residual_table_shows_only_the_active_signal():
+    from geo_check import residual_table
+    rep = _rep(0.9, 0.02)
+    assert "IoU" in residual_table(rep) and "depth" in residual_table(rep)
+    assert "IoU" in residual_table(rep, signal="mask") and "depth" not in residual_table(rep, signal="mask")
+    t = residual_table(rep, signal="depth")
+    assert "depth" in t and "IoU" not in t and "missing" not in t
+
+
+def test_restrict_keeps_only_the_chosen_views():
+    from geo_check import restrict
+    rep = _report({"a": 0.5, "b": 0.9})
+    assert list(restrict(rep, ["b"])["views"]) == ["b"]
+    assert restrict(rep, None) is rep
+    assert geo_score(restrict(rep, ["b"])) > geo_score(rep)
