@@ -58,6 +58,7 @@ import numpy as np
 import trimesh
 from PIL import Image, ImageDraw
 
+import vertex_ai
 import vlm
 from compare import compare, largest_residual, load_views
 from eval3d import evaluate, properties
@@ -575,6 +576,7 @@ def main(argv=None):
         {k: str(v) if isinstance(v, Path) else v for k, v in vars(args).items()
          if k != "targets"} | {"arms": arms, "n_targets": len(targets),
                                "started": f"{datetime.datetime.now():%Y-%m-%d %H:%M}",
+                               "prices": vertex_ai.prices() if args.backend == "vertex" else None,
                                "targets": {t.name: str(t) for t in targets}}, indent=2))
     print(f"run folder: {args.out}  (open README.md there)", flush=True)
     with report.Tee(args.out / "log.txt"):

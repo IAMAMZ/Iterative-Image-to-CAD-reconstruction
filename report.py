@@ -31,7 +31,8 @@ from PIL import Image, ImageDraw
 
 import layout
 import progress
-from summarize_runs import load, summarize
+import vertex_ai
+from summarize_runs import load, run_prices, summarize
 
 VIEWS = ("front", "right", "top", "iso_fr")
 ARM_TEXT = {
@@ -171,8 +172,8 @@ def scores_md(part, part_dir, target, arms, rows, finals, init_iou, cfg):
 # ------------------------------------------------------------------ run pages
 def arm_table(summary, arms):
     lines = ["| arm | parts | 3D IoU start → final (median) | mean | improved / worse | "
-             "invalid edits | kept edits that helped | tokens / part | min / part |",
-             "|---|---|---|---|---|---|---|---|---|"]
+             "invalid edits | kept edits that helped | tokens / part | $ / part | min / part |",
+             "|---|---|---|---|---|---|---|---|---|---|"]
     for arm in [a for a in arms if a in summary]:
         m = summary[arm]
         q = m["quality"]["iou3d"]
@@ -185,7 +186,12 @@ def arm_table(summary, arms):
             f"| {arm} | {m['parts']} | {_f(mi(q['init']))} → **{_f(mi(q['final']))}** | "
             f"{_f(mi(q['init'], 'mean'))} → {_f(mi(q['final'], 'mean'))} | "
             f"{m['parts_improved']} / {m['parts_worse']} | {_f(m['invalid_rate'], 2)} | {helped} | "
-            f"{_f(m['tokens_per_part'], 0)} | {_f(None if wall is None else wall / 60, 1)} |")
+            f"{_f(m['tokens_per_part'], 0)} | {_f(m.get('cost_per_part'), 3)} | "
+            f"{_f(None if wall is None else wall / 60, 1)} |")
+    costs = [summary[a].get("cost_total") for a in arms if a in summary]
+    if any(c is not None for c in costs):
+        lines += ["", f"Model cost for this run: **${sum(c or 0 for c in costs):.2f}** "
+                      "(token counts × VERTEX_PRICE_*_PER_M; thinking billed as output)."]
     return lines
 
 
@@ -196,18 +202,27 @@ def results_md(root, cfg, summary, parts, arms, init_iou, finals):
              "", "*kept edits that helped*: kept edits that raised 3D IoU / all kept edits.", "",
              "## Progress by part", "",
              "![3D IoU by round, per part](results/figures/progress_by_part.png)", "",
-             "## Per part", "", "Worst starting program first. Δ = final − start.", "",
+             "## Per part", "", "Worst starting program first. Δ = final − start; then why the arm stopped "
+             "and its model cost (when prices are set).", "",
              "| part | start | " + " | ".join(arms) + " | pictures |",
              "|---|---|" + "---|" * len(arms) + "---|"]
+    prices, totals = run_prices(root), {}
     for p in sorted(parts, key=lambda p: (init_iou.get(p) is None, init_iou.get(p) or 0)):
         cells = []
         for a in arms:
             fin = finals.get((p, a))
+            cost = None if fin is None else \
+                vertex_ai.cost_usd(fin.get("prompt_tokens"), fin.get("output_tokens"), prices)
             cells.append("–" if fin is None else
                          f"{_f(fin.get('iou3d'))}{_delta(init_iou.get(p), fin.get('iou3d'))} "
-                         f"· {fin.get('stop')}")
+                         f"· {fin.get('stop')}" + ("" if cost is None else f" · ${cost:.3f}"))
+            if cost is not None:
+                totals[a] = totals.get(a, 0) + cost
         lines.append(f"| [{p}](parts/{p}/scores.md) | {_f(init_iou.get(p))} | "
                      + " | ".join(cells) + f" | [progress](parts/{p}/progress.png) · [detail](parts/{p}/compare.png) |")
+    if totals:
+        lines.append(f"| **total** (all arms ${sum(totals.values()):.2f}) | | "
+                     + " | ".join(f"**${totals[a]:.2f}**" if a in totals else "–" for a in arms) + " | |")
     figs = sorted(f for f in (root / "results" / "figures").glob("*.png")
                   if f.name != "progress_by_part.png")
     if figs:

@@ -26,6 +26,8 @@ from pathlib import Path
 
 import numpy as np
 
+import vertex_ai
+
 ROOT = Path(__file__).parent
 META = ROOT / "data" / "fusion360" / "stage1_meta.json"
 METRICS = ("iou3d", "iou3d_cad", "cd_cad", "chamfer_x1000", "hausdorff", "f1", "iogt")
@@ -80,8 +82,21 @@ def load(root: Path):
     return rows, finals
 
 
+def run_prices(root: Path) -> dict | None:
+    """USD prices for a run: the ones frozen in config.json when it started, else the
+    current .env prices (Vertex runs only; local backends cost nothing to report)."""
+    f = root / "config.json"
+    cfg = json.loads(f.read_text()) if f.exists() else {}
+    if cfg.get("prices"):
+        return cfg["prices"]
+    return vertex_ai.prices() if cfg.get("backend", "vertex") == "vertex" else None
+
+
 def summarize(root: Path) -> dict:
     rows, finals = load(root)
+    prices = run_prices(root)
+    for d in finals.values():
+        d["cost_usd"] = vertex_ai.cost_usd(d.get("prompt_tokens"), d.get("output_tokens"), prices)
     meta = json.loads(META.read_text())["parts"] if META.exists() else {}
     by_arm = defaultdict(list)
     for r in rows:
@@ -127,6 +142,8 @@ def summarize(root: Path) -> dict:
             "stops": dict(Counter(f.get("stop") for f in fin.values())),
             "kernel_warnings_per_edit": mean([e.get("kernel_warnings") for e in valid]),
             "tokens_per_part": mean([f.get("prompt_tokens", 0) + f.get("output_tokens", 0) for f in fin.values()]),
+            "cost_per_part": mean([f.get("cost_usd") for f in fin.values()]),
+            "cost_total": None if prices is None else sum(f.get("cost_usd") or 0 for f in fin.values()),
             "llm_seconds_per_part": mean([f.get("llm_seconds") for f in fin.values()]),
             "wall_seconds_per_part": mean([f.get("wall_seconds") for f in fin.values()]),
             "gain_by_stratum": {k: med_iqr(v) for k, v in sorted(strata.items())},
@@ -144,7 +161,7 @@ def results_dir(root: Path) -> Path:
 def write_csv(root, rows, finals):
     keys = ["part", "arm", "stop", "rounds_run", "iou3d", "iou3d_cad", "cd_cad", "chamfer_x1000",
             "hausdorff", "f1", "w_iou", "llm_seconds", "prompt_tokens", "output_tokens",
-            "wall_seconds"]
+            "cost_usd", "wall_seconds"]
     init = {(r["part"], r["arm"]): r for r in rows if r["round"] == 0}
     with open(root / "parts.csv", "w", newline="") as f:
         w = csv.writer(f)
@@ -190,6 +207,8 @@ def main():
         print(f"  geo-vs-vlm agreement {f(m['geo_vlm_agreement'], 2)}; changes {m['change_types']}")
         print(f"  per part: {f(m['tokens_per_part'], 0)} tokens, {f(m['llm_seconds_per_part'], 0)} s model, "
               f"{f(m['wall_seconds_per_part'], 0)} s wall")
+        if m["cost_total"] is not None:
+            print(f"  cost: ${m['cost_total']:.2f} total, ${m['cost_per_part']:.3f} per part")
 
 
 if __name__ == "__main__":
