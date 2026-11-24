@@ -29,16 +29,16 @@ DISTANCE = 3.5            # unit sphere fills ~85% of the frame height
 ZNEAR, ZFAR = 1.0, 6.0    # brackets the unit sphere (2.5 .. 4.5) with slack
 
 # name -> (azimuth deg, elevation deg). azimuth 0 = +X, 90 = +Y; elevation from the XY plane.
-# "front" looks from -Y toward +Y, so +X is to the right of the image.
+# Four "table" views, as in RealCAD: a fixed camera about 45 deg above the table and the part
+# turned 90 deg between photos (VGGT on RealCAD test50: median elevation 43 deg, steps ~90 deg).
+# Same names and directions as data/cameras.json. The underside is never seen.
+# "top_front" looks from -Y toward +Y, so +X is to the right of the image. The order is the
+# agent's 2x2 grid (row by row).
 VIEWS = {
-    "front":     (-90.0,   0.0),
-    "back":      ( 90.0,   0.0),
-    "right":     (  0.0,   0.0),
-    "left":      (180.0,   0.0),
-    "top":       (-90.0,  90.0),
-    "bottom":    (-90.0, -90.0),
-    "iso_fr":    (-45.0,  30.0),   # front-right, from above
-    "iso_bl":    (135.0,  30.0),   # back-left, from above
+    "top_front": (-90.0, 45.0),
+    "top_right": (  0.0, 45.0),
+    "top_back":  ( 90.0, 45.0),
+    "top_left":  (180.0, 45.0),
 }
 
 

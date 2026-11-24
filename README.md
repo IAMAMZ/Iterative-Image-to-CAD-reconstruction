@@ -8,7 +8,7 @@ Write a 3D part as code, then take pictures of it from fixed angles.
 - `generate_solid.py` — runs a part file, checks the part is OK, saves it, and takes its pictures.
 - `op_checker.py` — watches every CadQuery command as it runs and logs the illegal ones (with the line and a hint how to fix it).
 - `cq_render.py` — the camera: turns a 3D shape into pictures.
-- `rig.py` — decides where the 8 cameras stand; saves them in `rig.json`.
+- `rig.py` — decides where the 4 cameras stand (RealCAD-style table views: 45° up, 90° apart); saves them in `rig.json`.
 - `compare.py` — scores a guess against the real 3D part: how well outlines overlap (IoU) and how far off the depth is, per camera.
 - `compare_image.py` — scores a guess against just a picture of the part (no 3D model): finds the camera angle, then compares outlines.
 
@@ -73,7 +73,7 @@ that best fits, lines the outlines up, and scores how well they match.
 ```sh
 uv run python generate_solid.py guess.py --out runs/_scratch/guess
 uv run python compare_image.py photo.png runs/_scratch/guess                  # camera unknown: search
-uv run python compare_image.py photo.png runs/_scratch/guess --camera iso_fr  # camera known
+uv run python compare_image.py photo.png runs/_scratch/guess --camera top_right  # camera known
 ```
 
 Look at `runs/_scratch/guess/compare_image/summary.png`: the picture, the guess from the found

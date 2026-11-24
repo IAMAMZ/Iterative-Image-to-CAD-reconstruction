@@ -34,7 +34,6 @@ STATUS = {"kept": ("#0ca30c", "✓ kept"), "rejected": ("#d03b3b", "✗ rejected
           "failed": ("#8c8c8c", "did not build"), "no-change": ("#8c8c8c", "no change"),
           "stopped": ("#8c8c8c", "stopped: all Yes"), "start": ("#5f5e5a", "start")}
 INK, MUTED, GRID = "#1f1f1e", "#6b6a64", "#e1e0d9"
-VIEWS = ("front", "right", "top", "iso_fr")
 
 plt.rcParams.update({"font.size": 8, "axes.edgecolor": "#c3c2b7", "axes.labelcolor": INK,
                      "xtick.color": MUTED, "ytick.color": MUTED, "text.color": INK})
@@ -75,17 +74,18 @@ def worst_view(init_dir: Path) -> str:
     """The grid view where the starting program is most wrong (silhouette + depth), among
     views that show the part at a useful size (not edge-on)."""
     f = layout.diff_dir(init_dir) / "report.json"
+    grid = layout.grid_views(init_dir)
     if not f.exists():
-        return "iso_fr"
+        return grid[0]
     rep = json.loads(f.read_text())
     vmax = rep.get("depth_vmax") or 0.05
 
     def err(m):
         sil = (m["missing_px"] + m["extra_px"]) / max(m["target_px"], 1)
         return sil + (m["depth_mae"] or 0) / vmax
-    views = [v for v in VIEWS if v in rep["views"]]
+    views = [v for v in grid if v in rep["views"]]
     if not views:
-        return "iso_fr"
+        return grid[0]
     big = max(rep["views"][v]["target_px"] for v in views)
     views = [v for v in views if rep["views"][v]["target_px"] >= 0.35 * big]
     return max(views, key=lambda v: err(rep["views"][v]))

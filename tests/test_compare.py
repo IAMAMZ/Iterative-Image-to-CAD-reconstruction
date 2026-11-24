@@ -111,16 +111,16 @@ def test_same_part_scores_perfectly(runs):
 def test_longer_part_shows_extra_material_along_x(runs):
     r = compare(runs / "target", runs / "longer", runs / "out_longer")
     v = r["views"]
-    assert v["front"]["iou"] < 0.95 and v["front"]["extra_px"] > 0
-    assert v["front"]["missing_px"] == 0          # the longer box covers all of the target
-    # looking along X (from the right) the end face is 4 mm closer. With a perspective camera
-    # that makes it look a bit bigger: target fully covered, only extra material around it
-    assert v["right"]["missing_px"] == 0 and v["right"]["extra_px"] > 0
-    assert v["right"]["depth_mae_mm"] == pytest.approx(4.0, abs=0.1)  # end face 4 mm closer
-    for f in ("summary.png", "report.json", "front_overlay.png", "front_depth_err.png"):
+    # the longer box contains the target, so every view shows only extra material
+    for name in ("top_front", "top_back"):        # X runs across these images
+        assert v[name]["iou"] < 0.95 and v[name]["extra_px"] > 0
+    assert all(m["missing_px"] == 0 for m in v.values())
+    # from the +X side the end face is 4 mm closer (seen at 45 deg, so more along the ray)
+    assert v["top_right"]["extra_px"] > 0 and v["top_right"]["depth_mae_mm"] > 0.5
+    for f in ("summary.png", "report.json", "top_front_overlay.png", "top_front_depth_err.png"):
         assert (runs / "out_longer" / f).exists()
     # extra material is drawn blue in the overlay
-    ov = np.asarray(Image.open(runs / "out_longer" / "front_overlay.png"))
+    ov = np.asarray(Image.open(runs / "out_longer" / "top_front_overlay.png"))
     assert (ov == EXTRA).all(-1).any()
 
 
@@ -129,4 +129,4 @@ def test_without_shared_frame_a_bigger_part_looks_wrongly_close(runs, capsys):
     fair = compare(runs / "target", runs / "longer", runs / "o1")
     unfair = compare(runs / "target", runs / "longer_own_frame", runs / "o2")
     assert "different frames" in capsys.readouterr().err
-    assert unfair["views"]["right"]["depth_mae"] < fair["views"]["right"]["depth_mae"]
+    assert unfair["mean_iou"] > fair["mean_iou"]   # shrunk to fit: silhouettes look closer

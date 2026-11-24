@@ -22,6 +22,19 @@ def _pick(d: Path, sub: str, name: str) -> Path:
     return old if not new.exists() and old.exists() else new
 
 
+LEGACY_GRID = ("front", "right", "top", "iso_fr")   # agent grid of the 8-camera rig (to 2026-11-23)
+
+
+def grid_views(d: Path | None = None) -> tuple:
+    """The views the agent sees and the pages show: every rig camera, in grid order. A
+    folder rendered with the old 8-camera rig gets that rig's 4 grid views instead."""
+    from rig import load_rig
+    names = tuple(c["name"] for c in load_rig()["cameras"])
+    if d is not None and not render(d, names[0]).exists() and render(d, "front").exists():
+        return LEGACY_GRID
+    return names
+
+
 def render(d: Path, view: str, kind: str = "") -> Path:
     """kind: "" (shaded), "_mask" or "_depth"."""
     return _pick(d, RENDERS, f"{view}{kind}.png")

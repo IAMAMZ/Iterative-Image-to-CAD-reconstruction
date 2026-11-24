@@ -71,7 +71,7 @@ from view_weights import measure_bbox, view_weights
 
 ROOT = Path(__file__).parent
 RUNS = ROOT / "runs"          # default home of run folders (git-ignored)
-GRID_VIEWS = ("front", "right", "top", "iso_fr")
+GRID_VIEWS = layout.grid_views()   # the 4 rig cameras, 2x2 grid order
 BUILD_TIMEOUT = 180  # seconds; model-written code can be pathological
 BENEFIT = 0.005      # 3D IoU change that counts as a real improvement / harm (offline label)
 TEMPERATURE = 1.0    # Gemini 3's recommended setting

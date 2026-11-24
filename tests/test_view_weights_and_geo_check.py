@@ -16,15 +16,15 @@ def _depths(target):
 def test_corrupted_view_gets_the_lowest_weight(f360_target, corrupt):
     d = _depths(f360_target)
     if corrupt == "shift":
-        d["top"] = np.roll(d["top"], 30, axis=1)
+        d["top_front"] = np.roll(d["top_front"], 30, axis=1)
     else:
-        f = d["top"].astype(np.float32)
+        f = d["top_front"].astype(np.float32)
         f[f > 0] += 0.2
-        d["top"] = f.astype(np.float16)
+        d["top_front"] = f.astype(np.float16)
     w = to_weights(consistency(d, load_rig()))
-    assert min(w, key=w.get) == "top"
-    assert w["top"] < 0.9
-    assert min(v for k, v in w.items() if k != "top") > 0.95   # the others stay trusted
+    assert min(w, key=w.get) == "top_front"
+    assert w["top_front"] < 0.9
+    assert min(v for k, v in w.items() if k != "top_front") > 0.95   # the others stay trusted
 
 
 def _report(ious, depth=0.01):

@@ -34,7 +34,6 @@ import progress
 import vertex_ai
 from summarize_runs import load, run_prices, summarize
 
-VIEWS = ("front", "right", "top", "iso_fr")
 ARM_TEXT = {
     "premise": "renders only; the VLM judge decides (3D-Premise-style baseline)",
     "vlm": "renders + failed verification questions; the VLM judge decides (CADCodeVerify-style)",
@@ -105,6 +104,7 @@ def compare_png(part_dir: Path, target: Path | None, columns, out: Path, tile=20
     """columns: [(label, rendered-solid dir)]. Rows: the 4 renders, then 4 depth-error maps
     (the target column shows its own depth map there)."""
     cols = [("target", target)] + columns
+    VIEWS = layout.grid_views(next((s for _, s in columns if s is not None), target))  # the run's rig
     sheet = Image.new("RGB", (tile * len(cols), head + 2 * len(VIEWS) * tile), (255, 255, 255))
     d = ImageDraw.Draw(sheet)
     for i, (lab, src) in enumerate(cols):
@@ -281,12 +281,12 @@ def readme_md(root, cfg, summary, parts, arms, finals, finished):
         "```", "",
         "Inside every program folder (`init/`, `round_*`): `program.py` (CadQuery), "
         "`solid.stl` / `solid.step` (the built shape), `conversation.json` (prompt, the model's "
-        "replies and repairs, the gate's decision), `renders/` (8 cameras: shaded, mask, depth), "
+        "replies and repairs, the gate's decision), `renders/` (4 cameras: shaded, mask, depth), "
         "`diff/` (vs the target: `<view>_overlay.png`, `<view>_depth_err.png`, `summary.png`, "
         "`report.json`), `internal/` (info.json, depth.npz, CAD-kernel ops log).", "",
         "## Terms", "",
         "- **3D IoU** (`iou3d`): volume overlap with the hidden ground truth; offline score only.",
-        "- **silhouette IoU** (`w_iou`): view-weighted 2D outline overlap over the 8 cameras; "
+        "- **silhouette IoU** (`w_iou`): view-weighted 2D outline overlap over the 4 cameras; "
         "what the geometric check sees. It is blind to depth-only errors (an offset hidden "
         "inside the outline), so check the depth-error rows too.",
         "- **round folder suffix**: `kept` (edit accepted), `rejected` (built, but the arm's gate "

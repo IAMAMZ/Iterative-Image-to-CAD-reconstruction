@@ -37,7 +37,7 @@ def test_refine_all_arms_with_echo(f360_target, tmp_path):
                 assert isinstance(r["geo_decision"], bool) and r["verdict"] is not None
                 assert r["prompt_tokens"] > 0
                 assert r["dir"].endswith("kept" if r["accepted"] else "rejected")
-                assert (part / arm / r["dir"] / "renders" / "front.png").exists()
+                assert (part / arm / r["dir"] / "renders" / "top_front.png").exists()
                 assert (part / arm / r["dir"] / "diff" / "summary.png").exists()
     s = summarize(out)
     assert set(s) == set(refine.ARMS)

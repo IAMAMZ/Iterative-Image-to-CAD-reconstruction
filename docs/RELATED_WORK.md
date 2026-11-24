@@ -86,7 +86,7 @@ judge rejects, so all arms share GATOR's keep-or-revert loop. `gsolver` keeps ev
 |---|---|---|
 | Start from an initial model as a scaffold | cadrille's program is round 0 | `cadrille_init.py convert` |
 | Fit scale by rendering silhouettes and depth | Placement fit: isotropic scale in [0.7, 1.4], grid + golden-section search on the geo score (not differentiable) | `cadrille_init.py convert` |
-| Edit–render–review loop, matched cameras | Same 8 cameras for target and candidate | `refine.py`, `rig.py` |
+| Edit–render–review loop, matched cameras | Same 4 cameras for target and candidate (RealCAD-style table views) | `refine.py`, `rig.py` |
 | Keep improvements, revert regressions | Every arm except `gsolver` | `refine.py` |
 | Time budget | `--rounds` and `--budget-seconds` | `refine.py` |
 | Preserve frame and scale | Rules in the system prompt | `vlm.SYSTEM` |

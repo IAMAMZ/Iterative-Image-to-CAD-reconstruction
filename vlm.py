@@ -178,11 +178,13 @@ Coordinate frames of the workplanes:
 - cq.Workplane("XY", origin=(x, y, z)) moves the workplane's origin.
 """
 
-VIEWS_TEXT = """The picture is a 2x2 grid of the same part seen by 4 calibrated cameras:
-- top-left "front": looking along +Y; image right = +X, image up = +Z
-- top-right "right": looking along -X; image right = +Y, image up = +Z
-- bottom-left "top": looking down -Z; image right = +X, image up = +Y
-- bottom-right "iso_fr": from the front-right, above"""
+VIEWS_TEXT = """The picture is a 2x2 grid of the same part seen by 4 calibrated cameras, like \
+photos of a part on a table: each camera is 45 degrees above the table, and they are 90 \
+degrees apart around the part. +Z points up in every image; the underside is never seen.
+- top-left "top_front": from the front (-Y side), above; image right = +X
+- top-right "top_right": from the right (+X side), above; image right = +Y
+- bottom-left "top_back": from the back (+Y side), above; image right = -X
+- bottom-right "top_left": from the left (-X side), above; image right = -Y"""
 
 
 def bbox_text(lo, hi):
