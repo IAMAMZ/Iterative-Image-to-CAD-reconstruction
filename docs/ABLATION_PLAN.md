@@ -8,6 +8,9 @@ comparison against the main method.
 `VERTEX_MODEL`) as the editing agent, `geo` arm. The full geometric checker is on: silhouette IoU
 plus depth error, view weights, residual images, detail tile and kernel report. All 4 rig views
 (`top_front top_right top_back top_left`) are used. `geo_accept` decides every edit.
+The agent also gets **edit feedback** (`docs/FEEDBACK_PLAN.md`), in whichever variant the
+feedback pilot picks: an attempt log of rejected edits with per-view deltas, a round history,
+and a repeat guard. Feedback is built and frozen **before** this ablation.
 
 ## 1. Configurations
 
@@ -81,6 +84,9 @@ implicitly carry the outline", not "pure depth".
 - **Report both `final` and `best_geo`.** `best_geo` (best kept state by geo score) is itself a
   GT-free selection. `no_gate` + `best_geo` is "checker as a selector at the end". `no_gate` +
   `final` is "no checker decisions at all". This split is part of the result.
+- Feedback stays on in `no_gate`. It still reports what each edit did to the score, so this
+  config means "checker as information only", and feedback is the agent's only sign that an
+  edit went wrong.
 
 ### F. Tree search: let bad edits run for a few rounds
 
@@ -116,7 +122,14 @@ end of run: final = A (never an uncommitted branch)
 - Stretch goal, not in the main grid: a real beam (B children per node, keep the best by geo
   score) multiplies cost by B.
 
-### G. Noise floor
+### G. Edit feedback
+
+| id | flag | change |
+|---|---|---|
+| `no_feedback` | `--feedback none` | each round sees only the current state, so rejected edits leave no trace (the pre-feedback method) |
+| `fb_text_only` | `--feedback text` | only if the image variant is in `main`: drop the edit-effect image |
+
+### H. Noise floor
 
 | id | change | why |
 |---|---|---|
@@ -138,16 +151,17 @@ so the proposal is **R = 6** everywhere, including `main` (decide in the pilot; 
 
 | group | configs that call the model |
 |---|---|
-| required | `main`, `gemini`, `hybrid`, `mask_only`, `depth_only`, `one_view`, `no_gate`, `patience1`, `patience2`, `main_s1` → **10** |
-| secondary | `no_weights`, `no_resid_img`, `no_detail`, `no_kernel` → 4 |
+| required | `main`, `gemini`, `hybrid`, `mask_only`, `depth_only`, `one_view`, `no_gate`, `patience1`, `patience2`, `no_feedback`, `main_s1` → **11** |
+| secondary | `no_weights`, `no_resid_img`, `no_detail`, `no_kernel`, (`fb_text_only`) → 4–5 |
 | free | `cadrille`, `gemini0` (round 0 of existing runs) |
 
-That is 10 × 36 = 360 part-runs required, plus 144 secondary.
+That is 11 × 36 = 396 part-runs required, plus 144–180 secondary.
 
 **Cost and time (rough).** The only real run so far (`runs/2026-11-23_vertex_smoke`: 1 part,
 1 round, gemini-3.8-flash) used about 12k tokens, cost $0.026 and took 0.7 min. Scaled linearly
-to 6 rounds, that is about $0.15 and 4 min per part-run, so **about $55 and 24 h serial** for
-the required set (hybrid costs more because of the questions and judge). These numbers come
+to 6 rounds, that is about $0.15 and 4 min per part-run, so **about $60–70 and 26 h serial** for
+the required set (hybrid costs more because of the questions and judge; the feedback block
+adds about 1–2k tokens per round). These numbers come
 from one round of one part. Measure them again in the pilot before the full run. Runs are
 independent per config, so 3–4 configs can run in parallel within the Vertex rate limits.
 
@@ -188,7 +202,10 @@ independent per config, so 3–4 configs can run in parallel within the Vertex r
 
 ## 4. Order of work
 
-1. Implement flags + tests (echo backend only).
+0. **Edit feedback first** (`docs/FEEDBACK_PLAN.md` §8): implement it, pilot it on the tuning
+   set, pick the variant, and freeze it as part of `main`.
+1. Implement the ablation flags + tests (echo backend only). The feedback block must respect
+   `--geo-signal`, `--views`, `--gate` and `--patience` (FEEDBACK_PLAN §5).
 2. **Pilot on the 9 tuning parts** (never on Stage 1 parts): every new config with
    `--rounds 6`. Check that the runs are sane, then measure real cost and time. Settle the
    open decisions in §5. Wait for go-ahead after the pilot report.
