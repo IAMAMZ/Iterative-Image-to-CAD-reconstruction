@@ -375,6 +375,46 @@ def _judge_reason(judge_d):
     return (paras[-1] if paras else text)[:400] or None
 
 
+class Branch:
+    """`--patience K` (docs/ABLATION_PLAN.md F): depth-limited backtracking on one path.
+    `anchor` is the last committed state, `head` the state the agent edits. Every built edit
+    is judged against the anchor, never its parent, so a run of bad steps cannot drift:
+      commit      the check passes vs the anchor       anchor = head = new, steps = 0
+      tentative   it fails and steps < K               head = new, steps += 1
+      rolled_back it fails on a branch with steps = K,  head = anchor, steps = 0
+                  or the agent reverted to the anchor   (new is discarded)
+      rejected    it fails at the anchor with K = 0 (or a no-op revert at the anchor)
+    With K = 0 this is the plain keep/reject loop. The run's final state is the anchor."""
+
+    def __init__(self, patience, start, start_round=0):
+        self.k = patience
+        self.anchor = self.head = start
+        self.anchor_round = start_round
+        self.steps = 0
+        self.branch = []                    # rounds of the tentative edits on the head
+
+    @property
+    def on_branch(self):
+        return self.head is not self.anchor
+
+    def step(self, r, new, passed, reverted=False):
+        if passed:
+            self.anchor = self.head = new
+            self.anchor_round, self.steps, self.branch = r, 0, []
+            return "committed"
+        if self.k and self.steps < self.k and not reverted:
+            self.head = new
+            self.steps += 1
+            self.branch.append(r)
+            return "tentative"
+        if self.on_branch:
+            self.rolled = self.branch + [r]     # the attempts that never beat the anchor
+            self.head, self.steps = self.anchor, 0
+            self.branch = []
+            return "rolled_back"
+        return "rejected"
+
+
 def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_img, weights,
                 questions, seed, views=None):
     """views: the cameras the checker and the agent use (None = all; `--views worst` passes
@@ -415,6 +455,7 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
          "w_iou": cur["w_iou"], "depth_mae": cur["report"]["mean_depth_mae"],
          "geo_score": cur["geo_score"], **cur["e3d"]})
     best_geo, best_any = cur, cur          # GT-free and oracle choice of the best state
+    br = Branch(opts.patience if gate else 0, cur)   # cur is always br.head
     stop = None
     r = 0
     for r in range(1, opts.rounds + 1):
@@ -471,7 +512,12 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
             table = residual_table(cur["report"], w, sig)
         if not opts.images:                       # ablation: refine without images
             images = []
-        fb_text, tried = None, None
+        fb_text, tried, branch = None, None, None
+        if br.on_branch:                          # --patience: tell the agent it is on a branch
+            # the branch's diff vs the anchor, unless the attempt log already shows it
+            show = fb == "none" or not fb_log or len(br.branch) > 1
+            branch = vlm.branch_text(br.branch, br.anchor_round, br.k - br.steps + 1,
+                                     diff_lines(br.anchor["src"], cur["src"]) if show else None)
         if fb != "none":
             shown = attempts[-FB_ATTEMPTS:] if fb_log else []
             effect = None
@@ -494,7 +540,8 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
             vlm.qa_text(qa["questions"], qa["answers"], only_failed=True) + "\n" + qa["feedback"],
             gsolver=gsolver_table(target_dir, cur["dir"]) if spec["gsolver"] else None,
             residual_images=kinds, views=views,
-            detail_kind="depth error" if sig == "depth" else "residual", feedback=fb_text)
+            detail_kind="depth error" if sig == "depth" else "residual", feedback=fb_text,
+            branch=branch)
         status, n_tries, tr, (tag, why) = agent.write_program(
             msg, images, rd, target_dir, center, allow_no_change=True, tried=tried)
         row.update(status=status, attempts=n_tries, repairs_used=n_tries - 1,
@@ -509,8 +556,9 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
             row.update(accepted=False, verdict=None, stop=stop)
         elif status == "ok":
             new = score(target_dir, rd, w, views, sig)
-            geo_keep, geo_d = geo_accept(cur["report"], new["report"], w, signal=sig)
-            a, b = cur["e3d"].get("iou3d"), new["e3d"].get("iou3d")
+            base, base_round = br.anchor, br.anchor_round   # = cur unless on a branch
+            geo_keep, geo_d = geo_accept(base["report"], new["report"], w, signal=sig)
+            a, b = base["e3d"].get("iou3d"), new["e3d"].get("iou3d")
             judge_d = None
             mode = spec["accept"]
             gate = opts.gate == "on"
@@ -544,16 +592,25 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
             else:
                 reason = None                     # oracle: rejected, without the GT reason
             row["reject_reason"] = None if keep else reason
+            reverted = br.on_branch and normalize_program(new["src"]) == \
+                normalize_program(base["src"])
+            outcome = br.step(r, new, keep, reverted)
+            if br.k:
+                row.update(patience_outcome=outcome, anchor_round=base_round,
+                           branch_depth=br.steps, reverted=reverted)
             if fb != "none":
-                entry = {"outcome": "kept" if keep else "rejected", "reason": reason,
+                entry = {"outcome": {"committed": "kept"}.get(outcome, outcome), "reason": reason,
+                         "anchor_round": base_round if br.k else None,
+                         "rolled": br.rolled if outcome == "rolled_back" else None,
+                         "reverted": reverted,
                          "geo_keep": geo_keep, "judge": _judge_reason(judge_d)
                          if reason == "judge" else None,
                          **{k: geo_d[k] for k in ("gain", "worst_view", "worst_view_drop",
                                                   "min_gain", "max_view_drop")}}
                 if fb_geo:
-                    entry["delta"] = edit_delta(cur["report"], new["report"], w, sig)
+                    entry["delta"] = edit_delta(base["report"], new["report"], w, sig)
                 if fb == "image" and fb_geo and sig != "depth" and not keep:
-                    write_effect_images(target_dir, cur["dir"], rd, rd / layout.DIFF, views)
+                    write_effect_images(target_dir, base["dir"], rd, rd / layout.DIFF, views)
             row.update(accepted=keep, verdict=verdict_of(a, b),
                        geo_decision=geo_keep, geo_gain=geo_d["gain"],
                        geo_inconclusive=geo_d["inconclusive"],
@@ -564,10 +621,9 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
                        **new["e3d"], iou3d_before=a)
             if (new["e3d"].get("iou3d") or -1) > (best_any["e3d"].get("iou3d") or -1):
                 best_any = new
-            if keep:
-                cur = new
-                if cur["geo_score"] > best_geo["geo_score"]:
-                    best_geo = cur
+            cur = br.head
+            if outcome == "committed" and cur["geo_score"] > best_geo["geo_score"]:
+                best_geo = cur
         else:
             row.update(accepted=False, verdict=None)
             if status in ("failed", "repeat_blocked"):
@@ -579,7 +635,9 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
         (rd / "conversation.json").write_text(json.dumps(
             {"prompt": msg, "transcript": tr, "decision": decision, "qa": qa}, indent=2,
             default=str))
-        label = {"ok": "kept" if row.get("accepted") else "rejected", "failed": "failed",
+        label = {"ok": {"committed": "kept", "tentative": "tentative",
+                        "rolled_back": "rolled-back"}.get(outcome, "rejected") if status == "ok"
+                 else None, "failed": "failed",
                  "no_change": "no-change", "repeat_blocked": "repeat-blocked"}[status]
         rd = _label_round(rd, label)
         if new is not None:               # cur / best_* may point at this round's state
@@ -587,7 +645,11 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
         if fb != "none":                  # update the attempt log and the round history
             hist = f"round {r}: " + {"kept": "kept", "rejected": "rejected",
                                      "failed": "did not build",
-                                     "repeat_blocked": "repeat, not built"}.get(
+                                     "repeat_blocked": "repeat, not built",
+                                     "tentative": "kept tentatively (below the last committed "
+                                                  f"program, round {(entry or {}).get('anchor_round')})",
+                                     "rolled_back": "rolled back to round "
+                                                    f"{(entry or {}).get('anchor_round')}"}.get(
                 (entry or {}).get("outcome"), "NO_CHANGE")
             if entry is not None:
                 src_f = rd / "program.py"
@@ -615,11 +677,13 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
             break
     else:
         stop = "rounds"
+    cur = br.anchor                       # never an uncommitted branch
     os.symlink(os.path.relpath(cur["dir"], run_dir), run_dir / "final",
                target_is_directory=True)
     final = {"part": target_dir.name, "arm": arm, "stop": stop, "rounds_run": r,
              "final_dir": str(cur["dir"]), "mean_iou": cur["report"]["mean_iou"],
-             "w_iou": cur["w_iou"], **cur["e3d"],
+             "w_iou": cur["w_iou"], **cur["e3d"], "patience": br.k,
+             "ended_on_branch": br.on_branch,
              "best_geo": {"dir": str(best_geo["dir"]), **best_geo["e3d"]},
              "best_oracle": {"dir": str(best_any["dir"]), **best_any["e3d"]},
              "wall_seconds": round(time.time() - t_start, 1),
@@ -699,13 +763,17 @@ def main(argv=None):
     ap.add_argument("--views", default="all", choices=["all", "worst"],
                     help="worst: use only the view where the round-0 program is most wrong, for "
                          "the agent's images and table and for the check (weights off)")
-    ap.add_argument("--feedback", default="none", choices=["none", "text", "image"],
+    ap.add_argument("--feedback", default="image", choices=["none", "text", "image"],
                     help="edit feedback (docs/FEEDBACK_PLAN.md): text = attempt log of edits "
                          "not kept since the last kept one, round history and repeat guard; "
                          "image = text + an edit-effect image of the latest attempt")
     ap.add_argument("--gate", default="on", choices=["on", "off"],
                     help="off: keep every built edit; the check still runs and is logged "
                          "(geo_decision), and best_geo still picks a state at the end")
+    ap.add_argument("--patience", type=int, default=0,
+                    help="geo/oracle arms, gate on: an edit that fails the check stays as a "
+                         "tentative branch for up to K more rounds; the branch is committed only "
+                         "if it beats the last committed state, else rolled back (ABLATION_PLAN F)")
     ap.add_argument("--sandbox", action="store_true",
                     help="build model-written programs inside a bubblewrap sandbox "
                          "(Linux only: no network, no home dir, only the output dir writable)")
@@ -726,6 +794,12 @@ def main(argv=None):
                                      for a in arms):
         ap.error("--views worst is for the geo and oracle arms (the questions and the judge "
                  "assume the 4-view grid)")
+    if args.patience < 0:
+        ap.error("--patience must be >= 0")
+    if args.patience and (args.gate == "off" or any(ARMS[a]["accept"] not in ("geo", "oracle")
+                                                    for a in arms)):
+        ap.error("--patience needs --gate on and the geo or oracle arm (it compares every edit "
+                 "with the last committed state)")
     if args.sandbox:
         try:
             sandbox.check()

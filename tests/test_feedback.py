@@ -140,7 +140,7 @@ def test_feedback_never_leaks_the_ground_truth(f360_target, tmp_path):
 
 
 def test_feedback_none_sends_the_old_prompt(f360_target, tmp_path):
-    rows, prompts, part = _run(f360_target, tmp_path, rounds=3)
+    rows, prompts, part = _run(f360_target, tmp_path, "--feedback", "none", rounds=3)
     for p in prompts.values():
         assert "Previous attempts" not in p and "Round history" not in p
     assert not list(part.glob("*/diff/effect.json"))

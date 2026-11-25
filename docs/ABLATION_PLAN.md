@@ -185,10 +185,29 @@ independent per config, so 3–4 configs can run in parallel within the Vertex r
      prompt calls it a lower bound, since one depth map misses hidden surfaces: on the tuning
      parts 68–100% of the 4-view size per axis). The candidate placement (`--center-at`) and
      the round-0 program, shared with `main`, still come from all 4 views; with
-     `--gate off` the judge is not called unless `--shadow-judge` is set. `--patience` is
-     still to do.
+     `--gate off` the judge is not called unless `--shadow-judge` is set.
    - `--patience K`: the anchor/branch logic above, a prompt line in `vlm.refine_prompt`, and
      new outcome labels.
+   - **Built (2026-11-24):** `--patience K` (`refine.Branch`, tests in
+     `tests/test_patience.py`). As built:
+     - Allowed only with `--gate on` and the `geo`/`oracle` arms (the judge compares a
+       candidate with its parent, not with the anchor). `K = 0` is the old loop.
+     - Every built edit is checked against the anchor; `iou3d_before`, `verdict` and the
+       feedback's per-view table are also vs the anchor, so kept-precision measures commits.
+     - A build failure or a blocked repeat leaves the branch as it is (it still uses a round).
+       `NO_CHANGE` on a branch stops the run; the final state is the anchor.
+     - If the agent's edit on a branch is the anchor's program again (normalised), the branch
+       ends as `rolled_back` with `reverted = true`.
+     - The agent is told (open decision §5, built as "yes"): a line before the feedback block
+       says the program is tentative, how many rounds are left, and that it is committed only
+       if it beats round N's program. Without feedback it also shows the branch's diff vs the
+       anchor; with feedback the attempt log shows each step (`KEPT TENTATIVELY`, `ROLLED
+       BACK to round N`).
+     - Logged per round: `patience_outcome` (`committed` / `tentative` / `rolled_back`),
+       `anchor_round`, `branch_depth`, `reverted`; folder suffixes `tentative` and
+       `rolled-back`; `result.json` has `ended_on_branch` (a discarded branch at the end).
+       `summarize_runs.py` counts the outcomes; `mark_repeats` treats a tentative edit as a
+       new state and a rollback as a return to the anchor.
    - `config.json` records all four, so `summarize_runs.py` can label runs.
 2. **Part list:** `cadrille_init.py ablation`, which writes `data/fusion360/ablation.txt` and
    `ablation_meta.json` (6 per cell from `stage1_meta.json`, seed 2531).

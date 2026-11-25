@@ -16,7 +16,7 @@ while it is still going.
         <arm>/
           final            -> the round the arm ended with (or ../init)
           round_01_kept/   program.py solid.stl conversation.json renders/ diff/ internal/
-          round_02_rejected/ ...   (suffix: kept|rejected|failed|no-change|stopped)
+          round_02_rejected/ ...   (suffix: kept|rejected|failed|no-change|stopped|...)
           log.jsonl  result.json
         internal/          view_weights.json
 
@@ -298,7 +298,9 @@ def readme_md(root, cfg, summary, parts, arms, finals, finished):
         "inside the outline), so check the depth-error rows too.",
         "- **round folder suffix**: `kept` (edit accepted), `rejected` (built, but the arm's gate "
         "said no), `failed` (did not build after the repairs), `no-change` (model said nothing "
-        "to fix), `stopped` (every verification question answered Yes).",
+        "to fix), `stopped` (every verification question answered Yes), `repeat-blocked`; with "
+        "`--patience`: `tentative` (failed the check but kept as a branch to explore) and "
+        "`rolled-back` (the branch never beat the last committed program and was discarded).",
         "- **stop**: `rounds` (ran out of rounds), `no_change`, `all_questions_yes`, `budget`.",
         "- **arms** in this run:",
         *[f"  - `{a}`: {ARM_TEXT.get(a, '')}" for a in arms],

@@ -113,7 +113,9 @@ version is a possible later variant, but it is not part of this plan.
   only signal that an edit went wrong.
 - **`--patience K`:** tentative edits are reported as "kept tentatively, score below the last
   committed state by X". A rollback is reported as "rolled back to round N; the branch
-  (attempts ...) never beat it".
+  (attempts ...) never beat it". (Built: `KEPT TENTATIVELY — compared with the last
+  committed program (round N)…` and `ROLLED BACK to the program committed in round N — the
+  branch (attempts in rounds …) never beat it`; per-view numbers are vs that program.)
 - **`--geo-signal mask|depth`:** the feedback uses only the columns and images of the active
   signal, so the ablation stays clean.
 - **`--views worst`:** the feedback covers only that view.
@@ -197,7 +199,14 @@ grid (`ABLATION_PLAN.md`, group G), feedback then appears as removals: `no_feedb
 
 ## 8. Order of work
 
-**Status (2026-11-24):** steps 1–2 done; the ablation flags `--geo-signal`, `--views` and
+**Status (2026-11-24):** steps 1–4 done. Pilot (9 tuning parts, 6 rounds, `runs/2026-11-24_fb_*`):
+in rounds 2–6 (round 1 has no feedback, so it is the same prompt in every config) kept edits
+that helped the hidden 3D IoU were none 2, text 5, image 9, with no harmful keeps in any
+config; exact repeats after a rejection fell from 19% to 0. Mean final 3D IoU none 0.862,
+text 0.891, image 0.902 (start 0.728); kept-precision text 0.77, image 0.64 (the extra keeps
+are neutral, not harmful); cost/part $0.36 / $0.28 / $0.32. **`image` is the default**; text
+vs image is too close to call on 9 parts and is measured at scale by the ablation's
+`fb_text_only` config. No second seed was run. Earlier status: steps 1–2 done; the ablation flags `--geo-signal`, `--views` and
 `--gate` were built first so the feedback respects them. As built, differing from §6:
 
 - The "do not repeat" rule sits at the end of the feedback block, not in `SYSTEM`, so

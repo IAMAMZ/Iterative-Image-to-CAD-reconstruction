@@ -33,7 +33,8 @@ ARM_COLORS = {"geo": "#2a78d6", "hybrid": "#eb6834", "vlm": "#1baf7a", "premise"
 STATUS = {"kept": ("#0ca30c", "✓ kept"), "rejected": ("#d03b3b", "✗ rejected"),
           "failed": ("#8c8c8c", "did not build"), "no-change": ("#8c8c8c", "no change"),
           "stopped": ("#8c8c8c", "stopped: all Yes"), "start": ("#5f5e5a", "start"),
-          "repeat-blocked": ("#8c8c8c", "repeat blocked")}
+          "repeat-blocked": ("#8c8c8c", "repeat blocked"),
+          "tentative": ("#eda100", "~ tentative"), "rolled-back": ("#a45a2a", "↺ rolled back")}
 INK, MUTED, GRID = "#1f1f1e", "#6b6a64", "#e1e0d9"
 
 plt.rcParams.update({"font.size": 8, "axes.edgecolor": "#c3c2b7", "axes.labelcolor": INK,
@@ -231,7 +232,8 @@ def part_figure(part_dir: Path, target: Path | None, arms, traj, start_name="sta
             else:
                 sub = f"{word}\n{_f(iou)}" + ("" if iou is None or before is None
                                               else f" ({iou - before:+.3f})")
-            _frame(ax, color, head, sub, lw=3 if outcome in ("kept", "rejected") else 1.2)
+            _frame(ax, color, head, sub,
+                   lw=3 if outcome in ("kept", "rejected", "tentative", "rolled-back") else 1.2)
     out = part_dir / "progress.png"
     fig.savefig(out, dpi=110, facecolor="white")
     plt.close(fig)

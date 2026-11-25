@@ -154,9 +154,13 @@ verification question answered "Yes".
 scratch), `--shadow-judge` (judge every edit in every arm for agreement statistics),
 `--geo-signal mask|depth` (check and evidence from the silhouette or the depth error only),
 `--views worst` (one view, picked from the round-0 program), `--gate off` (keep every built
-edit; the check is still logged). See `docs/ABLATION_PLAN.md`.
+edit; the check is still logged), `--patience K` (geo/oracle: an edit that fails the check
+stays as a tentative branch for up to K more rounds, is committed only if the branch beats
+the last committed program, else rolled back; the final program is always committed). See
+`docs/ABLATION_PLAN.md`.
 
-**Edit feedback** (`--feedback none|text|image`, default `none` until the feedback pilot):
+**Edit feedback** (`--feedback none|text|image`, default `image`, chosen in the feedback
+pilot on the tuning parts; `none` is the pre-feedback method):
 the next prompt lists the edits not kept since the last kept one (CHANGE line, diff, why it
 was rejected, per-view deltas), a one-line round history, and blocks exact repeats before
 building them; `image` adds an edit-effect grid (green = fixed, red = broken pixels). See

@@ -253,7 +253,7 @@ RESIDUAL_TEXT = {
 def refine_prompt(program, lo, hi, cand_size=None, *, n_images=2, residual_table=None,
                   detail=False, kernel=None, qa_feedback=None, gsolver=None,
                   residual_images=("overlay", "depth"), views=None, detail_kind="residual",
-                  feedback=None):
+                  feedback=None, branch=None):
     """The edit request. Which evidence goes in is decided by the arm (see refine.ARMS) and
     the ablation flags: `residual_images` lists the residual grids sent (images 3, 4, ...),
     `views` the cameras shown (None = all 4)."""
@@ -291,6 +291,8 @@ def refine_prompt(program, lo, hi, cand_size=None, *, n_images=2, residual_table
                   qa_feedback]
     if gsolver:
         lines += ["", "Geometric properties, target vs current:", gsolver]
+    if branch:
+        lines += ["", branch]
     if feedback:
         lines += ["", feedback]
     lines += ["", "Current program:", f"```python\n{program.strip()}\n```", "",
@@ -317,8 +319,21 @@ def _reason_text(e):
         return "FAILED TO BUILD — " + " / ".join(l.strip() for l in err)[:300]
     if out == "repeat_blocked":
         return f"NOT BUILT — the same program as your attempt in round {e.get('repeat_of')}"
-    head = {"rejected": "REJECTED", "kept": "KEPT"}[out]
+    if out == "rolled_back":
+        rounds = ", ".join(str(x) for x in e.get("rolled") or [])
+        how = "you reverted to it" if e.get("reverted") else \
+            f"the branch (attempts in rounds {rounds}) never beat it"
+        return (f"ROLLED BACK to the program committed in round {e.get('anchor_round')} — {how}; "
+                "the current program below is that one again")
+    head = {"rejected": "REJECTED", "kept": "KEPT",
+            "tentative": "KEPT TENTATIVELY"}[out]
     g = e.get("gain")
+    if out == "tentative":
+        what = f"view {e['worst_view']} lost {-e['worst_view_drop']:.3f} IoU" \
+            if why == "view_drop" else f"geometric score {g:+.4f}"
+        return (f"{head} — compared with the last committed program (round "
+                f"{e.get('anchor_round')}): {what}, so it was not committed but became a "
+                "tentative branch")
     if why == "gain":
         return f"{head} — the geometric score fell by {-g:.4f} (an edit is kept only if it " \
                f"rises by more than {e['min_gain']:g})"
@@ -362,7 +377,11 @@ def feedback_block(attempts, history, signal="both", effect_image=None):
     `effect_image` = the image number of the latest attempt's edit-effect grid, or None."""
     lines = []
     if attempts:
-        if all(e["outcome"] != "kept" for e in attempts):
+        if any(e["outcome"] in ("tentative", "rolled_back") for e in attempts):
+            lines.append("Attempts since the last committed program (round "
+                         f"{attempts[-1].get('anchor_round')}); per-view numbers compare each "
+                         "attempt with that committed program:")
+        elif all(e["outcome"] != "kept" for e in attempts):
             lines.append("Previous attempts from this same program (none was kept; the program "
                          "below is unchanged):")
         else:
@@ -391,6 +410,20 @@ def feedback_block(attempts, history, signal="both", effect_image=None):
     if history:
         lines += ["", "Round history so far:"] + [f"- {h}" for h in history]
     return "\n".join(lines) if lines else None
+
+
+def branch_text(branch_rounds, anchor_round, rounds_left, diff):
+    """`--patience`: the current program is an uncommitted branch (ABLATION_PLAN F)."""
+    lines = [f"Your edit in round {branch_rounds[-1]} did not beat the last committed program "
+             f"(round {anchor_round}): it lowered the geometric score or broke a view. It is kept "
+             f"TENTATIVELY for {rounds_left} more round(s): your next edit is committed only if "
+             f"it beats round {anchor_round}'s program, otherwise the branch is rolled back. "
+             "Continue in this direction only if you believe it leads to a better shape; "
+             "otherwise revert it."]
+    if diff:
+        lines += [f"The branch so far, vs round {anchor_round}'s program (- removed, + added):"]
+        lines += ["    " + l for l in diff]
+    return "\n".join(lines)
 
 
 def repeat_prompt(round_):

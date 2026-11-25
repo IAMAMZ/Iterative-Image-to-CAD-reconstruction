@@ -107,6 +107,7 @@ def mark_repeats(root: Path, rows):
         src = _program(root, {"part": part, "arm": "init", "round": 0, "dir": "."}) if init else None
         base = normalize_program(src) if src else None
         tried = []                     # (round, program lines, touched, diff) since last keep
+        anchor = base                  # --patience: the last committed state
         for r in rs[1:]:
             if r.get("status") not in ("ok", "failed"):
                 continue
@@ -132,8 +133,14 @@ def mark_repeats(root: Path, rows):
             r.update(repeat_eligible=bool(tried), repeat_rewrite=rewrite,
                      repeat_exact=exact, repeat_near=near,
                      repeat_spot=lines, repeat_of=of)
+            po = r.get("patience_outcome")
             if r.get("accepted"):
+                base = anchor = new
+                tried = []
+            elif po == "tentative":        # the agent now edits this branch: a new state
                 base, tried = new, []
+            elif po == "rolled_back":      # back to the committed state
+                base, tried = anchor, []
             else:
                 tried.append((r["round"], new, touched, diff))
 
@@ -260,6 +267,9 @@ def summarize(root: Path) -> dict:
             "reject_reasons": dict(Counter(r.get("reject_reason") for r in rs
                                            if r["round"] > 0 and r.get("reject_reason"))),
             "repeat_blocked": sum(r.get("repeat_blocked") or 0 for r in rs),
+            "patience_outcomes": dict(Counter(r["patience_outcome"] for r in rs
+                                              if r.get("patience_outcome"))),
+            "ended_on_branch": sum(bool(f.get("ended_on_branch")) for f in fin.values()),
             "kernel_warnings_per_edit": mean([e.get("kernel_warnings") for e in valid]),
             "tokens_per_part": mean([f.get("prompt_tokens", 0) + f.get("output_tokens", 0) for f in fin.values()]),
             "cost_per_part": mean([f.get("cost_usd") for f in fin.values()]),
@@ -293,7 +303,8 @@ def write_csv(root, rows, finals):
              "geo_gain", "geo_inconclusive", "change_tag", "iou3d_before", "iou3d", "w_iou",
              "qa_yes", "qa_n", "kernel_warnings", "repairs_used", "wall_seconds",
              "repeat_eligible", "repeat_rewrite", "repeat_exact", "repeat_near", "repeat_spot",
-             "repeat_of", "reject_reason", "feedback_attempts", "repeat_blocked"]
+             "repeat_of", "reject_reason", "feedback_attempts", "repeat_blocked",
+             "patience_outcome", "anchor_round", "branch_depth"]
     with open(root / "edits.csv", "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(ekeys)
@@ -332,6 +343,9 @@ def main():
         if m["reject_reasons"] or m["repeat_blocked"]:
             print(f"  reject reasons {m['reject_reasons']}; repeats blocked before building "
                   f"{m['repeat_blocked']}")
+        if m.get("patience_outcomes"):
+            print(f"  patience: {m['patience_outcomes']}; runs that ended on an uncommitted "
+                  f"branch (discarded) {m['ended_on_branch']}")
         rp = m["repeats"]
         if rp["eligible"]:
             print(f"  repeats: {rp['eligible']} proposals after a failed attempt from the same "
