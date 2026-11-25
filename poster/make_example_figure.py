@@ -2,7 +2,7 @@
 residual and depth error for one Stage 1 part, in two views.
 
     uv run python poster/make_example_figure.py            # -> poster/figures/checker_example.png
-    uv run python poster/make_example_figure.py --part 38675_6e07d74b_0004 --views right iso_fr
+    uv run python poster/make_example_figure.py --part 38675_6e07d74b_0004 --views top_back top_left
 
 It first renders cadrille's starting program with a free dry run of refine.py
 (--backend echo --rounds 0, no model calls) into runs/poster_example/, then composes the
@@ -52,7 +52,7 @@ def crop_box(images, pad=14, thresh=245):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--part", default="61899_93eee6e5_0000")
-    ap.add_argument("--views", nargs="+", default=["iso_bl", "top"])
+    ap.add_argument("--views", nargs="+", default=["top_front", "top_right"])
     ap.add_argument("--targets", type=Path, default=ROOT / "data/generated/targets/fusion360")
     ap.add_argument("--init", type=Path, default=ROOT / "data/generated/init/cadrille_rl")
     ap.add_argument("--run", type=Path, default=ROOT / "runs/poster_example")
