@@ -1,0 +1,311 @@
+% Poster draft, CSC2529 poster session (Dec 2).  Build:  cd poster && tectonic poster.tex
+% Grey dashed boxes are placeholders. Each names the workstream in docs/PLAN.md that fills it.
+% Real numbers so far: Stage 2 checker study (docs/STAGE2.md, PR #9; 8-view rig, old score) and
+% cadrille's baselines (Fusion360, RealCAD dev). Layout follows the meeting with the professor:
+% harness vs. baselines per dollar is the headline, then real photos; the noise study only
+% explains the real-photo gap.
+\documentclass[25pt, a0paper, landscape, margin=0mm, innermargin=12mm,
+  blockverticalspace=9mm, colspace=10mm, subcolspace=6mm]{tikzposter}
+
+\usepackage[T1]{fontenc}
+\usepackage{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\setlist{leftmargin=1.2em, itemsep=3pt, topsep=3pt}
+\usetikzlibrary{positioning, arrows.meta, calc}
+\graphicspath{{figures/}}
+
+% ------------------------------------------------------------------ look
+\definecolorstyle{Draft}{
+  \definecolor{colorOne}{HTML}{1E3765}    % dark blue: titles
+  \definecolor{colorTwo}{HTML}{2A78D6}    % blue: same as "weights on" in the Stage 2 figures
+  \definecolor{colorThree}{HTML}{EB6834}  % orange: accents, callouts
+}{
+  \colorlet{backgroundcolor}{white}
+  \colorlet{framecolor}{colorOne}
+  \colorlet{titlefgcolor}{white}
+  \colorlet{titlebgcolor}{colorOne}
+  \colorlet{blocktitlebgcolor}{colorOne}
+  \colorlet{blocktitlefgcolor}{white}
+  \colorlet{blockbodybgcolor}{white}
+  \colorlet{blockbodyfgcolor}{black}
+  \colorlet{innerblocktitlebgcolor}{colorTwo}
+  \colorlet{innerblocktitlefgcolor}{white}
+  \colorlet{innerblockbodybgcolor}{colorTwo!7}
+  \colorlet{innerblockbodyfgcolor}{black}
+  \colorlet{notefgcolor}{black}
+  \colorlet{notebgcolor}{colorThree!10}
+  \colorlet{noteframecolor}{colorThree}
+}
+\usetheme{Default}
+\usecolorstyle{Draft}
+\usetitlestyle{Filled}
+\useblockstyle{Default}
+
+% A dashed grey box standing in for a result that does not exist yet.
+%   \placeholder{<height>}{<what it will show>}{<details: data, source workstream>}
+\newcommand{\placeholder}[3]{%
+  \begin{tikzpicture}
+    \node[draw=black!35, dashed, line width=2pt, fill=black!4, rounded corners=8pt,
+          minimum width={\linewidth-6pt}, minimum height=#1, inner sep=12pt,
+          text width={\linewidth-70pt}, align=center, text=black!65]
+      {\textbf{Placeholder: #2}\\[6pt]{\small #3}};
+  \end{tikzpicture}}
+
+\newcommand{\pending}[1]{\textcolor{colorThree}{\textbf{[#1]}}}
+
+% ------------------------------------------------------------------ title
+% (a line break directly in \title breaks tikzposter's title node; keep the \parbox)
+\title{\parbox{0.8\paperwidth}{\centering Agentic VLM Visual Review and
+       Forward-Rendering Geometric Checks\\ for Iterative Image-to-CAD Reconstruction}}
+\author{Miran Qarachatani \quad Teodor Cirstoiu \quad Metom Bega}
+\institute{University of Toronto \,\textbullet\, CSC2529 Computational Imaging, Fall 2026
+  \qquad \textcolor{colorThree!60!white}{\textbf{DRAFT: grey dashed boxes are placeholders}}}
+
+\tikzposterlatexaffectionproofoff
+\begin{document}
+\maketitle
+
+\begin{columns}
+% ================================================================== column 1: idea + setup
+\column{0.25}
+
+\block{The idea}{
+  A VLM agent can fix the features a single-pass image-to-CAD model misses \cite{cadrille}.
+  But whether an edit helped is usually decided by a VLM comparing renders with the target:
+  nothing is measured. Self-correction needs \emph{reliable outside feedback} \cite{kamoi}.
+
+  \vspace{6pt}
+  \textbf{Ours: a verification harness with no 3D ground truth.} Every edit is rendered,
+  compared with the target's silhouettes and depth, and kept only if the match improves. The
+  agent is told what rejected edits did.
+
+  \vspace{6pt}
+  \textbf{Unlike} CADCodeVerify \cite{cadcodeverify} (the VLM quizzes itself) and CADSmith
+  \cite{cadsmith} (checks a text spec), we check the measured views, so a \emph{cheap}
+  model can do the editing.
+
+  \vspace{6pt}
+  \textbf{We ask:}
+  \begin{enumerate}
+    \item Per dollar, does the harness make a cheap model beat the same model without it,
+          and a frontier model in one shot?
+    \item Does it hold up on real photos?
+    \item Where it fails, which measurement error is to blame?
+  \end{enumerate}
+}
+
+\block{Image-to-CAD as an inverse problem}{
+  The unknown is a CadQuery program $\theta$. The forward model builds the solid and
+  renders silhouettes $\hat S_v(\theta)$ and depth $\hat D_v(\theta)$ in 4 table views
+  ($45^\circ$ above, part turned $90^\circ$, like the RealCAD photos).
+
+  \vspace{6pt}
+  \textbf{Score} (no 3D ground truth):
+  \[
+    \mathrm{geo}(\theta)=\sum_v \bar w_v\,\mathrm{IoU}\big(\hat S_v,S_v\big)
+      -\sum_v \bar w_v\,E_v
+  \]
+  $E_v$: depth error over $\hat S_v\cup S_v$, capped at $c$; a pixel only one shape covers
+  costs $c$.
+
+  \vspace{6pt}
+  \textbf{Gate:} keep an edit only if $\mathrm{geo}$ rises by more than $10^{-3}$ and no
+  trusted view ($w_v \ge 0.5$) loses more than $0.05$ IoU.
+
+  \vspace{6pt}
+  \textbf{View weights} $w_v$ (space carving): views whose depth disagrees with the
+  others count less.
+}
+
+\block{Data, start, metrics}{
+  \begin{itemize}
+    \item \textbf{Synthetic:} 36 Fusion360 test parts (stratified); 18 tuning parts.
+    \item \textbf{Real:} RealCAD photos with CAD; SAM~3 masks \cite{sam3}; cameras from the
+          GT (oracle) or VGGT \cite{vggt}.
+    \item \textbf{Start:} cadrille. \textbf{Agent:} Gemini 3.8 Flash, 6 rounds.
+    \item \textbf{Metrics:} 3D IoU, Chamfer, harmful edits kept, \$/part.
+  \end{itemize}
+}
+
+% ================================================================== column 2: the method
+\column{0.25}
+
+\block{The refinement loop}{
+  \begin{center}
+  \begin{tikzpicture}[
+      node distance=20mm and 30mm,
+      box/.style={draw=colorOne, line width=2pt, rounded corners=8pt, fill=white,
+                  align=center, text width=9.2cm, minimum height=3.0cm, inner sep=7pt},
+      start/.style={box, fill=colorTwo!10, text width=20cm, minimum height=2.2cm},
+      gate/.style={box, draw=colorThree, fill=colorThree!10},
+      arr/.style={-{Stealth[length=6mm, width=5mm]}, line width=2.5pt, draw=colorOne},
+      lab/.style={font=\small, text=colorOne, fill=white, inner sep=3pt}]
+    \node[box] (prog) {\textbf{Program} $\theta_t$\\{\small CadQuery code}};
+    \node[box, right=of prog] (cmp) {\textbf{Render and compare}\\{\small 4 views vs.\
+      target silhouettes + depth}};
+    \node[box, below=of cmp] (agent) {\textbf{Agent edits}\\{\small sees renders,
+      residual images, per-view table}};
+    \node[gate, below=of prog] (gate) {\textbf{Gate}\\{\small geometric check (geo)
+      or VLM judge}};
+    \node[start, above=18mm of $(prog.north)!0.5!(cmp.north)$] (start)
+      {Input: 4 views $\;\to\;$ cadrille writes the first program};
+    \draw[arr] (start.south -| prog.north) -- (prog.north);
+    \draw[arr] (prog) -- node[lab, above=4pt] {build} (cmp);
+    \draw[arr] (cmp) -- node[lab, right=4pt, align=left] {residuals} (agent);
+    \draw[arr] (agent) -- node[lab, above=4pt] {edit $\theta'$} (gate);
+    \draw[arr, draw=colorThree] (gate.south) to[out=-30, in=-150]
+      node[lab, below=3pt, text=colorThree] {\textbf{feedback:} what each edit did to the views}
+      (agent.south);
+    \draw[arr] (gate) -- node[lab, left=4pt, align=right] {keep $\theta'$\\or revert} (prog);
+  \end{tikzpicture}
+  \end{center}
+
+  \vspace{4pt}
+  \small
+  \begin{tabularx}{\linewidth}{@{}l X X@{}}
+    \toprule
+    \textbf{Method} & \textbf{Program from} & \textbf{Edit kept if} \\
+    \midrule
+    cadrille & cadrille, no edits & n/a \\
+    Flash one-shot & Flash, from the views & n/a \\
+    frontier one-shot & \pending{model}, from the views & n/a \\
+    premise & cadrille + Flash edits, renders only & Flash judge prefers it \\
+    vlm & + visual questions \cite{cadcodeverify} & Flash judge \\
+    \textbf{geo (ours)} & + residuals, per-view table, feedback & geometric gate \\
+    hybrid & everything above & gate \emph{and} judge \\
+    oracle & as geo & hidden 3D IoU rises \\
+    \bottomrule
+  \end{tabularx}
+  \normalsize
+
+  \vspace{4pt}
+  {\small \textbf{premise} is the ``same loop, no harness'' baseline. \textbf{Ablations} of
+  geo change one thing each: mask or depth only, one view, gate off, no feedback, patience.}
+}
+
+\block{What the checker sees}{
+  \begin{center}\includegraphics[width=0.9\linewidth]{checker_example.png}\end{center}\vspace{-10pt}
+
+  {\small Two of the 4 views of one synthetic part. In the geo arm the agent gets these
+  residuals and a per-view table every round.}
+}
+
+% ================================================================== column 3: results
+\column{0.25}
+
+\block{Does the harness pay off?}{
+  \placeholder{12cm}{Price vs.\ performance (headline)}{$x$: \$ per part (log scale);
+    $y$: mean final 3D IoU with 95\% bootstrap CI; one point per method in the table, line =
+    Pareto frontier. 36 synthetic parts. Source: W1 + W8.}
+
+  \vspace{8pt}
+  \placeholder{7cm}{Paired gain over cadrille}{Per method: mean $\Delta$ 3D IoU with 95\%
+    CI and wins/ties/losses on the same parts. Grey band = gap between two identical geo
+    runs (noise floor). Source: W1 + W8.}
+
+  \vspace{8pt}
+  \placeholder{7cm}{Who judges edits better?}{On the very same edits: right keep/reject
+    calls and harmful edits kept, geometric gate vs.\ Flash judge. Source: W1
+    (\texttt{-{}-shadow-judge}).}
+}
+
+\block{Making the loop learn}{
+  Without feedback a rejected edit vanishes: each round is a fresh session with the same
+  pictures, so the agent can propose the same edit again.
+
+  \vspace{6pt}
+  \textbf{Feedback.} Every prompt lists earlier attempts and what they did
+  {\small (illustrative)}:
+
+  \vspace{4pt}
+  \noindent\colorbox{black!5}{\parbox{\dimexpr\linewidth-2\fboxsep}{\footnotesize\ttfamily
+    round 1: "made the base 20\% thicker" -> kept (+0.012)\\
+    round 2: "moved the hole 5 units left" -> rejected:\\
+    \hspace*{2em}top\_front IoU 0.91 -> 0.84, extra material}}
+
+  \vspace{6pt}
+  \textbf{Patience.} A worse edit may stay on trial for up to $K$ rounds; it is committed
+  only if it beats the last kept program, otherwise rolled back.
+
+  \vspace{8pt}
+  \placeholder{7cm}{3D IoU vs.\ round (0--6)}{geo without feedback vs.\ with feedback vs.\
+    + patience; band = noise floor. Source: W2.}
+}
+
+% ================================================================== column 4: real photos + discussion
+\column{0.25}
+
+\block{Real photos (RealCAD)}{
+  On real photos cadrille drops from 84.5\% to 35\% mean 3D IoU. Masks and depth now come
+  from models, so the checker's measurements contain errors.
+
+  \vspace{6pt}
+  \placeholder{9cm}{Results on RealCAD}{3D IoU and \$ per part for cadrille, premise and
+    geo; geo with oracle cameras vs.\ VGGT cameras (how much is the camera estimate to
+    blame?). Source: W6.}
+}
+
+\block{Why real photos are hard}{
+  We corrupt only the target's masks and depth and count how often the gate makes the right
+  keep/reject call on 2,804 edits with known 3D effect.
+
+  \vspace{4pt}
+  \small
+  \begin{tabularx}{\linewidth}{@{}X r r@{}}
+    \toprule
+    \textbf{Error in the target (level 3)} & \textbf{Right} & \textbf{Harmful kept} \\
+    \midrule
+    none & 93\% & 4\% \\
+    holes, blobs, depth noise, one view shifted & 92--93\% & 4\% \\
+    mask 6 px too thin & 75\% & 20\% \\
+    mask 6 px too fat & \textbf{70\%} & \textbf{23\%} \\
+    \bottomrule
+  \end{tabularx}
+  \normalsize
+
+  \vspace{6pt}
+  \noindent\colorbox{colorThree!12}{\parbox{\dimexpr\linewidth-2\fboxsep}{\small
+    \textbf{Random errors cancel, bias does not.} Both programs are scored against the same
+    flawed target, so a hole hurts both equally. A mask too fat in every view looks like a
+    fatter object; the views still agree, the weights stay at 1, and bigger programs win.}}
+
+  \vspace{6pt}
+  \placeholder{4.5cm}{Measured SAM 3 bias}{SAM 3 masks vs.\ the GT rendered from oracle
+    cameras on RealCAD, placed on this scale. Source: W6.}
+
+  {\scriptsize \pending{table from the 8-view rig and old score; rerun on the 4 views
+  before printing}}
+}
+
+\block{Discussion}{
+  \textbf{So far.} On clean views the gate makes 93\% right calls; only consistent bias
+  fools it. \pending{headline: harness vs.\ baselines per dollar}
+
+  \vspace{4pt}
+  \textbf{Limits.} Silhouettes and depth miss the inside and underside of a part; 4 views;
+  scoring real photos needs a GT alignment; sketch-and-extrude parts only.
+
+  \vspace{4pt}
+  \textbf{Next.} Estimate and remove mask bias; a depth sensor or more views; use the gate
+  to pick among several cheap samples.
+
+  {\scriptsize
+  \begin{thebibliography}{9}\setlength{\itemsep}{0pt}
+    \bibitem{cadrille} M.~Kolodiazhnyi et al., cadrille, ICLR 2026.
+    \bibitem{kamoi} R.~Kamoi et al., When Can LLMs Actually Correct Their Own Mistakes?,
+      TACL 2024.
+    \bibitem{cadcodeverify} K.~Alrashedy et al., Generating CAD Code with
+      Vision-Language Models for 3D Designs, ICLR 2025.
+    \bibitem{cadsmith} J.~Barkley et al., CADSmith, arXiv:2603.26512, 2026.
+    \bibitem{sam3} N.~Carion et al., SAM 3, ICLR 2026.
+    \bibitem{vggt} J.~Wang et al., VGGT, CVPR 2025.
+  \end{thebibliography}}
+}
+
+\end{columns}
+\end{document}

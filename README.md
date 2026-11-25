@@ -2,6 +2,10 @@
 
 Write a 3D part as code, then take pictures of it from fixed angles.
 
+**Plan to Dec 2 / Dec 11:** [`docs/PLAN.md`](docs/PLAN.md) holds the workstreams, owners, budget,
+timeline and rules (agents: read its §2 before running anything). The poster draft is in
+[`poster/`](poster/).
+
 ## Scripts
 
 - `examples/flange.py` — a 3D part written as CadQuery code (just the shape, nothing else).
