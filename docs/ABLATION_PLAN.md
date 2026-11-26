@@ -215,6 +215,6 @@ before starting the rest.
 | `--patience K` (`refine.Branch`) | built (2026-11-24), `tests/test_patience.py`, tuning pilot done |
 | `--residual-view signed` | built (PR #13), needs a tuning pilot |
 | `--no-weights`, `--no-residual-images`, `--no-detail`, `--no-kernel` | built |
-| `data/fusion360/ablation.txt` | §3 step 1 |
-| `ablation.py` runner | not built; the runbooks use plain `refine.py` commands |
+| `data/fusion360/ablation.txt` | written (2026-11-26): 36 parts, 6 per cell, mean cadrille-RL IoU 0.704 |
+| `ablation.py` runner | dropped: the runbooks use plain `refine.py` commands |
 | `summarize_ablation.py` | not built (§6) |
