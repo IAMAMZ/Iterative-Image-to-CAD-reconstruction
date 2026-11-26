@@ -1,6 +1,6 @@
 """Re-score existing RealCAD predictions with the RealCAD paper's Chamfer convention (no regeneration).
 
-  python score_realcad_cd.py --tag rl_dev --n 20 [--seeds 5]
+  python score_realcad_cd.py --tag rl_dev --n 20 [--seeds 5]   (other splits: REALCAD_SPLIT=test50 python ...)
 
 Convention, from github.com/sunyh39/RealCAD (dataset/json2pc.py, cadlib/extrude.py, evaluation/evaluate_ae_cd.py):
   GT    : cad_seq.normalize() -> uniform scale about the ORIGIN (no centring) so that max|bbox coord| = 0.75,

@@ -4,8 +4,9 @@
   python eval_realcad.py gen    --n 20 --ckpt <dir> --tag rl_dev
   python eval_realcad.py score  --n 20 --tag rl_dev
   python eval_realcad.py table  --n 20 --tags rl_dev
+  any mode + --split test50 (default dev): other RealCAD splits, e.g. gen --split test50 --n 50 --tag rl_test50
 
-Input : data/realcad/dev/images/<id>/rgb/{1..4}.jpg (real photos; camera and object pose unknown)
+Input : data/realcad/<split>/images/<id>/rgb/{1..4}.jpg (real photos; camera and object pose unknown)
         Each photo is cropped to a square around the part (dark print on a light table, Otsu threshold on
         brightness, 30% margin), resized to 128 px, given a 3 px black border and tiled 2x2 like
         dataset.CadRecodeDataset.get_img. The photos are NOT the training views (cube diagonals, yellow
@@ -31,10 +32,10 @@ import batch_eval as be
 
 HERE = Path(__file__).parent
 RC = HERE.parent / 'data' / 'realcad'
-SPLIT = 'dev'
+SPLIT = os.environ.get('REALCAD_SPLIT', 'dev')   # env var so the spawned scoring workers see --split too
 MAX_NEW_TOKENS = 768
 SCORE_TIMEOUT_S = 300
-IN_DIR = HERE / 'work_dirs' / 'realcad_inputs'
+IN_DIR = HERE / 'work_dirs' / ('realcad_inputs' if SPLIT == 'dev' else f'realcad_inputs_{SPLIT}')
 
 
 def ids(n=None):
@@ -277,6 +278,7 @@ def table(args):
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()
     ap.add_argument('mode', choices=['inputs', 'gen', 'score', 'table'])
+    ap.add_argument('--split', default=SPLIT, help='data/realcad/<split> (dev, test, test50)')
     ap.add_argument('--n', type=int, default=20)
     ap.add_argument('--ckpt', default=str(HERE / 'checkpoints' / 'cadrille-rl'))
     ap.add_argument('--tag', default='rl_dev')
@@ -285,4 +287,9 @@ if __name__ == '__main__':
     ap.add_argument('--jobs', type=int, default=4)
     ap.add_argument('--dtype', default='bfloat16', choices=['bfloat16', 'float32'])
     a = ap.parse_args()
+    if a.split != SPLIT:   # re-import under the new split so module globals and spawned workers agree
+        os.environ['REALCAD_SPLIT'] = a.split
+        import subprocess
+        import sys
+        raise SystemExit(subprocess.call([sys.executable] + sys.argv))
     {'inputs': inputs, 'gen': gen, 'score': score, 'table': table}[a.mode](a)

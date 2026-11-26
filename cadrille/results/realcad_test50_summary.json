@@ -1,0 +1,13 @@
+{
+ "rl_test50": {
+  "parts": 50,
+  "valid": 50,
+  "IR %": 0.0,
+  "mean IoU % aligned (valid)": 12.752190354273097,
+  "mean IoU % aligned (invalid = 0)": 12.752190354273099,
+  "median IoU % aligned": 9.33719493704154,
+  "median CD x1000 aligned": 39.588438595162785,
+  "mean IoU % raw (valid)": 9.669593193412448,
+  "median CD x1000 raw": 62.88490488676929
+ }
+}
