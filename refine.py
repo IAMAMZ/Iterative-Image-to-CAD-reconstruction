@@ -129,6 +129,10 @@ def diff_grid(d: Path, kind, labels=None, views=None):
     return grid([layout.diff(d, v, kind) for v in views], labels or list(views))
 
 
+DETAIL_LABEL = {"_overlay": "residual", "_depth_err": "depth error",
+                "_depth_signed": "signed depth error"}
+
+
 def detail_strip(target_dir: Path, cand_dir: Path, weights=None, tile=256, margin=24,
                  views=None, kind="_overlay"):
     """Zoom on the largest residual blob over the views (GATOR's detail view):
@@ -152,7 +156,7 @@ def detail_strip(target_dir: Path, cand_dir: Path, weights=None, tile=256, margi
     top, left = int(np.clip(cy - side // 2, 0, max(h - side, 0))), int(np.clip(cx - side // 2, 0, max(w - side, 0)))
     crop = (left, top, min(left + side, w), min(top + side, h))
     srcs = [(layout.render(target_dir, v), "target"), (layout.render(cand_dir, v), "current"),
-            (layout.diff(cand_dir, v, kind), "residual" if kind == "_overlay" else "depth error")]
+            (layout.diff(cand_dir, v, kind), DETAIL_LABEL[kind])]
     sheet = Image.new("RGB", (3 * tile, tile), (255, 255, 255))
     for i, (p, lab) in enumerate(srcs):
         im = Image.open(p).convert("RGB").crop(crop).resize((tile, tile), Image.NEAREST)
@@ -499,7 +503,13 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
         table, detail, kinds = None, False, []
         if spec["residuals"] and opts.residuals:
             gviews = views or layout.grid_views(target_dir)
-            if opts.residual_images:              # only the grids of the active signal
+            if opts.residual_images and opts.residual_view == "signed":
+                # one grid: outline + signed depth error (compare.signed_depth_image)
+                labels = None if sig == "depth" else [
+                    f"{v}  IoU {cur['report']['views'][v]['iou']:.3f}" for v in gviews]
+                images.append(diff_grid(cur["dir"], "_depth_signed", labels, views))
+                kinds.append("signed")
+            elif opts.residual_images:            # only the grids of the active signal
                 if sig in ("both", "mask"):
                     labels = [f"{v}  IoU {cur['report']['views'][v]['iou']:.3f}" for v in gviews]
                     images.append(diff_grid(cur["dir"], "_overlay", labels, views))
@@ -508,8 +518,9 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
                     images.append(diff_grid(cur["dir"], "_depth_err", views=views))
                     kinds.append("depth")
             if opts.detail:
-                strip, dview = detail_strip(target_dir, cur["dir"], w, views=views,
-                                            kind="_depth_err" if sig == "depth" else "_overlay")
+                zoom = ("_depth_signed" if opts.residual_view == "signed"
+                        else "_depth_err" if sig == "depth" else "_overlay")
+                strip, dview = detail_strip(target_dir, cur["dir"], w, views=views, kind=zoom)
                 if strip:
                     images.append(strip)
                     detail = True
@@ -545,7 +556,7 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
             vlm.qa_text(qa["questions"], qa["answers"], only_failed=True) + "\n" + qa["feedback"],
             gsolver=gsolver_table(target_dir, cur["dir"]) if spec["gsolver"] else None,
             residual_images=kinds, views=views,
-            detail_kind="depth error" if sig == "depth" else "residual", feedback=fb_text,
+            detail_kind=DETAIL_LABEL[zoom] if detail else "residual", feedback=fb_text,
             branch=branch, view_desc=agent.view_desc)
         status, n_tries, tr, (tag, why) = agent.write_program(
             msg, images, rd, target_dir, center, allow_no_change=True, tried=tried)
@@ -784,6 +795,11 @@ def main(argv=None):
                     help="what the geometric check uses, for both the agent's evidence and the "
                          "keep decision: silhouette + depth (both), silhouette only (mask) or "
                          "depth error only (depth; no per-view IoU guard)")
+    ap.add_argument("--residual-view", default="split", choices=["split", "signed"],
+                    help="geo/hybrid residual images: split = silhouette residual + |depth "
+                         "error| grids (default); signed = one grid with the outline and the "
+                         "SIGNED depth error (which way each surface is off). Only changes what "
+                         "the agent sees; the keep decision is the same")
     ap.add_argument("--views", default="all", choices=["all", "worst"],
                     help="worst: use only the view where the round-0 program is most wrong, for "
                          "the agent's images and table and for the check (weights off)")
@@ -818,6 +834,9 @@ def main(argv=None):
                                      for a in arms):
         ap.error("--views worst is for the geo and oracle arms (the questions and the judge "
                  "assume the 4-view grid)")
+    if args.residual_view == "signed" and args.geo_signal == "mask":
+        ap.error("--residual-view signed shows the depth error; it needs --geo-signal both or "
+                 "depth")
     if args.patience < 0:
         ap.error("--patience must be >= 0")
     if args.patience and (args.gate == "off" or any(ARMS[a]["accept"] not in ("geo", "oracle")

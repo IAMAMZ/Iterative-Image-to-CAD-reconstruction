@@ -272,6 +272,14 @@ RESIDUAL_TEXT = {
                "target does not.",
     "depth": "the depth error where both cover the pixel: pale = correct, dark red/purple = "
              "surface at the wrong depth (wrong thickness or height).",
+    "signed": "the outline AND the signed depth error for the same {views}, on a GREY "
+              "background. LIGHT RED = material the target has but we are MISSING; LIGHT BLUE "
+              "= EXTRA material we have but the target does not. Where both have material: "
+              "WHITE = our surface is at the right depth; ORANGE = our surface is BEHIND the "
+              "target's (farther from that camera: material is missing in front, e.g. a wall "
+              "too thin or a face set too far back); PURPLE = our surface is IN FRONT of the "
+              "target's (closer to that camera: extra material in front, e.g. a wall too "
+              "thick). Darker = larger error; full colour at about 5% of the part's size.",
 }
 
 

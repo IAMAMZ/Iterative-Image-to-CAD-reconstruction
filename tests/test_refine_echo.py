@@ -136,3 +136,21 @@ def test_geo_signal_changes_evidence(f360_target, tmp_path):
     assert "silhouette residual" in m and "depth error where" not in m and "depth MAE" not in m
     assert "depth error where" in d and "silhouette residual" not in d and "missing px" not in d
     assert "Image 3 is the depth error" in d                       # renumbered images
+
+
+def test_signed_residual_view_sends_one_grid(f360_target, tmp_path):
+    _, part, rows, prompts = _echo_run(f360_target, tmp_path, "--residual-view", "signed",
+                                       rounds=1)
+    p = prompts[0]
+    assert "Image 3 is the outline AND the signed depth error" in p
+    assert "silhouette residual" not in p and "depth error where" not in p
+    assert "Image 4 zooms into the largest residual" in p and "signed depth error." in p
+    d = part / "geo" / rows[1]["dir"] / "diff"
+    assert all((d / f"{v}_depth_signed.png").exists() for v in refine.GRID_VIEWS)
+
+
+def test_signed_residual_view_needs_depth(f360_target, tmp_path):
+    import pytest
+    with pytest.raises(SystemExit):
+        refine.main([str(f360_target), "--backend", "echo", "--arm", "geo", "--residual-view",
+                     "signed", "--geo-signal", "mask", "--out", str(tmp_path / "run")])

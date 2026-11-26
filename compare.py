@@ -19,6 +19,10 @@ Per view it measures
 and writes, per view,
   * <view>_overlay.png  grey = both, RED = missing material (in target, not candidate),
                         BLUE = extra material (in candidate, not target)
+  * <view>_depth_signed.png  outline + SIGNED depth error in one image (refine.py
+                        --residual-view signed): grey background, light red/blue = missing/extra,
+                        white = right depth, orange = candidate surface behind the target's,
+                        purple = in front, full colour at +-SIGNED_VMAX
   * <view>_depth_err.png heatmap of the depth error where both cover (pale = 0,
                         dark = >= --depth-vmax), uncovered pixels shown like the overlay
 plus summary.png (all views side by side) and report.json.
@@ -147,6 +151,53 @@ def write_effect_images(target_dir: Path, cur_dir: Path, new_dir: Path, out: Pat
     return counts
 
 
+# signed depth error (--residual-view signed): one image with outline AND depth, and the
+# direction of every depth error. Grey background so "correct" (white) reads as part.
+SIGNED_BG = (150, 150, 150)
+SIGNED_UNKNOWN = (105, 105, 105)    # both cover the pixel, target depth unknown (photo targets)
+SIGNED_MISSING = (234, 135, 135)    # light red: target only
+SIGNED_EXTRA = (136, 168, 233)      # light blue: candidate only
+SIGNED_VMAX = DEPTH_CAP             # normalised units at full colour (~5% of the part's size)
+# white -> orange: candidate surface BEHIND the target's (material missing in front)
+_BEHIND = np.array([[255, 255, 255], [254, 224, 182], [253, 184, 99], [224, 130, 20],
+                    [179, 88, 6], [127, 59, 8]], dtype=np.float64)
+# white -> purple: candidate surface IN FRONT of the target's (extra material in front)
+_IN_FRONT = np.array([[255, 255, 255], [216, 218, 235], [178, 171, 210], [128, 115, 172],
+                      [84, 39, 136], [45, 0, 75]], dtype=np.float64)
+
+
+def _ramp(stops, t):
+    t = np.clip(t, 0, 1) * (len(stops) - 1)
+    i = np.minimum(t.astype(int), len(stops) - 2)
+    f = (t - i)[..., None]
+    return (stops[i] * (1 - f) + stops[i + 1] * f).round().astype(np.uint8)
+
+
+def signed_colormap(e, vmax):
+    """Signed depth error (candidate - target, along the view axis) -> uint8 RGB:
+    white = 0, orange = candidate behind the target surface, purple = in front."""
+    e = np.asarray(e, dtype=np.float64)
+    out = np.empty(e.shape + (3,), np.uint8)
+    behind = e >= 0
+    out[behind] = _ramp(_BEHIND, e[behind] / vmax)
+    out[~behind] = _ramp(_IN_FRONT, -e[~behind] / vmax)
+    return out
+
+
+def signed_depth_image(mask_t, depth_t, mask_c, depth_c, vmax=SIGNED_VMAX):
+    """Outline and signed depth error in one image: grey background, light red = target
+    only, light blue = candidate only, and where both cover the pixel the signed depth error
+    (white = right depth, orange = candidate surface behind the target's, purple = in front)."""
+    img = np.empty(mask_t.shape + (3,), np.uint8)
+    img[:] = SIGNED_BG
+    img[mask_t & mask_c] = SIGNED_UNKNOWN
+    img[mask_t & ~mask_c] = SIGNED_MISSING
+    img[mask_c & ~mask_t] = SIGNED_EXTRA
+    known = mask_t & mask_c & (depth_t > 0) & (depth_c > 0)
+    img[known] = signed_colormap(depth_c[known].astype(np.float64) - depth_t[known], vmax)
+    return img
+
+
 def depth_error_image(mask_t, depth_t, mask_c, depth_c, vmax):
     img = overlay_image(mask_t, mask_c)
     # dim the red/blue so the heatmap is what stands out
@@ -222,6 +273,7 @@ def compare(target_dir: Path, cand_dir: Path, out: Path, depth_vmax=0.05, thumb=
         de = depth_error_image(mt, dt, mc, dc, depth_vmax)
         Image.fromarray(ov).save(out / f"{v}_overlay.png")
         Image.fromarray(de).save(out / f"{v}_depth_err.png")
+        Image.fromarray(signed_depth_image(mt, dt, mc, dc)).save(out / f"{v}_depth_signed.png")
         dtxt = "depth n/a" if m["depth_mae"] is None else f"depth MAE {m['depth_mae_mm']:.2f} mm"
         small = lambda a: np.asarray(Image.fromarray(a).resize((thumb, thumb), Image.NEAREST))
         tiles.append((_label(small(ov), [v, f"IoU {m['iou']:.3f}"]), _label(small(de), [v, dtxt])))
@@ -235,7 +287,7 @@ def compare(target_dir: Path, cand_dir: Path, out: Path, depth_vmax=0.05, thumb=
         "mean_depth_mae": float(np.mean(depths)) if depths else None,
         "mean_depth_mae_mm": float(np.mean(depths)) * mm if depths else None,
         "mean_depth_err": float(np.mean([m["depth_err"] for m in per_view.values()])),
-        "mm_per_unit": mm, "depth_vmax": depth_vmax,
+        "mm_per_unit": mm, "depth_vmax": depth_vmax, "signed_vmax": SIGNED_VMAX,
         "views": per_view,
     }
     (out / "report.json").write_text(json.dumps(report, indent=2) + "\n")
