@@ -1,253 +1,220 @@
 # Ablation plan
 
 The ablation shows which parts of the pipeline produce the gain. Every configuration changes
-**one thing** from the main method and runs on the **same parts**, so each result is a paired
-comparison against the main method.
+**one thing** from the main method and runs on the **same 36 Fusion360 parts**, so each result
+is a paired comparison against `main`.
 
-**Main method (reference config `main`):** cadrille-RL program as round 0, Gemini (Vertex,
-`VERTEX_MODEL`) as the editing agent, `geo` arm. The full geometric checker is on: silhouette IoU
-plus depth error, view weights, residual images, detail tile and kernel report. All 4 rig views
-(`top_front top_right top_back top_left`) are used. `geo_accept` decides every edit.
-The agent also gets **edit feedback** (`docs/FEEDBACK_PLAN.md`), in whichever variant the
-feedback pilot picks: an attempt log of rejected edits with per-view deltas, a round history,
-and a repeat guard. Feedback is built and frozen **before** this ablation.
+This round is **synthetic data only** (Fusion360 renders with exact masks and depth). RealCAD
+photo targets come later, once the grid is settled here.
 
-## 1. Configurations
+The run is split between two people. They run in parallel and each owns half the configs:
 
-### A. Where the program comes from (model axis)
+- [`ABLATION_RUN_A.md`](ABLATION_RUN_A.md): `main` plus the checker and feedback configs.
+- [`ABLATION_RUN_B.md`](ABLATION_RUN_B.md): the `main_s1` noise floor plus the model, view,
+  gate and patience configs.
 
-| id | init | refine | what it measures | new code |
-|---|---|---|---|---|
-| `cadrille` | cadrille-RL | none (round 0 only) | the baseline we start from | none: round 0 of `main` |
-| `gemini0` | Gemini from scratch | none (round 0 only) | Gemini zero-shot image → CAD | none: round 0 of `gemini` |
-| `gemini` | Gemini from scratch | Gemini, `geo` | the loop without cadrille's starting program | none (omit `--init`) |
-| `main` | cadrille-RL | Gemini, `geo` | **cadrille + Gemini** (our method) | none |
+This file is the shared design. Both runbooks depend on §3 (setup) being done first.
 
-`cadrille` and `gemini0` add no model cost. They are read from round 0 of `main` and `gemini`.
+## 1. The main method (`main`)
 
-### B. Checker vs checker + visual review
-
-| id | change | question |
+| piece | setting | flag |
 |---|---|---|
-| `hybrid` | `--arm hybrid` (geo + CADCodeVerify-style questions + VLM judge) | does VLM visual review on top of geo help? |
+| round 0 | cadrille-RL program (4 of its own 128 px corner renders) | `--init data/generated/init/cadrille_rl` |
+| editing agent | Gemini on Vertex (`VERTEX_MODEL` in `.env`, `gemini-3.8-flash`), temperature 1.0 | `--backend vertex` (default) |
+| arm | `geo`: the geometric checker gates every edit | `--arm geo` |
+| checker signal | silhouette IoU + depth error, with view weights | defaults |
+| views | all 4 rig views (`top_front top_right top_back top_left`) | `--views all` (default) |
+| agent evidence | residual images (split view: silhouette residual + \|depth error\|), per-view table, zoom tile, kernel report | defaults |
+| edit feedback | attempt log + round history + repeat guard + edit-effect image | `--feedback image` (default since 2026-11-24) |
+| gate | on: edit kept if weighted score gain > 0.001 and no trusted view loses > 0.05 IoU | `--gate on` (default) |
+| patience | off | `--patience 0` (default) |
+| rounds | 6 | `--rounds 6` |
+| sandbox | on (bubblewrap; does not change scores) | `--sandbox` |
 
-Optional, if budget allows: `premise` and `vlm` (VLM judge only, no geometry) show how much
-the geometric checker adds on its own.
+Note that `refine.py` defaults differ from `main` in three places: `--arm` defaults to four
+arms, `--rounds` to 4, and with no `--init` Gemini writes round 0. Always pass all three.
 
-### C. Parts of the geometric checker
+```
+uv run python refine.py <36 targets> --init data/generated/init/cadrille_rl \
+    --arm geo --rounds 6 --sandbox --name abl_main
+```
 
-Each signal is removed from **both** places it is used: the evidence the agent sees and the
-score that decides whether an edit is kept.
+## 2. Configurations
 
-| id | flag | agent sees | edit kept if |
+Each config is `main` plus the flags shown. The **owner** column says which runbook it is in.
+
+### Required (12 configs)
+
+| id | flags added to `main` | what it measures | owner |
 |---|---|---|---|
-| `mask_only` | `--geo-signal mask` *(built)* | overlay images (missing/extra); table with IoU, missing px, extra px | weighted IoU gain > `min_gain`, per-view IoU guard |
-| `depth_only` | `--geo-signal depth` *(built)* | depth-error heatmaps; table with depth error only | weighted `depth_err` falls by > `min_gain`, no IoU guard |
-| `no_weights` | `--no-weights` | as main, weight column = 1 | plain mean over views |
-| `no_resid_img` | `--no-residual-images` | table only, no overlay/heatmap images | as main |
-| `no_detail` | `--no-detail` | no zoomed detail tile | as main |
-| `no_kernel` | `--no-kernel` | no OpenCascade/op_checker report | as main |
+| `main` | none | our method | A |
+| `main_s1` | `--seed 1` | **noise floor**: a second identical run (see below) | B |
+| `gemini` | drop `--init` | the loop without cadrille's round 0 (Gemini writes it) | B |
+| `hybrid` | `--arm hybrid` | geo + CADCodeVerify-style questions + VLM judge: does visual review on top of geo help? | A |
+| `mask_only` | `--geo-signal mask` | silhouette only: no depth images, no depth in the score | A |
+| `depth_only` | `--geo-signal depth` | depth error only: no overlay images, no IoU guard (caveat below) | A |
+| `one_view` | `--views worst` | 1 view instead of 4 (the worst at round 0, fixed); weights forced off | B |
+| `no_gate` | `--gate off` | checker as information only: every built edit is kept | B |
+| `patience1` | `--patience 1` | a failed edit may be explored for 1 more round before rollback | B |
+| `patience2` | `--patience 2` | ... for 2 more rounds | B |
+| `no_feedback` | `--feedback none` | no attempt log, history or repeat guard (the pre-feedback loop) | A |
+| `fb_text_only` | `--feedback text` | feedback without the edit-effect image | A |
 
-`mask_only` and `depth_only` are the required ones. The other four already exist as flags and
-are secondary.
+### Secondary (5 configs, if budget remains)
 
-**Caveat for `depth_only`.** `depth_err` is computed over the union of the two silhouettes and
-charges `DEPTH_CAP` wherever only one shape covers a pixel. It therefore already contains
-silhouette information. This is deliberate: depth MAE on the overlap alone can be lowered by
-shrinking the part. The write-up should state that `depth_only` means "depth maps, which
-implicitly carry the outline", not "pure depth".
+| id | flags added to `main` | what it measures | owner |
+|---|---|---|---|
+| `no_weights` | `--no-weights` | plain mean over views instead of view-confidence weights | A |
+| `no_resid_img` | `--no-residual-images` | per-view table only, no residual images | A |
+| `no_detail` | `--no-detail` | no zoom tile on the largest residual | B |
+| `no_kernel` | `--no-kernel` | no CAD-kernel report | B |
+| `signed_resid` | `--residual-view signed` | one grid with the outline and the **signed** depth error instead of the split pair (agent evidence only; same gate) | B |
 
-### D. One view instead of four
+### Free (no model calls)
 
-| id | flag | change |
+| id | source | what it measures |
 |---|---|---|
-| `one_view` | `--views worst` *(built)* | only the single worst view is used, for the agent's images and table and for the checker |
+| `cadrille` | round 0 of `main` | the cadrille-RL baseline we start from |
+| `gemini0` | round 0 of `gemini` | Gemini zero-shot image → CAD |
 
-- **Which view.** The view with the lowest geo score of the **round-0** candidate against the
-  target. This needs no GT and is the same view `progress.py` already highlights. It is fixed
-  for the whole run, so that `cur` and `new` are always compared on the same view.
-  (A per-round re-pick is a possible variant, but it makes the score non-stationary.)
-- **Target image.** The target grid shows the same single view (a 1×1 tile at the grid's size).
-- **View weights** need at least 3 views to cross-check, so they are off (weight 1). This config
-  is therefore "1 view, no weights" compared with "4 views, weights". Read it against
-  `no_weights` to separate the two effects.
-- **Questions/judge** are not involved (geo arm).
+### Notes per config
 
-### E. Firewall off (checker informs, does not gate)
+- **`main_s1`.** `--seed` is not sent to Gemini; it only seeds the local RNG. So this is simply
+  a rerun of `main`, and because A runs `main` and B runs `main_s1`, it also covers any
+  difference between the two machines. An ablation delta smaller than the `main` vs `main_s1`
+  difference is not a finding.
+- **`depth_only`.** `depth_err` is computed over the union of the two silhouettes and charges
+  `DEPTH_CAP` where only one shape covers a pixel, so it still carries outline information.
+  This is deliberate, since depth MAE on the overlap alone can be lowered by shrinking the part.
+  The write-up should say "depth maps, which implicitly carry the outline", not "pure depth".
+- **`one_view`.** The view is the one with the lowest geo score of the round-0 program,
+  chosen without GT, and written to `parts/<part>/internal/views.json`. View weights need ≥ 3
+  views, so they are off. Read it against `no_weights` to separate "1 view" from "no weights".
+  The bounding box comes from that view's depth only, so the prompt calls it a lower bound.
+- **`no_gate`.** `geo_accept` still runs and is logged as `geo_decision`, so kept-precision and
+  harmful-accept rate show what the gate would have blocked. Report both `final` (no checker
+  decisions at all) and `best_geo` (checker used only as a selector at the end).
+- **`patience1/2`.** Branches are judged against the last committed state (the anchor), and
+  the final state is always the anchor. The agent is told when it is on a tentative branch.
+  Every round counts against `--rounds 6`. Tuning pilot (9 parts, 6 rounds): mean 3D IoU
+  0.902 off, 0.886 p1, 0.892 p2, dominated by one part (115533). Without that part it was
+  0.919 off vs 0.932 p2. The 36-part run decides it.
+- **`fb_text_only` / `no_feedback`.** Tuning pilot: mean 3D IoU 0.902 image, 0.891 text, 0.862
+  none (9 parts, one run each). Text vs image is too close to call on 9 parts, so it is
+  measured at scale here.
+- **`hybrid`.** It costs more because of the questions and the judge. It has not been run with
+  feedback on yet, so B should not wait on A's numbers to budget it.
+- **`signed_resid`.** This is a new flag (PR #13) with no tuning pilot yet. Pilot it on the 9
+  tuning parts first (§4) and run it only if the pilot looks sane.
 
-| id | flag | change |
-|---|---|---|
-| `no_gate` | `--gate off` *(built)* | geo evidence is shown as in main; **every built edit is kept** |
+Not in the grid (optional): `premise` and `vlm` arms (VLM judge only, no geometry), and
+`gemini` × `hybrid` as a 2×2.
 
-- `geo_accept` still runs and is logged as the shadow decision. Kept-precision and
-  harmful-accept rate then show directly what the firewall would have blocked.
-- **Report both `final` and `best_geo`.** `best_geo` (best kept state by geo score) is itself a
-  GT-free selection. `no_gate` + `best_geo` is "checker as a selector at the end". `no_gate` +
-  `final` is "no checker decisions at all". This split is part of the result.
-- Feedback stays on in `no_gate`. It still reports what each edit did to the score, so this
-  config means "checker as information only", and feedback is the agent's only sign that an
-  edit went wrong.
+## 3. Shared setup (once, before either runbook)
 
-### F. Tree search: let bad edits run for a few rounds
+Both people must score **identical inputs**. The steps below are done by A, who then sends B
+the files. Data under `data/generated/` and `runs/` is git-ignored.
 
-| id | flag | change |
-|---|---|---|
-| `patience1` | `--patience 1` *(new)* | a rejected edit may be explored for 1 more round |
-| `patience2` | `--patience 2` *(new)* | ... for 2 more rounds |
+1. **Part list.** 36 parts: 6 per cell (3 cadrille-IoU bins × 2 complexity bins, every cell
+   has 10), from the 60 Stage 1 parts, seed 2531. Write and commit
+   `data/fusion360/ablation.txt`:
 
-The search is depth-limited backtracking. It follows a single path and keeps an **anchor**
-`A`, the last committed state.
+   ```
+   uv run python - <<'EOF'
+   import json, random
+   m = json.load(open("data/fusion360/stage1_meta.json"))["parts"]
+   rng = random.Random(2531)
+   pick = []
+   for b in ("low", "mid", "high"):
+       for c in ("simple", "complex"):
+           cell = sorted(p for p, v in m.items() if v["iou_bin"] == b and v["mesh"] == c)
+           pick += sorted(rng.sample(cell, 6))
+   open("data/fusion360/ablation.txt", "w").write("\n".join(pick) + "\n")
+   EOF
+   ```
 
+2. **Targets and round-0 programs.** A sends B a tarball of the exact folders instead of B
+   regenerating them:
+
+   ```
+   tar czf ablation_inputs.tgz data/generated/targets/fusion360 data/generated/init/cadrille_rl
+   ```
+
+3. **Same code and model.** Both are on the same `main` commit, run `uv sync`, and use the
+   same `VERTEX_MODEL` and `VERTEX_PRICE_*_PER_M` in `.env`. Each person may use their own
+   Vertex project, since rate limits are per project.
+
+4. **Cross-check.** After B's first run has round 0, compare its `iou3d` at round 0 with A's
+   `main` round 0 for the same parts. They must match exactly. If they don't, stop and find the
+   difference (library versions, inputs) before going on.
+
+The 36 targets as shell arguments (bash), used by both runbooks:
+
+```bash
+mapfile -t T < <(sed 's|^|data/generated/targets/fusion360/|' data/fusion360/ablation.txt)
+uv run python refine.py "${T[@]}" ...
 ```
-A = H = round 0;  steps = 0
-each round: agent edits H  ->  new  (build failure: nothing changes)
-  if geo_accept(A, new):          commit    A = H = new, steps = 0
-  elif steps < patience:          tentative H = new, steps += 1
-  else:                           roll back H = A,   steps = 0   (new is discarded)
-end of run: final = A (never an uncommitted branch)
-```
 
-- A tentative branch is always compared with the **anchor**, not with its parent. A sequence
-  of bad steps therefore cannot drift: the branch has to beat the last good state to be
-  committed.
-- **Tell the agent** when it is on a tentative branch. Proposed prompt line: "Your last edit
-  lowered the geometric score. It is kept tentatively for N more round(s): continue in this
-  direction only if you believe it leads to a better shape; otherwise revert it." Without
-  this line, the residuals simply tell the agent to undo the edit. Decide this in the pilot
-  (see §5).
-- New round outcomes: `tentative`, `committed`, `rolled-back`. These need a colour in
-  `progress.py`/`figures.py`, and a stop/outcome entry in `summarize_runs.py`.
-- Every round counts against `--rounds`, including exploratory ones, so the cost per part stays
-  comparable.
-- Stretch goal, not in the main grid: a real beam (B children per node, keep the best by geo
-  score) multiplies cost by B.
+## 4. Pilots (tuning parts only)
 
-### G. Edit feedback
+Pilots run only on the 9 tuning parts (`data/generated/targets/fusion360_tuning`, init
+`data/generated/init/cadrille_rl_tuning`), never on the 36 ablation parts.
 
-| id | flag | change |
+The tuning pilots already cover `main`, `no_feedback`, `fb_text_only`, `patience1` and
+`patience2` (`runs/2026-11-24_*`). Still to pilot, each for 9 parts × 6 rounds:
+
+- `hybrid` with feedback on (A), to measure its cost;
+- `signed_resid` (B), to check it is sane before the 36-part run.
+
+The other configs were checked with echo tests and change only things already exercised.
+Pilot them only if a 36-part run looks broken.
+
+## 5. Budget and time
+
+The measured cost on the tuning pilots (geo, 6 rounds, feedback image) is about **$0.32–0.36
+and 10 min per part**. Parts in one run go one after another, so a config of 36 parts is about
+**$12–13 and 6 h**. Runs of different configs are independent and can run in parallel
+(about 3 per person, within Vertex rate limits).
+
+| | configs | estimate |
 |---|---|---|
-| `no_feedback` | `--feedback none` | each round sees only the current state, so rejected edits leave no trace (the pre-feedback method) |
-| `fb_text_only` | `--feedback text` | only if the image variant is in `main`: drop the edit-effect image |
+| A required | 6 (`hybrid` counted as ~2×) | ~$90, ~12–14 h at 3 in parallel |
+| B required | 6 (`one_view` cheaper) | ~$70, ~12 h at 3 in parallel |
+| secondary | 5 | ~$60 |
+| total | 17 | ~$220 |
 
-### H. Noise floor
+These numbers come from 9 tuning parts. Check the first finished 36-part run against them
+before starting the rest.
 
-| id | change | why |
-|---|---|---|
-| `main_s1` | `main` with `--seed 1` | Gemini runs at temperature 1.0. A second `main` run measures how much two identical configs differ by chance. An ablation delta smaller than this is not a finding. |
+## 6. Collecting results
 
-## 2. Run size and budget
+- Each run is written to `runs/<date>_abl_<id>/` with its own README.md, results and
+  `config.json`, which records every flag.
+- When B is done, B sends A the `runs/*_abl_*` folders as a tarball. Folder names must keep the
+  `abl_<id>` pattern.
+- `refine.py` cannot resume a run that dies. The missing parts are rerun as
+  `abl_<id>_part2`, and the summary treats `abl_<id>` + `abl_<id>_part2` as one config.
+- **Summary (not built yet): `summarize_ablation.py`.** It reads every `runs/*_abl_*` folder
+  and writes `runs/ablation_summary/` (README.md + CSV + figures), with:
+  - one row per config: median/mean 3D IoU (`iou3d`, `iou3d_cad`), CD, gain over round 0,
+    `final` and `best_geo`, kept-precision, harmful-accept rate, invalid-edit rate, tokens, $,
+    minutes;
+  - the **paired difference vs `main`** per part: mean Δ IoU with a bootstrap 95% CI (10 000
+    resamples over parts), a Wilcoxon signed-rank p-value, and wins/ties/losses;
+  - the `main` vs `main_s1` difference as the noise floor in the same table;
+  - Δ per stratum (low/mid/high start IoU);
+  - figures: a forest plot of Δ IoU vs `main` with CIs, and IoU by round for each config.
+- Until it exists, `summarize_runs.py` gives per-run numbers.
 
-**Parts.** 36 parts, the same for every config: 6 per stratum cell (3 cadrille-IoU bins × 2
-complexity bins), drawn from the 60 Stage 1 parts with a fixed seed and written to
-`data/fusion360/ablation.txt`. This gives the "30–40 per configuration" and keeps the strata
-balanced. All parts in a config use one seed (`--seed 0`). Only `main_s1` differs, and only
-in the seed.
+## 7. What is built
 
-**Rounds.** The same `--rounds R` for every config. The patience configs need room to explore,
-so the proposal is **R = 6** everywhere, including `main` (decide in the pilot; R = 4 leaves
-`patience2` almost no rounds to commit).
-
-**Config count.**
-
-| group | configs that call the model |
+| piece | status |
 |---|---|
-| required | `main`, `gemini`, `hybrid`, `mask_only`, `depth_only`, `one_view`, `no_gate`, `patience1`, `patience2`, `no_feedback`, `main_s1` → **11** |
-| secondary | `no_weights`, `no_resid_img`, `no_detail`, `no_kernel`, (`fb_text_only`) → 4–5 |
-| free | `cadrille`, `gemini0` (round 0 of existing runs) |
-
-That is 11 × 36 = 396 part-runs required, plus 144–180 secondary.
-
-**Cost and time (rough).** The only real run so far (`runs/2026-11-23_vertex_smoke`: 1 part,
-1 round, gemini-3.8-flash) used about 12k tokens, cost $0.026 and took 0.7 min. Scaled linearly
-to 6 rounds, that is about $0.15 and 4 min per part-run, so **about $60–70 and 26 h serial** for
-the required set (hybrid costs more because of the questions and judge; the feedback block
-adds about 1–2k tokens per round). These numbers come
-from one round of one part. Measure them again in the pilot before the full run. Runs are
-independent per config, so 3–4 configs can run in parallel within the Vertex rate limits.
-
-## 3. Implementation
-
-1. **`refine.py` flags** (all default to current behaviour):
-   - `--geo-signal {both,mask,depth}`: passed to `geo_score`/`geo_accept` (a `signal`
-     parameter in `geo_check.py`) and to the evidence block (which diff grids are sent, which
-     table columns `residual_table` prints).
-   - `--views {all,worst}`: chooses the view at round 0 and restricts `GRID_VIEWS`, the
-     compare report used for scoring, `detail_strip`, the target grid and the table to that
-     view. Forces weights off.
-   - `--gate {on,off}`: `off` sets `keep = True` for the geo/hybrid rules; the geo decision is
-     still logged.
-   - **Built (2026-11-24):** `--geo-signal`, `--views` and `--gate`, with echo tests. Details
-     as built: in `depth` mode the detail tile crops the depth-error image (the blob is still
-     found from the silhouette residual, consistent with the `depth_only` caveat); `--views
-     worst` is allowed only for the `geo` and `oracle` arms (the questions and the judge
-     assume the 4-view grid), writes the chosen view to `parts/<part>/internal/views.json`,
-     and gives the agent the bounding box measured from that view's depth map only (strict; the
-     prompt calls it a lower bound, since one depth map misses hidden surfaces: on the tuning
-     parts 68–100% of the 4-view size per axis). The candidate placement (`--center-at`) and
-     the round-0 program, shared with `main`, still come from all 4 views; with
-     `--gate off` the judge is not called unless `--shadow-judge` is set.
-   - `--patience K`: the anchor/branch logic above, a prompt line in `vlm.refine_prompt`, and
-     new outcome labels.
-   - **Built (2026-11-24):** `--patience K` (`refine.Branch`, tests in
-     `tests/test_patience.py`). As built:
-     - Allowed only with `--gate on` and the `geo`/`oracle` arms (the judge compares a
-       candidate with its parent, not with the anchor). `K = 0` is the old loop.
-     - Every built edit is checked against the anchor; `iou3d_before`, `verdict` and the
-       feedback's per-view table are also vs the anchor, so kept-precision measures commits.
-     - A build failure or a blocked repeat leaves the branch as it is (it still uses a round).
-       `NO_CHANGE` on a branch stops the run; the final state is the anchor.
-     - If the agent's edit on a branch is the anchor's program again (normalised), the branch
-       ends as `rolled_back` with `reverted = true`.
-     - The agent is told (open decision §5, built as "yes"): a line before the feedback block
-       says the program is tentative, how many rounds are left, and that it is committed only
-       if it beats round N's program. Without feedback it also shows the branch's diff vs the
-       anchor; with feedback the attempt log shows each step (`KEPT TENTATIVELY`, `ROLLED
-       BACK to round N`).
-     - Logged per round: `patience_outcome` (`committed` / `tentative` / `rolled_back`),
-       `anchor_round`, `branch_depth`, `reverted`; folder suffixes `tentative` and
-       `rolled-back`; `result.json` has `ended_on_branch` (a discarded branch at the end).
-       `summarize_runs.py` counts the outcomes; `mark_repeats` treats a tentative edit as a
-       new state and a rollback as a return to the anchor.
-   - `config.json` records all four, so `summarize_runs.py` can label runs.
-2. **Part list:** `cadrille_init.py ablation`, which writes `data/fusion360/ablation.txt` and
-   `ablation_meta.json` (6 per cell from `stage1_meta.json`, seed 2531).
-3. **Runner:** `ablation.py` holds a table `config id → refine.py flags` (§1) and runs each
-   config to `runs/<date>_abl_<id>/`. `--only id,id` runs a subset. A config that has already
-   finished is skipped, so the runner can be restarted.
-4. **Summary:** `summarize_ablation.py` reads every `runs/*_abl_*`. Its output:
-   - one row per config: median/mean 3D IoU (`iou3d`, `iou3d_cad`), CD, gain over round 0,
-     `final` and `best_geo`, kept-precision, harmful-accept rate, invalid-edit rate, tokens, $,
-     minutes;
-   - **paired difference vs `main`** per part: mean Δ IoU with a bootstrap 95% CI
-     (10 000 resamples over parts), a Wilcoxon signed-rank p-value, and wins/ties/losses;
-   - the `main` vs `main_s1` difference as the noise floor in the same table;
-   - Δ per stratum (low/mid/high start IoU);
-   - figures: a forest plot of Δ IoU vs `main` with CIs, and IoU-by-round for each config.
-   - Output goes to `runs/ablation_summary/` (README.md + CSV + figures).
-5. **Tests** (echo backend, in `tests/test_refine_echo.py`): one end-to-end test per new flag.
-   `--gate off` keeps every built edit. `--views worst` scores one view. The `--patience`
-   state machine commits, holds tentative edits, and rolls back, so `final` is never an
-   uncommitted branch. `--geo-signal` changes the score and the evidence. Unit tests for the
-   `geo_check` signal variants.
-
-## 4. Order of work
-
-0. **Edit feedback first** (`docs/FEEDBACK_PLAN.md` §8): implement it, pilot it on the tuning
-   set, pick the variant, and freeze it as part of `main`.
-1. Implement the ablation flags + tests (echo backend only). The feedback block must respect
-   `--geo-signal`, `--views`, `--gate` and `--patience` (FEEDBACK_PLAN §5).
-2. **Pilot on the 9 tuning parts** (never on Stage 1 parts): every new config with
-   `--rounds 6`. Check that the runs are sane, then measure real cost and time. Settle the
-   open decisions in §5. Wait for go-ahead after the pilot report.
-3. Freeze prompts and flags. Write `ablation.txt`.
-4. Run the required configs, then the secondary ones if budget remains.
-5. `summarize_ablation.py` → results table and forest plot for the report.
-
-## 5. Open decisions (settle in the pilot)
-
-- `--rounds`: 6 for all configs (proposed) or 4.
-- Patience: whether to tell the agent it is on a tentative branch (proposed: yes).
-- `one_view`: worst view fixed at round 0 (proposed) or re-picked each round.
-- `gemini` (from scratch): also run it with `hybrid`? This is only needed if the write-up wants
-  model × checker as a 2×2.
-- Whether the main write-up includes the optional `premise`/`vlm` arms.
+| `--geo-signal`, `--views`, `--gate` | built (2026-11-24), echo tests |
+| `--feedback none/text/image` (default image) | built (2026-11-24), tuning pilot done |
+| `--patience K` (`refine.Branch`) | built (2026-11-24), `tests/test_patience.py`, tuning pilot done |
+| `--residual-view signed` | built (PR #13), needs a tuning pilot |
+| `--no-weights`, `--no-residual-images`, `--no-detail`, `--no-kernel` | built |
+| `data/fusion360/ablation.txt` | §3 step 1 |
+| `ablation.py` runner | not built; the runbooks use plain `refine.py` commands |
+| `summarize_ablation.py` | not built (§6) |
