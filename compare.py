@@ -10,7 +10,12 @@ part twice the size would look identical. Render the candidate with --like:
 Per view it measures
   * silhouette IoU   = |target AND candidate| / |target OR candidate|   (1 = same outline)
   * depth error      = |depth_cand - depth_target| on pixels both cover, as mean (MAE),
-                       RMSE and 95th percentile, in normalised units and in mm
+                       RMSE and 95th percentile, in normalised units and in mm (shown to the agent)
+  * depth_err        = the score's depth term, over the UNION of both silhouettes:
+                       min(|depth error|, DEPTH_CAP) where both cover, DEPTH_CAP where only one
+                       does. Always defined, and shrinking the overlap cannot lower it (the
+                       MAE on the overlap alone can be gamed that way, and is undefined when
+                       the outlines don't overlap).
 and writes, per view,
   * <view>_overlay.png  grey = both, RED = missing material (in target, not candidate),
                         BLUE = extra material (in candidate, not target)
@@ -32,6 +37,8 @@ BG = (255, 255, 255)
 BOTH = (200, 200, 200)
 MISSING = (215, 38, 38)     # red: target has material here, candidate doesn't
 EXTRA = (38, 98, 215)       # blue: candidate has material here, target doesn't
+
+DEPTH_CAP = 0.1   # normalised units (unit bounding sphere): ~5% of the part's size
 
 # pale yellow -> orange -> red -> dark purple   (low error -> high error)
 _STOPS = np.array([[255, 247, 188], [254, 196, 79], [236, 112, 20], [189, 0, 38], [84, 0, 60]],
@@ -58,8 +65,15 @@ def view_metrics(mask_t, depth_t, mask_c, depth_c, mm_per_unit=1.0):
         "target_px": int(mask_t.sum()),
         "candidate_px": int(mask_c.sum()),
     }
-    if inter.any():
+    n_union, n_inter = int(union.sum()), int(inter.sum())
+    if n_inter:
         err = np.abs(depth_c[inter] - depth_t[inter]).astype(np.float64)
+        capped = float(np.minimum(err, DEPTH_CAP).sum())
+    else:
+        capped = 0.0
+    # union-based, capped: a pixel only one shape covers counts as a full DEPTH_CAP error
+    m["depth_err"] = (capped + DEPTH_CAP * (n_union - n_inter)) / n_union if n_union else 0.0
+    if n_inter:
         m.update(depth_mae=float(err.mean()), depth_rmse=float(np.sqrt((err ** 2).mean())),
                  depth_p95=float(np.percentile(err, 95)))
     else:  # nothing in common: depth error is undefined
@@ -92,6 +106,41 @@ def overlay_image(mask_t, mask_c):
     img[mask_t & ~mask_c] = MISSING
     img[mask_c & ~mask_t] = EXTRA
     return img
+
+
+FIXED = (30, 160, 60)       # edit-effect image: wrong before the edit, right after
+BROKE = (215, 38, 38)       # right before the edit, wrong after
+STILL_WRONG = (245, 222, 190)
+
+
+def edit_effect_image(mask_t, mask_cur, mask_new):
+    """What an edit changed, relative to the state it was made from (FEEDBACK_PLAN 3.2):
+    green = pixels it fixed, red = pixels it broke, grey = part pixels right before and
+    after, faint = wrong before and after, white = background before and after.
+    -> (rgb image, {"fixed": px, "broke": px})"""
+    ok_cur, ok_new = mask_t == mask_cur, mask_t == mask_new
+    img = np.empty(mask_t.shape + (3,), np.uint8)
+    img[:] = BG
+    img[ok_cur & ok_new & mask_t] = BOTH
+    img[~ok_cur & ~ok_new] = STILL_WRONG
+    fixed, broke = ~ok_cur & ok_new, ok_cur & ~ok_new
+    img[fixed] = FIXED
+    img[broke] = BROKE
+    return img, {"fixed": int(fixed.sum()), "broke": int(broke.sum())}
+
+
+def write_effect_images(target_dir: Path, cur_dir: Path, new_dir: Path, out: Path, views=None):
+    """<out>/<view>_effect.png for every (or the given) view. -> {view: counts}"""
+    tv, _ = load_views(target_dir)
+    cv, _ = load_views(cur_dir)
+    nv, _ = load_views(new_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    counts = {}
+    for v in (views or tv):
+        img, counts[v] = edit_effect_image(tv[v][0], cv[v][0], nv[v][0])
+        Image.fromarray(img).save(out / f"{v}_effect.png")
+    (out / "effect.json").write_text(json.dumps(counts))
+    return counts
 
 
 def depth_error_image(mask_t, depth_t, mask_c, depth_c, vmax):
@@ -174,6 +223,7 @@ def compare(target_dir: Path, cand_dir: Path, out: Path, depth_vmax=0.05, thumb=
         "min_iou": per_view[worst]["iou"], "worst_view": worst,
         "mean_depth_mae": float(np.mean(depths)) if depths else None,
         "mean_depth_mae_mm": float(np.mean(depths)) * mm if depths else None,
+        "mean_depth_err": float(np.mean([m["depth_err"] for m in per_view.values()])),
         "mm_per_unit": mm, "depth_vmax": depth_vmax,
         "views": per_view,
     }

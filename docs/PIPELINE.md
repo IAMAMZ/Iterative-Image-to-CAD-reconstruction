@@ -35,7 +35,7 @@ cadrille/results/fusion360_test_gt/<part>.stl        cadrille/work_dirs/f360_rl_
           │  cadrille_init.py split  ──► data/fusion360/stage1.txt (+ stage1_meta.json)
           ▼                                                          │
  data/fusion360_targets.py                                           ▼
-   map to cadrille frame, render 8 cameras            cadrille_init.py convert --tag rl
+   map to cadrille frame, render 4 cameras            cadrille_init.py convert --tag rl
           │                                             append `result = r`, build, fit scale
           ▼                                                          │
  data/generated/targets/fusion360/<part>/                           ▼
@@ -89,7 +89,7 @@ pulled). `--backend echo` replaces the model with a fake agent for dry runs.
 
 | File | Role |
 |---|---|
-| `rig.py` | The 8 fixed cameras: `front back right left top bottom iso_fr iso_bl`, 512×512, 40° FOV, distance 3.5 (unit sphere fills ~85% of the frame). Saves/loads `rig.json` (OpenGL camera-to-world). `normalize()` and `render_rig()`. |
+| `rig.py` | The 4 fixed cameras `top_front top_right top_back top_left`: 45° above the table, 90° apart, as in RealCAD (one phone camera, part turned between photos; VGGT on test50 gives a median elevation of 43°). Same directions as `data/cameras.json`. The agent sees all 4 as its 2×2 grid; the checker and view weights use the same 4; the underside is never seen. 512×512, 40° FOV, distance 3.5 (unit sphere fills ~85% of the frame). Runs before 2026-11-24 used 8 cameras (`front back right left top bottom iso_fr iso_bl`; agent grid `front right top iso_fr`); their targets are in `data/generated/targets/*_8view`. Saves/loads `rig.json` (OpenGL camera-to-world). `normalize()` and `render_rig()`. |
 | `cq_render.py` | `CQRenderer` (pyrender, offscreen) renders colour, mask and depth; `to_trimesh()` tessellates a CadQuery shape. Depth is along the view axis in normalised units. |
 | `op_checker.py` | `OpTrace` wraps every `cq.Workplane` operation (even inside one chained statement) and asks OpenCascade after each step whether the result is legal. **error**: kernel exception, `BRepCheck_Analyzer` failure, or all material removed → `IllegalOperation` with step, line and a fix hint. **warning**: operation changed nothing, selector matched nothing, part split into pieces. One JSON record per step. |
 | `generate_solid.py` | Runs a program (`result = ...`) under `OpTrace`, checks the solid, exports `solid.step` / `solid.stl`, renders the rig. `render_mesh()` is the shared render half (also used for GT targets). Writes `<view>.png`, `<view>_mask.png`, `<view>_depth.png`, `depth.npz`, `ops_log.jsonl`, `info.json` (normalisation, bbox, solids/faces/volume, op warnings). Exit 1 on illegal programs. Flags: `--like`, `--center-at`, `--rig`. |
@@ -107,9 +107,9 @@ pulled). `--backend echo` replaces the model with a fake agent for dry runs.
 
 | File | Role |
 |---|---|
-| `compare.py` | Per view: silhouette IoU, missing / extra pixels, depth MAE on the overlap. Writes overlay images (red = missing, blue = extra) and depth-error heatmaps to `<cand>/diff/`. `largest_residual()` finds the largest connected missing/extra blob for the zoomed detail tile. |
+| `compare.py` | Per view: silhouette IoU, missing / extra pixels, depth MAE on the overlap (shown to the agent), and the score's depth term `depth_err`: over the union of both silhouettes, `min(|Δdepth|, DEPTH_CAP)` where both cover and `DEPTH_CAP` (0.1 normalised units) where only one does, so it is defined without overlap and an edit cannot lower it by shrinking the overlap. Writes overlay images (red = missing, blue = extra) and depth-error heatmaps to `<cand>/diff/`. `largest_residual()` finds the largest connected missing/extra blob for the zoomed detail tile. |
 | `view_weights.py` | Confidence per **target** view. Each view's depth is back-projected to 3D and projected into every other view (space carving): a point must land on the other view's silhouette and must not be in front of its visible surface (`DEPTH_TOL = 0.03`, 3×3 min-filter on depth). `r(v,u)` = symmetric rejection rate; `c_v = 1 − median_u r(v,u)`; `w_v = clip((c_v − 0.6)/(0.98 − 0.6), 0, 1)`. The median means one bad view cannot drag good ones down. Clean renders give exactly 1.0; cached in `<target>/view_weights.json`. |
-| `geo_check.py` | `geo_score` = weighted mean silhouette IoU − weighted mean depth MAE. `geo_accept(cur, new, w)` keeps an edit iff the gain > `min_gain` (1e-3) **and** no *trusted* view (`w ≥ 0.5`) loses more than 0.05 IoU. `|gain| ≤ min_gain` is flagged *inconclusive*. `residual_table` is the per-view table shown to the agent (with the weight column). |
+| `geo_check.py` | `geo_score` = weighted mean silhouette IoU − weighted mean `depth_err` (old reports: depth MAE). `geo_accept(cur, new, w)` keeps an edit iff the gain > `min_gain` (1e-3) **and** no *trusted* view (`w ≥ 0.5`) loses more than 0.05 IoU. `|gain| ≤ min_gain` is flagged *inconclusive*. `residual_table` is the per-view table shown to the agent (with the weight column). |
 
 ### The agent
 
@@ -225,7 +225,7 @@ runs/<date>_<name>/                    (--name; --out sets the folder exactly)
 ```
 
 Every program folder (targets too, see `layout.py`): `program.py`, `solid.stl`/`solid.step`,
-`conversation.json` (prompt, transcript, decision, QA), `renders/` (8 cameras: shaded, mask,
+`conversation.json` (prompt, transcript, decision, QA), `renders/` (4 cameras: shaded, mask,
 depth), `diff/` (overlay + depth-error images, `summary.png`, `report.json`), `internal/`
 (`info.json`, `depth.npz`, `ops_log.jsonl`). Inputs (targets, starting programs) live in the
 git-ignored `data/generated/`; runs from before this layout are in `archive/runs_until_2026-11-18/`.
@@ -255,7 +255,7 @@ mean_iou, w_iou, depth_mae, geo_score, kernel_warnings`, all `eval3d` metrics, `
 
 - **Centring** forgives translation errors (`--center-at`); scoring is otherwise fixed-frame.
 - **Placement** fits isotropic scale only — no rotation or per-axis scale.
-- **cadrille's inputs** were its own 4-view renders (`cadrille/eval_fusion360.py`), not our 8 cameras.
+- **cadrille's inputs** were its own 4-view renders (`cadrille/eval_fusion360.py`), not our 4 cameras.
 - cadrille cannot be the editing agent: it is a fine-tuned image→code model, not instruction-following.
 - Echo-backend numbers are meaningless; no real-model run has been done yet.
 - Not yet built: Stage 2 (corrupted views). The Vertex backend has no real run yet.

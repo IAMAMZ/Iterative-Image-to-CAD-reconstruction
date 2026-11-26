@@ -74,15 +74,17 @@ def _rejected(pts, depth_u, near_u, cam_u, K):
     return float(1.0 - ok.mean())
 
 
-def measure_bbox(target_dir: Path, rig: dict):
+def measure_bbox(target_dir: Path, rig: dict, views=None):
     """Bounding box (target units) of the target from its depth maps and the calibrated
-    cameras: back-project every foreground pixel of every view. Uses no 3D model."""
+    cameras: back-project every foreground pixel of every view (or only `views`). Uses no 3D
+    model. From one view it covers only the visible surfaces, so it is a lower bound."""
     info = json.loads(layout.info(target_dir).read_text())
     center = np.array(info["normalization"]["center"])
     scale = info["normalization"]["scale"]
     depth = np.load(layout.depth(target_dir))
     pts = np.concatenate([backproject(depth[c["name"]], c, rig["K"])
-                          for c in rig["cameras"] if c["name"] in depth.files])
+                          for c in rig["cameras"] if c["name"] in depth.files
+                          and (views is None or c["name"] in views)])
     pts = pts / scale + center                              # normalised -> target units
     return pts.min(0), pts.max(0)
 

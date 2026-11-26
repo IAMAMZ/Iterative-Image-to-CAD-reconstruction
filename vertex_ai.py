@@ -8,6 +8,8 @@ Configuration comes from the environment, filled from a `.env` file at the repo 
   VERTEX_THINKING_LEVEL     optional: minimal | low | medium | high (unset = model default;
                             --think forces high)
   VERTEX_MAX_OUTPUT_TOKENS  optional cap on reply + thinking tokens (default 32768)
+  VERTEX_PRICE_INPUT_PER_M  optional USD per 1M input tokens  } both set -> runs report
+  VERTEX_PRICE_OUTPUT_PER_M optional USD per 1M output tokens } cost (thinking = output)
 
 Authentication is Application Default Credentials; run once in a terminal:
     gcloud auth application-default login
@@ -59,6 +61,24 @@ def config() -> dict:
             "thinking_level": os.environ.get("VERTEX_THINKING_LEVEL", "").strip().lower() or None,
             "max_output_tokens": int(os.environ.get("VERTEX_MAX_OUTPUT_TOKENS")
                                      or DEFAULT_MAX_OUTPUT_TOKENS)}
+
+
+def prices() -> dict | None:
+    """{"input_per_m", "output_per_m"} in USD from the environment, or None when either is
+    unset. Thinking tokens are billed as output and are already in output_tokens."""
+    load_env()
+    try:
+        i = float(os.environ.get("VERTEX_PRICE_INPUT_PER_M", "").strip())
+        o = float(os.environ.get("VERTEX_PRICE_OUTPUT_PER_M", "").strip())
+    except ValueError:
+        return None
+    return {"input_per_m": i, "output_per_m": o}
+
+
+def cost_usd(prompt_tokens, output_tokens, p: dict | None):
+    if p is None:
+        return None
+    return ((prompt_tokens or 0) * p["input_per_m"] + (output_tokens or 0) * p["output_per_m"]) / 1e6
 
 
 def default_model() -> str:

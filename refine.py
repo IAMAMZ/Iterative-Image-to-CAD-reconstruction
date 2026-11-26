@@ -42,6 +42,7 @@ only. Run folder layout: see report.py (and the README.md it writes into every r
 """
 import argparse
 import datetime
+import difflib
 import io
 import json
 import os
@@ -58,24 +59,31 @@ import numpy as np
 import trimesh
 from PIL import Image, ImageDraw
 
+import vertex_ai
 import vlm
-from compare import compare, largest_residual, load_views
+from compare import compare, largest_residual, load_views, write_effect_images
 from eval3d import evaluate, properties
-from geo_check import geo_accept, geo_score, residual_table, weighted_means
+from geo_check import (SIGNALS, edit_delta, geo_accept, geo_score, residual_table, restrict,
+                       weighted_means)
 import layout
+import progress
 import report
 import sandbox
 from rig import load_rig
+from summarize_runs import normalize_program
 from view_weights import measure_bbox, view_weights
 
 ROOT = Path(__file__).parent
 RUNS = ROOT / "runs"          # default home of run folders (git-ignored)
-GRID_VIEWS = ("front", "right", "top", "iso_fr")
+GRID_VIEWS = layout.grid_views()   # the 4 rig cameras, 2x2 grid order
 BUILD_TIMEOUT = 180  # seconds; model-written code can be pathological
 BENEFIT = 0.005      # 3D IoU change that counts as a real improvement / harm (offline label)
 TEMPERATURE = 1.0    # Gemini 3's recommended setting
 ALL_YES_IOU = 0.98   # arms with geometric evidence only stop on "all questions Yes" when the
                      # weighted silhouette IoU is already this good
+FB_ATTEMPTS = 3      # edit feedback: attempts shown (since the last kept edit)
+FB_HISTORY = 8       # edit feedback: round-history lines shown
+FB_DIFF_LINES = 30   # edit feedback: diff lines per attempt
 
 # what each arm shows the agent and how it decides; see the module docstring
 ARMS = {
@@ -97,8 +105,12 @@ def _png(im: Image.Image) -> bytes:
 
 
 def grid(paths, labels, tile=256) -> bytes:
-    """2x2 labelled grid of images -> PNG bytes."""
-    sheet = Image.new("RGB", (2 * tile, 2 * tile), (255, 255, 255))
+    """2x2 labelled grid of images -> PNG bytes. A single image fills the whole sheet
+    (one-view ablation), so it is shown at the same size as the grid."""
+    if len(paths) == 1:
+        tile *= 2
+    sheet = Image.new("RGB", (tile, tile) if len(paths) == 1 else (2 * tile, 2 * tile),
+                      (255, 255, 255))
     for i, (p, lab) in enumerate(zip(paths, labels)):
         im = Image.open(p).convert("RGB").resize((tile, tile), Image.LANCZOS)
         ImageDraw.Draw(im).text((6, 5), lab, fill=(0, 0, 0))
@@ -106,22 +118,26 @@ def grid(paths, labels, tile=256) -> bytes:
     return _png(sheet)
 
 
-def render_grid(d: Path, labels=None):
-    return grid([layout.render(d, v) for v in GRID_VIEWS], labels or list(GRID_VIEWS))
+def render_grid(d: Path, labels=None, views=None):
+    views = views or GRID_VIEWS
+    return grid([layout.render(d, v) for v in views], labels or list(views))
 
 
-def diff_grid(d: Path, kind, labels=None):
+def diff_grid(d: Path, kind, labels=None, views=None):
     """kind: "_overlay" or "_depth_err" (compare.py's images of candidate dir d)."""
-    return grid([layout.diff(d, v, kind) for v in GRID_VIEWS], labels or list(GRID_VIEWS))
+    views = views or GRID_VIEWS
+    return grid([layout.diff(d, v, kind) for v in views], labels or list(views))
 
 
-def detail_strip(target_dir: Path, cand_dir: Path, weights=None, tile=256, margin=24):
-    """Zoom on the largest residual blob over all views (GATOR's detail view):
-    target | candidate | residual overlay. -> (png bytes, view) or (None, None)."""
+def detail_strip(target_dir: Path, cand_dir: Path, weights=None, tile=256, margin=24,
+                 views=None, kind="_overlay"):
+    """Zoom on the largest residual blob over the views (GATOR's detail view):
+    target | candidate | residual (kind "_overlay") or depth error ("_depth_err").
+    -> (png bytes, view) or (None, None)."""
     tv, _ = load_views(target_dir)
     cv, _ = load_views(cand_dir)
     best = (0, None, None)
-    for v in tv:
+    for v in (views or tv):
         area, box = largest_residual(tv[v][0], cv[v][0])
         area *= 1.0 if weights is None else float(weights.get(v, 1.0))
         if box and area > best[0]:
@@ -136,7 +152,7 @@ def detail_strip(target_dir: Path, cand_dir: Path, weights=None, tile=256, margi
     top, left = int(np.clip(cy - side // 2, 0, max(h - side, 0))), int(np.clip(cx - side // 2, 0, max(w - side, 0)))
     crop = (left, top, min(left + side, w), min(top + side, h))
     srcs = [(layout.render(target_dir, v), "target"), (layout.render(cand_dir, v), "current"),
-            (layout.diff(cand_dir, v, "_overlay"), "residual")]
+            (layout.diff(cand_dir, v, kind), "residual" if kind == "_overlay" else "depth error")]
     sheet = Image.new("RGB", (3 * tile, tile), (255, 255, 255))
     for i, (p, lab) in enumerate(srcs):
         im = Image.open(p).convert("RGB").crop(crop).resize((tile, tile), Image.NEAREST)
@@ -169,8 +185,10 @@ def build(src: str, cand_dir: Path, target_dir: Path, center, sandboxed=False):
     return None
 
 
-def score(target_dir: Path, cand_dir: Path, weights=None):
-    rep = compare(target_dir, cand_dir, cand_dir / layout.DIFF)
+def score(target_dir: Path, cand_dir: Path, weights=None, views=None, signal="both"):
+    """Render-compare a built candidate. The checker (geo score, w_iou, table) sees only
+    `views` (None = all) and `signal`; report["mean_iou"] stays the all-view mean."""
+    rep = restrict(compare(target_dir, cand_dir, cand_dir / layout.DIFF), views)
     try:
         e3d = evaluate(target_dir, cand_dir)
     except Exception as e:  # never let offline scoring kill a run
@@ -179,7 +197,7 @@ def score(target_dir: Path, cand_dir: Path, weights=None):
     size = (np.array(info["bbox_max"]) - np.array(info["bbox_min"])).tolist()
     w_iou, w_depth = weighted_means(rep, weights)
     return {"dir": cand_dir, "report": rep, "e3d": e3d, "size": size, "info": info,
-            "geo_score": geo_score(rep, weights), "w_iou": w_iou, "w_depth": w_depth,
+            "geo_score": geo_score(rep, weights, signal=signal), "w_iou": w_iou, "w_depth": w_depth,
             "src": (cand_dir / "program.py").read_text()}
 
 
@@ -217,13 +235,18 @@ class Agent:
         return {"llm_seconds": round(self.llm_seconds, 1), "calls": self.calls,
                 "prompt_tokens": self.prompt_tokens, "output_tokens": self.output_tokens}
 
-    def write_program(self, user_msg, images, cand_dir, target_dir, center, allow_no_change=False):
+    def write_program(self, user_msg, images, cand_dir, target_dir, center, allow_no_change=False,
+                      tried=None):
         """Ask for a program; on build errors feed the error (with the CAD kernel's
-        diagnosis) back up to `repairs` times.
-        -> (status, attempts, transcript, change) with status "ok" | "failed" | "no_change"."""
+        diagnosis) back up to `repairs` times. Repeat guard (edit feedback): a program equal,
+        once normalised, to one in `tried` [(round, normalised lines)] is not built; the agent
+        is told and the reply uses a repair slot.
+        -> (status, attempts, transcript, change) with status "ok" | "failed" | "no_change" |
+        "repeat_blocked" (the last reply was a blocked repeat)."""
         messages = [{"role": "system", "content": vlm.SYSTEM},
                     {"role": "user", "content": user_msg, "images": images}]
         transcript, change = [], (None, None)
+        repeat = None
         for attempt in range(1, self.repairs + 2):
             text, st = self.ask(messages)
             transcript.append({"attempt": attempt, "reply": text, **st})
@@ -232,14 +255,25 @@ class Agent:
                 if allow_no_change and change[0] == "no_change":
                     return "no_change", attempt, transcript, change
             src = vlm.extract_code(text)
-            err = "the reply had no ```python code block" if src is None else \
-                build(src, cand_dir, target_dir, center, self.sandboxed)
+            repeat = None
+            if src is not None and tried:
+                norm = normalize_program(src)
+                repeat = next((rnd for rnd, prog in tried if prog == norm), None)
+            if repeat is not None:
+                cand_dir.mkdir(parents=True, exist_ok=True)
+                (cand_dir / "program.py").write_text(src)       # kept for the record, not built
+                transcript[-1]["repeat_of"] = repeat
+                err, follow = f"repeat of round {repeat}", vlm.repeat_prompt(repeat)
+            else:
+                err = "the reply had no ```python code block" if src is None else \
+                    build(src, cand_dir, target_dir, center, self.sandboxed)
+                follow = None if err is None else vlm.repair_prompt(err)
             transcript[-1]["error"] = err
             if err is None:
                 return "ok", attempt, transcript, change
             messages += [{"role": "assistant", "content": text},
-                         {"role": "user", "content": vlm.repair_prompt(err)}]
-        return "failed", attempt, transcript, change
+                         {"role": "user", "content": follow}]
+        return ("repeat_blocked" if repeat is not None else "failed"), attempt, transcript, change
 
     def judge(self, target_img, cur_img, new_img, rng):
         """VLM visual review. Randomises which side is A to avoid position bias.
@@ -316,9 +350,83 @@ def verdict_of(before, after):
         else "neutral"
 
 
+def diff_lines(old: str, new: str, cap=FB_DIFF_LINES):
+    """Line diff for the agent's attempt log, blind to whitespace-only changes (the agent
+    often reformats). -> ["- old line", "+ new line", ...]"""
+    a = [l.rstrip() for l in old.splitlines() if l.strip()]
+    b = [l.rstrip() for l in new.splitlines() if l.strip()]
+    key = lambda ls: [re.sub(r"\s+", "", l) for l in ls]
+    out = []
+    for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(a=key(a), b=key(b),
+                                                       autojunk=False).get_opcodes():
+        if tag != "equal":
+            out += [f"- {l.strip()}" for l in a[i1:i2]] + [f"+ {l.strip()}" for l in b[j1:j2]]
+    if len(out) > cap:
+        out = out[:cap] + [f"... ({len(out) - cap} more lines)"]
+    return out
+
+
+def _judge_reason(judge_d):
+    """The judge's reasoning without its KEEP line (last paragraph, capped)."""
+    if not judge_d or not judge_d.get("reply"):
+        return None
+    text = re.sub(r"KEEP\s+[AB]\b.*", "", judge_d["reply"], flags=re.I | re.S).strip()
+    paras = [p.strip() for p in text.split("\n\n") if p.strip()]
+    return (paras[-1] if paras else text)[:400] or None
+
+
+class Branch:
+    """`--patience K` (docs/ABLATION_PLAN.md F): depth-limited backtracking on one path.
+    `anchor` is the last committed state, `head` the state the agent edits. Every built edit
+    is judged against the anchor, never its parent, so a run of bad steps cannot drift:
+      commit      the check passes vs the anchor       anchor = head = new, steps = 0
+      tentative   it fails and steps < K               head = new, steps += 1
+      rolled_back it fails on a branch with steps = K,  head = anchor, steps = 0
+                  or the agent reverted to the anchor   (new is discarded)
+      rejected    it fails at the anchor with K = 0 (or a no-op revert at the anchor)
+    With K = 0 this is the plain keep/reject loop. The run's final state is the anchor."""
+
+    def __init__(self, patience, start, start_round=0):
+        self.k = patience
+        self.anchor = self.head = start
+        self.anchor_round = start_round
+        self.steps = 0
+        self.branch = []                    # rounds of the tentative edits on the head
+
+    @property
+    def on_branch(self):
+        return self.head is not self.anchor
+
+    def step(self, r, new, passed, reverted=False):
+        if passed:
+            self.anchor = self.head = new
+            self.anchor_round, self.steps, self.branch = r, 0, []
+            return "committed"
+        if self.k and self.steps < self.k and not reverted:
+            self.head = new
+            self.steps += 1
+            self.branch.append(r)
+            return "tentative"
+        if self.on_branch:
+            self.rolled = self.branch + [r]     # the attempts that never beat the anchor
+            self.head, self.steps = self.anchor, 0
+            self.branch = []
+            return "rolled_back"
+        return "rejected"
+
+
 def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_img, weights,
-                questions, seed):
+                questions, seed, views=None):
+    """views: the cameras the checker and the agent use (None = all; `--views worst` passes
+    the one view picked from the round-0 program)."""
     spec = ARMS[arm]
+    sig = opts.geo_signal
+    gate = opts.gate == "on"
+    # edit feedback (docs/FEEDBACK_PLAN.md): what each arm may be told about its own edits
+    fb = opts.feedback
+    fb_geo = spec["residuals"]                     # arms that see the geometric evidence
+    fb_log = spec["accept"] != "always" or not gate  # gsolver keeps everything: history only
+    attempts, history = [], []                     # attempts since the last kept edit
     rng = random.Random(seed)
     run_dir = part_out / arm
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -340,12 +448,14 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
             for k, v in row.items() if k in ("status", "accepted", "w_iou", "iou3d", "verdict",
                                              "stop")), flush=True)
 
-    w = weights if opts.weights else None
-    cur = score(target_dir, part_out / "init", w)
-    log({"round": 0, "status": "ok", "accepted": True, "mean_iou": cur["report"]["mean_iou"],
+    w = weights if opts.weights and views is None else None   # one view: nothing to cross-check
+    cur = score(target_dir, part_out / "init", w, views, sig)
+    log({"round": 0, "status": "ok", "accepted": True, "views": views or list(GRID_VIEWS),
+         "mean_iou": cur["report"]["mean_iou"],
          "w_iou": cur["w_iou"], "depth_mae": cur["report"]["mean_depth_mae"],
          "geo_score": cur["geo_score"], **cur["e3d"]})
     best_geo, best_any = cur, cur          # GT-free and oracle choice of the best state
+    br = Branch(opts.patience if gate else 0, cur)   # cur is always br.head
     stop = None
     r = 0
     for r in range(1, opts.rounds + 1):
@@ -355,7 +465,8 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
         rd = run_dir / f"round_{r:02d}"
         rd.mkdir(parents=True, exist_ok=True)
         u_round = agent.usage()
-        cur_img = render_grid(cur["dir"])
+        cur_img = render_grid(cur["dir"], views=views)
+        cur_src_before = cur["src"]
         row = {"round": r}
         new = None
         qa = None
@@ -380,45 +491,81 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
 
         # --- evidence for the edit
         images = [target_img, cur_img]
-        table, detail = None, False
+        table, detail, kinds = None, False, []
         if spec["residuals"] and opts.residuals:
-            labels = [f"{v}  IoU {cur['report']['views'][v]['iou']:.3f}" for v in GRID_VIEWS]
-            if opts.residual_images:
-                images += [diff_grid(cur["dir"], "_overlay", labels),
-                           diff_grid(cur["dir"], "_depth_err")]
+            gviews = views or GRID_VIEWS
+            if opts.residual_images:              # only the grids of the active signal
+                if sig in ("both", "mask"):
+                    labels = [f"{v}  IoU {cur['report']['views'][v]['iou']:.3f}" for v in gviews]
+                    images.append(diff_grid(cur["dir"], "_overlay", labels, views))
+                    kinds.append("overlay")
+                if sig in ("both", "depth"):
+                    images.append(diff_grid(cur["dir"], "_depth_err", views=views))
+                    kinds.append("depth")
             if opts.detail:
-                strip, dview = detail_strip(target_dir, cur["dir"], w)
+                strip, dview = detail_strip(target_dir, cur["dir"], w, views=views,
+                                            kind="_depth_err" if sig == "depth" else "_overlay")
                 if strip:
                     images.append(strip)
                     detail = True
                     row["detail_view"] = dview
-            table = residual_table(cur["report"], w)
+            table = residual_table(cur["report"], w, sig)
         if not opts.images:                       # ablation: refine without images
             images = []
+        fb_text, tried, branch = None, None, None
+        if br.on_branch:                          # --patience: tell the agent it is on a branch
+            # the branch's diff vs the anchor, unless the attempt log already shows it
+            show = fb == "none" or not fb_log or len(br.branch) > 1
+            branch = vlm.branch_text(br.branch, br.anchor_round, br.k - br.steps + 1,
+                                     diff_lines(br.anchor["src"], cur["src"]) if show else None)
+        if fb != "none":
+            shown = attempts[-FB_ATTEMPTS:] if fb_log else []
+            effect = None
+            if (fb == "image" and opts.images and fb_geo and sig != "depth" and shown
+                    and shown[-1].get("effect_dir")):
+                ed = shown[-1]["effect_dir"]
+                cnt = json.loads((layout.diff_dir(ed) / "effect.json").read_text())
+                gv = views or GRID_VIEWS
+                images.append(diff_grid(ed, "_effect", [
+                    f"{v}  fixed {cnt[v]['fixed']} px, broke {cnt[v]['broke']} px" for v in gv],
+                    views=views))
+                effect = len(images)
+            fb_text = vlm.feedback_block(shown, history[-FB_HISTORY:], sig, effect)
+            tried = [(e["round"], e["norm"]) for e in attempts if e.get("norm")]
+            row["feedback_attempts"] = len(shown)
         msg = vlm.refine_prompt(
             cur["src"], lo, hi, cur["size"], n_images=len(images), residual_table=table,
             detail=detail, kernel=vlm.kernel_report(cur["info"]) if opts.kernel else None,
             qa_feedback=None if qa is None or not qa.get("feedback") else
             vlm.qa_text(qa["questions"], qa["answers"], only_failed=True) + "\n" + qa["feedback"],
-            gsolver=gsolver_table(target_dir, cur["dir"]) if spec["gsolver"] else None)
-        status, attempts, tr, (tag, why) = agent.write_program(
-            msg, images, rd, target_dir, center, allow_no_change=True)
-        row.update(status=status, attempts=attempts, repairs_used=attempts - 1,
+            gsolver=gsolver_table(target_dir, cur["dir"]) if spec["gsolver"] else None,
+            residual_images=kinds, views=views,
+            detail_kind="depth error" if sig == "depth" else "residual", feedback=fb_text,
+            branch=branch)
+        status, n_tries, tr, (tag, why) = agent.write_program(
+            msg, images, rd, target_dir, center, allow_no_change=True, tried=tried)
+        row.update(status=status, attempts=n_tries, repairs_used=n_tries - 1,
                    change_tag=tag, change=why)
+        blocked = [t["repeat_of"] for t in tr if t.get("repeat_of") is not None]
+        if fb != "none":
+            row["repeat_blocked"] = len(blocked)
+        entry = None
         decision = {}
         if status == "no_change":
             stop = "no_change"
             row.update(accepted=False, verdict=None, stop=stop)
         elif status == "ok":
-            new = score(target_dir, rd, w)
-            geo_keep, geo_d = geo_accept(cur["report"], new["report"], w)
-            a, b = cur["e3d"].get("iou3d"), new["e3d"].get("iou3d")
+            new = score(target_dir, rd, w, views, sig)
+            base, base_round = br.anchor, br.anchor_round   # = cur unless on a branch
+            geo_keep, geo_d = geo_accept(base["report"], new["report"], w, signal=sig)
+            a, b = base["e3d"].get("iou3d"), new["e3d"].get("iou3d")
             judge_d = None
             mode = spec["accept"]
-            need_judge = mode == "judge" or opts.shadow_judge or \
-                (mode == "hybrid" and (geo_keep or geo_d["inconclusive"]))
+            gate = opts.gate == "on"
+            need_judge = opts.shadow_judge or (gate and (
+                mode == "judge" or (mode == "hybrid" and (geo_keep or geo_d["inconclusive"]))))
             if need_judge:
-                _, judge_d = agent.judge(target_img, cur_img, render_grid(rd), rng)
+                _, judge_d = agent.judge(target_img, cur_img, render_grid(rd, views=views), rng)
             if mode == "judge":
                 keep = judge_d["keep"]
             elif mode == "geo":
@@ -429,7 +576,41 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
                 keep = a is not None and b is not None and b > a
             else:  # always
                 keep = True
-            decision = {"rule": mode, "geo": geo_d, "judge": judge_d}
+            if not gate:                          # ablation: the checker informs, never blocks
+                keep = True
+            decision = {"rule": mode if gate else "gate_off", "geo": geo_d, "judge": judge_d}
+            # why the edit ended the way it did, as far as this arm may know it
+            if not gate:
+                reason = "gate_off"
+            elif keep:
+                reason = "kept"
+            elif mode == "judge" or (mode == "hybrid" and judge_d is not None
+                                     and not judge_d["keep"]):
+                reason = "judge"
+            elif mode in ("geo", "hybrid"):
+                reason = geo_d["reason"]
+            else:
+                reason = None                     # oracle: rejected, without the GT reason
+            row["reject_reason"] = None if keep else reason
+            reverted = br.on_branch and normalize_program(new["src"]) == \
+                normalize_program(base["src"])
+            outcome = br.step(r, new, keep, reverted)
+            if br.k:
+                row.update(patience_outcome=outcome, anchor_round=base_round,
+                           branch_depth=br.steps, reverted=reverted)
+            if fb != "none":
+                entry = {"outcome": {"committed": "kept"}.get(outcome, outcome), "reason": reason,
+                         "anchor_round": base_round if br.k else None,
+                         "rolled": br.rolled if outcome == "rolled_back" else None,
+                         "reverted": reverted,
+                         "geo_keep": geo_keep, "judge": _judge_reason(judge_d)
+                         if reason == "judge" else None,
+                         **{k: geo_d[k] for k in ("gain", "worst_view", "worst_view_drop",
+                                                  "min_gain", "max_view_drop")}}
+                if fb_geo:
+                    entry["delta"] = edit_delta(base["report"], new["report"], w, sig)
+                if fb == "image" and fb_geo and sig != "depth" and not keep:
+                    write_effect_images(target_dir, base["dir"], rd, rd / layout.DIFF, views)
             row.update(accepted=keep, verdict=verdict_of(a, b),
                        geo_decision=geo_keep, geo_gain=geo_d["gain"],
                        geo_inconclusive=geo_d["inconclusive"],
@@ -440,32 +621,69 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
                        **new["e3d"], iou3d_before=a)
             if (new["e3d"].get("iou3d") or -1) > (best_any["e3d"].get("iou3d") or -1):
                 best_any = new
-            if keep:
-                cur = new
-                if cur["geo_score"] > best_geo["geo_score"]:
-                    best_geo = cur
+            cur = br.head
+            if outcome == "committed" and cur["geo_score"] > best_geo["geo_score"]:
+                best_geo = cur
         else:
             row.update(accepted=False, verdict=None)
+            if status in ("failed", "repeat_blocked"):
+                row["reject_reason"] = status
+                if fb != "none":
+                    entry = {"outcome": status, "error": tr[-1].get("error"),
+                             "repeat_of": blocked[-1] if blocked else None}
         row.update(_usage_delta(u_round, agent.usage()))
         (rd / "conversation.json").write_text(json.dumps(
             {"prompt": msg, "transcript": tr, "decision": decision, "qa": qa}, indent=2,
             default=str))
-        label = {"ok": "kept" if row.get("accepted") else "rejected", "failed": "failed",
-                 "no_change": "no-change"}[status]
+        label = {"ok": {"committed": "kept", "tentative": "tentative",
+                        "rolled_back": "rolled-back"}.get(outcome, "rejected") if status == "ok"
+                 else None, "failed": "failed",
+                 "no_change": "no-change", "repeat_blocked": "repeat-blocked"}[status]
         rd = _label_round(rd, label)
         if new is not None:               # cur / best_* may point at this round's state
             new["dir"] = rd
+        if fb != "none":                  # update the attempt log and the round history
+            hist = f"round {r}: " + {"kept": "kept", "rejected": "rejected",
+                                     "failed": "did not build",
+                                     "repeat_blocked": "repeat, not built",
+                                     "tentative": "kept tentatively (below the last committed "
+                                                  f"program, round {(entry or {}).get('anchor_round')})",
+                                     "rolled_back": "rolled back to round "
+                                                    f"{(entry or {}).get('anchor_round')}"}.get(
+                (entry or {}).get("outcome"), "NO_CHANGE")
+            if entry is not None:
+                src_f = rd / "program.py"
+                new_src = src_f.read_text() if src_f.exists() else None
+                entry.update(round=r, tag=tag, change=why,
+                             diff=None if new_src is None else diff_lines(cur_src_before, new_src),
+                             norm=None if new_src is None else normalize_program(new_src))
+                if (rd / layout.DIFF / f"{(views or GRID_VIEWS)[0]}_effect.png").exists():
+                    entry["effect_dir"] = rd
+                if fb_geo and entry.get("gain") is not None:
+                    hist += f", geometric score {entry['gain']:+.4f}"
+                    d = entry.get("delta")
+                    if entry["outcome"] == "kept" and d and sig != "depth":
+                        hist += f" (best view {d['best_view']} IoU {d['best_change']:+.3f})"
+                if why:
+                    hist += f' — "{why[:120]}"'
+                if entry["outcome"] == "kept":
+                    attempts = [entry] if not gate else []   # gate off: show the last edit
+                else:
+                    attempts.append(entry)
+            history.append(hist)
         row["dir"] = rd.name
         log(row)
         if stop:
             break
     else:
         stop = "rounds"
+    cur = br.anchor                       # never an uncommitted branch
     os.symlink(os.path.relpath(cur["dir"], run_dir), run_dir / "final",
                target_is_directory=True)
     final = {"part": target_dir.name, "arm": arm, "stop": stop, "rounds_run": r,
              "final_dir": str(cur["dir"]), "mean_iou": cur["report"]["mean_iou"],
-             "w_iou": cur["w_iou"], **cur["e3d"],
+             "w_iou": cur["w_iou"], **cur["e3d"], "patience": br.k,
+             "ended_on_branch": br.on_branch,
              "best_geo": {"dir": str(best_geo["dir"]), **best_geo["e3d"]},
              "best_oracle": {"dir": str(best_any["dir"]), **best_any["e3d"]},
              "wall_seconds": round(time.time() - t_start, 1),
@@ -538,6 +756,24 @@ def main(argv=None):
                     help="no zoom on the largest residual")
     ap.add_argument("--no-images", dest="images", action="store_false",
                     help="refine from text only (CADCodeVerify ablation)")
+    ap.add_argument("--geo-signal", default="both", choices=SIGNALS,
+                    help="what the geometric check uses, for both the agent's evidence and the "
+                         "keep decision: silhouette + depth (both), silhouette only (mask) or "
+                         "depth error only (depth; no per-view IoU guard)")
+    ap.add_argument("--views", default="all", choices=["all", "worst"],
+                    help="worst: use only the view where the round-0 program is most wrong, for "
+                         "the agent's images and table and for the check (weights off)")
+    ap.add_argument("--feedback", default="image", choices=["none", "text", "image"],
+                    help="edit feedback (docs/FEEDBACK_PLAN.md): text = attempt log of edits "
+                         "not kept since the last kept one, round history and repeat guard; "
+                         "image = text + an edit-effect image of the latest attempt")
+    ap.add_argument("--gate", default="on", choices=["on", "off"],
+                    help="off: keep every built edit; the check still runs and is logged "
+                         "(geo_decision), and best_geo still picks a state at the end")
+    ap.add_argument("--patience", type=int, default=0,
+                    help="geo/oracle arms, gate on: an edit that fails the check stays as a "
+                         "tentative branch for up to K more rounds; the branch is committed only "
+                         "if it beats the last committed state, else rolled back (ABLATION_PLAN F)")
     ap.add_argument("--sandbox", action="store_true",
                     help="build model-written programs inside a bubblewrap sandbox "
                          "(Linux only: no network, no home dir, only the output dir writable)")
@@ -554,6 +790,16 @@ def main(argv=None):
     unknown = [a for a in arms if a not in ARMS]
     if unknown:
         ap.error(f"unknown arm(s) {unknown}")
+    if args.views == "worst" and any(ARMS[a]["qa"] or ARMS[a]["accept"] in ("judge", "hybrid")
+                                     for a in arms):
+        ap.error("--views worst is for the geo and oracle arms (the questions and the judge "
+                 "assume the 4-view grid)")
+    if args.patience < 0:
+        ap.error("--patience must be >= 0")
+    if args.patience and (args.gate == "off" or any(ARMS[a]["accept"] not in ("geo", "oracle")
+                                                    for a in arms)):
+        ap.error("--patience needs --gate on and the geo or oracle arm (it compares every edit "
+                 "with the last committed state)")
     if args.sandbox:
         try:
             sandbox.check()
@@ -575,6 +821,7 @@ def main(argv=None):
         {k: str(v) if isinstance(v, Path) else v for k, v in vars(args).items()
          if k != "targets"} | {"arms": arms, "n_targets": len(targets),
                                "started": f"{datetime.datetime.now():%Y-%m-%d %H:%M}",
+                               "prices": vertex_ai.prices() if args.backend == "vertex" else None,
                                "targets": {t.name: str(t) for t in targets}}, indent=2))
     print(f"run folder: {args.out}  (open README.md there)", flush=True)
     with report.Tee(args.out / "log.txt"):
@@ -596,9 +843,20 @@ def main(argv=None):
                     continue
                 questions = part_questions(agent, part_out, target_img) \
                     if any(ARMS[a]["qa"] for a in arms) else []
+                views, arm_img = None, target_img
+                if args.views == "worst":            # fixed for the run, from round 0
+                    init_dir = part_out / "init"
+                    compare(target, init_dir, init_dir / layout.DIFF)
+                    views = [progress.worst_view(init_dir)]
+                    arm_img = render_grid(target, views=views)
+                    lo, hi = measure_bbox(target, rig, views)   # strict: this view's depth only
+                    (part_out / layout.INTERNAL / "views.json").write_text(json.dumps(
+                        {"views": views, "rule": "worst view of the round-0 program",
+                         "bbox_size_one_view": np.round(hi - lo, 1).tolist()}))
+                    print(f"  one view: {views[0]}", flush=True)
                 for i, arm in enumerate(arms):
-                    refine_part(agent, arm, target, part_out, args, lo, hi, center, target_img,
-                                weights, questions, args.seed + i)
+                    refine_part(agent, arm, target, part_out, args, lo, hi, center, arm_img,
+                                weights, questions, args.seed + i, views)
             except Exception:
                 traceback.print_exc(file=sys.stdout)
                 print(f"  {target.name} crashed; continuing with the next part", flush=True)

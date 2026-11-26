@@ -16,7 +16,7 @@ while it is still going.
         <arm>/
           final            -> the round the arm ended with (or ../init)
           round_01_kept/   program.py solid.stl conversation.json renders/ diff/ internal/
-          round_02_rejected/ ...   (suffix: kept|rejected|failed|no-change|stopped)
+          round_02_rejected/ ...   (suffix: kept|rejected|failed|no-change|stopped|...)
           log.jsonl  result.json
         internal/          view_weights.json
 
@@ -31,9 +31,9 @@ from PIL import Image, ImageDraw
 
 import layout
 import progress
-from summarize_runs import load, summarize
+import vertex_ai
+from summarize_runs import load, run_prices, summarize
 
-VIEWS = ("front", "right", "top", "iso_fr")
 ARM_TEXT = {
     "premise": "renders only; the VLM judge decides (3D-Premise-style baseline)",
     "vlm": "renders + failed verification questions; the VLM judge decides (CADCodeVerify-style)",
@@ -104,6 +104,7 @@ def compare_png(part_dir: Path, target: Path | None, columns, out: Path, tile=20
     """columns: [(label, rendered-solid dir)]. Rows: the 4 renders, then 4 depth-error maps
     (the target column shows its own depth map there)."""
     cols = [("target", target)] + columns
+    VIEWS = layout.grid_views(next((s for _, s in columns if s is not None), target))  # the run's rig
     sheet = Image.new("RGB", (tile * len(cols), head + 2 * len(VIEWS) * tile), (255, 255, 255))
     d = ImageDraw.Draw(sheet)
     for i, (lab, src) in enumerate(cols):
@@ -171,8 +172,9 @@ def scores_md(part, part_dir, target, arms, rows, finals, init_iou, cfg):
 # ------------------------------------------------------------------ run pages
 def arm_table(summary, arms):
     lines = ["| arm | parts | 3D IoU start → final (median) | mean | improved / worse | "
-             "invalid edits | kept edits that helped | tokens / part | min / part |",
-             "|---|---|---|---|---|---|---|---|---|"]
+             "invalid edits | kept edits that helped | repeats after a rejection | tokens / part | "
+             "$ / part | min / part |",
+             "|---|---|---|---|---|---|---|---|---|---|---|"]
     for arm in [a for a in arms if a in summary]:
         m = summary[arm]
         q = m["quality"]["iou3d"]
@@ -181,11 +183,19 @@ def arm_table(summary, arms):
         helped = "–" if not acc["n"] else \
             f"{acc['counts'].get('kept-good', 0)} / {sum(v for k, v in acc['counts'].items() if k.startswith('kept'))}"
         wall = m.get("wall_seconds_per_part")
+        rp = m.get("repeats") or {}
+        rep = "–" if not rp.get("eligible") else \
+            f"{round(rp['any'] * rp['eligible'])} / {rp['eligible']}"
         lines.append(
             f"| {arm} | {m['parts']} | {_f(mi(q['init']))} → **{_f(mi(q['final']))}** | "
             f"{_f(mi(q['init'], 'mean'))} → {_f(mi(q['final'], 'mean'))} | "
-            f"{m['parts_improved']} / {m['parts_worse']} | {_f(m['invalid_rate'], 2)} | {helped} | "
-            f"{_f(m['tokens_per_part'], 0)} | {_f(None if wall is None else wall / 60, 1)} |")
+            f"{m['parts_improved']} / {m['parts_worse']} | {_f(m['invalid_rate'], 2)} | {helped} | {rep} | "
+            f"{_f(m['tokens_per_part'], 0)} | {_f(m.get('cost_per_part'), 3)} | "
+            f"{_f(None if wall is None else wall / 60, 1)} |")
+    costs = [summary[a].get("cost_total") for a in arms if a in summary]
+    if any(c is not None for c in costs):
+        lines += ["", f"Model cost for this run: **${sum(c or 0 for c in costs):.2f}** "
+                      "(token counts × VERTEX_PRICE_*_PER_M; thinking billed as output)."]
     return lines
 
 
@@ -193,21 +203,33 @@ def results_md(root, cfg, summary, parts, arms, init_iou, finals):
     lines = [f"# Results: {root.name}", "",
              "3D IoU against the hidden ground-truth shape (1 = identical). The agent never "
              "sees it; it is the offline score.", "", "## Per arm", "", *arm_table(summary, arms),
-             "", "*kept edits that helped*: kept edits that raised 3D IoU / all kept edits.", "",
+             "", "*kept edits that helped*: kept edits that raised 3D IoU / all kept edits. "
+             "*repeats after a rejection*: proposals that changed the same spot of the program "
+             "as an attempt already rejected from that program (or redid it exactly) / all "
+             "proposals made after such a rejection.", "",
              "## Progress by part", "",
              "![3D IoU by round, per part](results/figures/progress_by_part.png)", "",
-             "## Per part", "", "Worst starting program first. Δ = final − start.", "",
+             "## Per part", "", "Worst starting program first. Δ = final − start; then why the arm stopped "
+             "and its model cost (when prices are set).", "",
              "| part | start | " + " | ".join(arms) + " | pictures |",
              "|---|---|" + "---|" * len(arms) + "---|"]
+    prices, totals = run_prices(root), {}
     for p in sorted(parts, key=lambda p: (init_iou.get(p) is None, init_iou.get(p) or 0)):
         cells = []
         for a in arms:
             fin = finals.get((p, a))
+            cost = None if fin is None else \
+                vertex_ai.cost_usd(fin.get("prompt_tokens"), fin.get("output_tokens"), prices)
             cells.append("–" if fin is None else
                          f"{_f(fin.get('iou3d'))}{_delta(init_iou.get(p), fin.get('iou3d'))} "
-                         f"· {fin.get('stop')}")
+                         f"· {fin.get('stop')}" + ("" if cost is None else f" · ${cost:.3f}"))
+            if cost is not None:
+                totals[a] = totals.get(a, 0) + cost
         lines.append(f"| [{p}](parts/{p}/scores.md) | {_f(init_iou.get(p))} | "
                      + " | ".join(cells) + f" | [progress](parts/{p}/progress.png) · [detail](parts/{p}/compare.png) |")
+    if totals:
+        lines.append(f"| **total** (all arms ${sum(totals.values()):.2f}) | | "
+                     + " | ".join(f"**${totals[a]:.2f}**" if a in totals else "–" for a in arms) + " | |")
     figs = sorted(f for f in (root / "results" / "figures").glob("*.png")
                   if f.name != "progress_by_part.png")
     if figs:
@@ -266,17 +288,19 @@ def readme_md(root, cfg, summary, parts, arms, finals, finished):
         "```", "",
         "Inside every program folder (`init/`, `round_*`): `program.py` (CadQuery), "
         "`solid.stl` / `solid.step` (the built shape), `conversation.json` (prompt, the model's "
-        "replies and repairs, the gate's decision), `renders/` (8 cameras: shaded, mask, depth), "
+        "replies and repairs, the gate's decision), `renders/` (4 cameras: shaded, mask, depth), "
         "`diff/` (vs the target: `<view>_overlay.png`, `<view>_depth_err.png`, `summary.png`, "
         "`report.json`), `internal/` (info.json, depth.npz, CAD-kernel ops log).", "",
         "## Terms", "",
         "- **3D IoU** (`iou3d`): volume overlap with the hidden ground truth; offline score only.",
-        "- **silhouette IoU** (`w_iou`): view-weighted 2D outline overlap over the 8 cameras; "
+        "- **silhouette IoU** (`w_iou`): view-weighted 2D outline overlap over the 4 cameras; "
         "what the geometric check sees. It is blind to depth-only errors (an offset hidden "
         "inside the outline), so check the depth-error rows too.",
         "- **round folder suffix**: `kept` (edit accepted), `rejected` (built, but the arm's gate "
         "said no), `failed` (did not build after the repairs), `no-change` (model said nothing "
-        "to fix), `stopped` (every verification question answered Yes).",
+        "to fix), `stopped` (every verification question answered Yes), `repeat-blocked`; with "
+        "`--patience`: `tentative` (failed the check but kept as a branch to explore) and "
+        "`rolled-back` (the branch never beat the last committed program and was discarded).",
         "- **stop**: `rounds` (ran out of rounds), `no_change`, `all_questions_yes`, `budget`.",
         "- **arms** in this run:",
         *[f"  - `{a}`: {ARM_TEXT.get(a, '')}" for a in arms],

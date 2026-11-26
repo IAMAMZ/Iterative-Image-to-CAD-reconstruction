@@ -8,7 +8,7 @@ Write a 3D part as code, then take pictures of it from fixed angles.
 - `generate_solid.py` — runs a part file, checks the part is OK, saves it, and takes its pictures.
 - `op_checker.py` — watches every CadQuery command as it runs and logs the illegal ones (with the line and a hint how to fix it).
 - `cq_render.py` — the camera: turns a 3D shape into pictures.
-- `rig.py` — decides where the 8 cameras stand; saves them in `rig.json`.
+- `rig.py` — decides where the 4 cameras stand (RealCAD-style table views: 45° up, 90° apart); saves them in `rig.json`.
 - `compare.py` — scores a guess against the real 3D part: how well outlines overlap (IoU) and how far off the depth is, per camera.
 - `compare_image.py` — scores a guess against just a picture of the part (no 3D model): finds the camera angle, then compares outlines.
 
@@ -73,7 +73,7 @@ that best fits, lines the outlines up, and scores how well they match.
 ```sh
 uv run python generate_solid.py guess.py --out runs/_scratch/guess
 uv run python compare_image.py photo.png runs/_scratch/guess                  # camera unknown: search
-uv run python compare_image.py photo.png runs/_scratch/guess --camera iso_fr  # camera known
+uv run python compare_image.py photo.png runs/_scratch/guess --camera top_right  # camera known
 ```
 
 Look at `runs/_scratch/guess/compare_image/summary.png`: the picture, the guess from the found
@@ -151,7 +151,20 @@ verification question answered "Yes".
 
 **Ablations:** `--no-weights`, `--no-kernel`, `--no-residuals`, `--no-residual-images`,
 `--no-detail`, `--no-images`, `--no-placement` (cadrille_init), `--init` omitted (agent starts from
-scratch), `--shadow-judge` (judge every edit in every arm for agreement statistics).
+scratch), `--shadow-judge` (judge every edit in every arm for agreement statistics),
+`--geo-signal mask|depth` (check and evidence from the silhouette or the depth error only),
+`--views worst` (one view, picked from the round-0 program), `--gate off` (keep every built
+edit; the check is still logged), `--patience K` (geo/oracle: an edit that fails the check
+stays as a tentative branch for up to K more rounds, is committed only if the branch beats
+the last committed program, else rolled back; the final program is always committed). See
+`docs/ABLATION_PLAN.md`.
+
+**Edit feedback** (`--feedback none|text|image`, default `image`, chosen in the feedback
+pilot on the tuning parts; `none` is the pre-feedback method):
+the next prompt lists the edits not kept since the last kept one (CHANGE line, diff, why it
+was rejected, per-view deltas), a one-line round history, and blocks exact repeats before
+building them; `image` adds an edit-effect grid (green = fixed, red = broken pixels). See
+`docs/FEEDBACK_PLAN.md`.
 
 Files:
 - `refine.py` — the loop, arms and logging (every edit logs the geometric check's decision, the

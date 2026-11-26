@@ -37,7 +37,7 @@ def test_refine_all_arms_with_echo(f360_target, tmp_path):
                 assert isinstance(r["geo_decision"], bool) and r["verdict"] is not None
                 assert r["prompt_tokens"] > 0
                 assert r["dir"].endswith("kept" if r["accepted"] else "rejected")
-                assert (part / arm / r["dir"] / "renders" / "front.png").exists()
+                assert (part / arm / r["dir"] / "renders" / "top_front.png").exists()
                 assert (part / arm / r["dir"] / "diff" / "summary.png").exists()
     s = summarize(out)
     assert set(s) == set(refine.ARMS)
@@ -81,3 +81,58 @@ def test_all_yes_stop_rule():
     assert refine.stops_on_all_yes(refine.ARMS["vlm"], 0.5)           # CADCodeVerify: always
     assert not refine.stops_on_all_yes(refine.ARMS["hybrid"], 0.80)   # geometry disagrees
     assert refine.stops_on_all_yes(refine.ARMS["hybrid"], 0.99)       # both agree
+
+
+# ---------------------------------------------------------------- ablation flags
+def _echo_run(f360_target, tmp_path, *flags, rounds=2):
+    init = tmp_path / "init"
+    init.mkdir(parents=True)
+    name = f360_target.name
+    (init / f"{name}.py").write_text(to_refine_program(
+        (ROOT / "cadrille" / "work_dirs" / "f360_rl_test" / "py" / f"{name}.py").read_text()))
+    out = tmp_path / "run"
+    refine.main([str(f360_target), "--init", str(init), "--backend", "echo", "--arm", "geo",
+                 "--rounds", str(rounds), "--out", str(out), *flags])
+    part = out / "parts" / name
+    rows = [json.loads(l) for l in (part / "geo" / "log.jsonl").read_text().splitlines()]
+    prompts = [json.loads((part / "geo" / r["dir"] / "conversation.json").read_text())["prompt"]
+               for r in rows[1:] if r.get("dir")]
+    return out, part, rows, prompts
+
+
+def test_gate_off_keeps_every_built_edit(f360_target, tmp_path):
+    out, _, rows, _ = _echo_run(f360_target, tmp_path, "--gate", "off", rounds=3)
+    built = [r for r in rows[1:] if r["status"] == "ok"]
+    assert built and all(r["accepted"] for r in built)
+    assert all(isinstance(r["geo_decision"], bool) for r in built)   # shadow decision logged
+    assert json.loads((out / "config.json").read_text())["gate"] == "off"
+
+
+def test_one_view_uses_only_the_worst_view(f360_target, tmp_path):
+    _, part, rows, prompts = _echo_run(f360_target, tmp_path, "--views", "worst")
+    meta = json.loads((part / "internal" / "views.json").read_text())
+    (view,) = meta["views"]
+    assert rows[0]["views"] == [view]
+    w, d, h = meta["bbox_size_one_view"]           # strict: this view's depth only
+    for p in prompts:
+        assert "one calibrated camera" in p and f'"{view}"' in p
+        assert "this camera's depth map" in p and f"{w:.1f} x {d:.1f} x {h:.1f}" in p
+        table = p.split("Per-view numbers")[1]
+        assert sum(v in table for v in refine.GRID_VIEWS) == 1     # one row in the table
+
+
+def test_one_view_rejects_judge_arms(f360_target, tmp_path):
+    import pytest
+    with pytest.raises(SystemExit):
+        refine.main([str(f360_target), "--backend", "echo", "--arm", "hybrid", "--views", "worst",
+                     "--out", str(tmp_path / "run")])
+
+
+def test_geo_signal_changes_evidence(f360_target, tmp_path):
+    _, _, _, mask_prompts = _echo_run(f360_target, tmp_path / "m", "--geo-signal", "mask", rounds=1)
+    _, _, rows, depth_prompts = _echo_run(f360_target, tmp_path / "d", "--geo-signal", "depth",
+                                          rounds=1)
+    m, d = mask_prompts[0], depth_prompts[0]
+    assert "silhouette residual" in m and "depth error where" not in m and "depth MAE" not in m
+    assert "depth error where" in d and "silhouette residual" not in d and "missing px" not in d
+    assert "Image 3 is the depth error" in d                       # renumbered images

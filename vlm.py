@@ -178,15 +178,41 @@ Coordinate frames of the workplanes:
 - cq.Workplane("XY", origin=(x, y, z)) moves the workplane's origin.
 """
 
-VIEWS_TEXT = """The picture is a 2x2 grid of the same part seen by 4 calibrated cameras:
-- top-left "front": looking along +Y; image right = +X, image up = +Z
-- top-right "right": looking along -X; image right = +Y, image up = +Z
-- bottom-left "top": looking down -Z; image right = +X, image up = +Y
-- bottom-right "iso_fr": from the front-right, above"""
+VIEW_DESC = {   # rig.py cameras, in grid order
+    "top_front": "from the front (-Y side), above; image right = +X",
+    "top_right": "from the right (+X side), above; image right = +Y",
+    "top_back": "from the back (+Y side), above; image right = -X",
+    "top_left": "from the left (-X side), above; image right = -Y",
+}
+GRID_POS = ("top-left", "top-right", "bottom-left", "bottom-right")
 
 
-def bbox_text(lo, hi):
+def views_text(views=None):
+    """How the pictures are laid out: the 2x2 grid of all 4 cameras, or a single camera
+    (ablation `--views worst`)."""
+    views = list(VIEW_DESC) if views is None else list(views)
+    if len(views) == 1:
+        v = views[0]
+        return (f'The picture shows the part seen by one calibrated camera, "{v}": '
+                f"{VIEW_DESC[v]}. The camera is 45 degrees above the table, like a photo of a "
+                "part on a table. +Z points up in the image; the underside is never seen.")
+    return ("The picture is a 2x2 grid of the same part seen by 4 calibrated cameras, like "
+            "photos of a part on a table: each camera is 45 degrees above the table, and they "
+            "are 90 degrees apart around the part. +Z points up in every image; the underside "
+            "is never seen.\n" + "\n".join(f'- {p} "{v}": {VIEW_DESC[v]}'
+                                           for p, v in zip(GRID_POS, views)))
+
+
+VIEWS_TEXT = views_text()
+
+
+def bbox_text(lo, hi, one_view=False):
     size = [h - l for l, h in zip(lo, hi)]
+    if one_view:      # one depth map sees only the near surfaces: a lower bound
+        return (f"Measured from this camera's depth map, the visible surfaces of the part span "
+                f"about {size[0]:.1f} x {size[1]:.1f} x {size[2]:.1f} units (X x Y x Z). Parts "
+                "the camera cannot see may extend further, so the real size is at least this. "
+                "Its exact position does not matter; only shape and size are compared.")
     return (f"Measured from the calibrated depth maps, the part's bounding box is about "
             f"{size[0]:.1f} x {size[1]:.1f} x {size[2]:.1f} units (X x Y x Z). "
             f"Its exact position does not matter; only shape and size are compared.")
@@ -215,32 +241,49 @@ def kernel_report(info: dict) -> str:
     return "\n".join(lines)
 
 
+RESIDUAL_TEXT = {
+    "overlay": "the silhouette residual for the same {views}: GREY = correct, RED = material "
+               "the target has but we are MISSING, BLUE = EXTRA material we have but the "
+               "target does not.",
+    "depth": "the depth error where both cover the pixel: pale = correct, dark red/purple = "
+             "surface at the wrong depth (wrong thickness or height).",
+}
+
+
 def refine_prompt(program, lo, hi, cand_size=None, *, n_images=2, residual_table=None,
-                  detail=False, kernel=None, qa_feedback=None, gsolver=None):
-    """The edit request. Which evidence goes in is decided by the arm (see refine.ARMS)."""
+                  detail=False, kernel=None, qa_feedback=None, gsolver=None,
+                  residual_images=("overlay", "depth"), views=None, detail_kind="residual",
+                  feedback=None, branch=None):
+    """The edit request. Which evidence goes in is decided by the arm (see refine.ARMS) and
+    the ablation flags: `residual_images` lists the residual grids sent (images 3, 4, ...),
+    `views` the cameras shown (None = all 4)."""
+    nv = len(VIEW_DESC) if views is None else len(views)
+    cams = "camera" if nv == 1 else f"{nv} cameras"
     lines = []
     if n_images:
         lines += ["Image 1 is the TARGET part. Image 2 is our CURRENT reconstruction, rendered "
-                  "by the same 4 cameras.", VIEWS_TEXT]
-    lines += ["", bbox_text(lo, hi)]
+                  f"by the same {cams}.", views_text(views)]
+    lines += ["", bbox_text(lo, hi, one_view=views is not None and len(views) == 1)]
     if cand_size is not None:
         lines.append("The current reconstruction's bounding box is "
                      f"{cand_size[0]:.1f} x {cand_size[1]:.1f} x {cand_size[2]:.1f} units.")
     if residual_table is not None:
         k = 3
-        if n_images >= 4:
-            lines += ["",
-                      "Image 3 is the silhouette residual for the same 4 views: GREY = correct, "
-                      "RED = material the target has but we are MISSING, BLUE = EXTRA material we "
-                      "have but the target does not.",
-                      "Image 4 is the depth error where both cover the pixel: pale = correct, "
-                      "dark red/purple = surface at the wrong depth (wrong thickness or height)."]
-            k = 5
+        if n_images > 2 and residual_images:
+            lines.append("")
+            for kind in residual_images:
+                lines.append(f"Image {k} is " + RESIDUAL_TEXT[kind].format(
+                    views="view" if nv == 1 else f"{nv} views"))
+                k += 1
         if detail:
-            lines.append(f"Image {k} zooms into the largest residual: target | current | residual.")
-        lines += ["Per-view numbers from all 8 cameras (IoU 1.0 = perfect outline; weight = how "
-                  "much that camera is trusted, views that disagree with the others count less):",
-                  residual_table]
+            lines.append(f"Image {k} zooms into the largest residual: target | current | "
+                         f"{detail_kind}.")
+        what = "IoU 1.0 = perfect outline; " if "IoU" in residual_table.splitlines()[0] else ""
+        trust = "" if nv == 1 else ("weight = how much that camera is trusted, views that "
+                                    "disagree with the others count less")
+        note = f" ({what}{trust})".replace("; )", ")") if what or trust else ""
+        lines += [f"Per-view numbers from {'the camera' if nv == 1 else f'all {nv} cameras'}"
+                  f"{note}:", residual_table]
     if kernel:
         lines += ["", "CAD kernel report for the current program:", kernel]
     if qa_feedback:
@@ -248,11 +291,146 @@ def refine_prompt(program, lo, hi, cand_size=None, *, n_images=2, residual_table
                   qa_feedback]
     if gsolver:
         lines += ["", "Geometric properties, target vs current:", gsolver]
+    if branch:
+        lines += ["", branch]
+    if feedback:
+        lines += ["", feedback]
     lines += ["", "Current program:", f"```python\n{program.strip()}\n```", "",
               "Find the single biggest geometric difference between the target and the current "
               "reconstruction, fix it, and reply in the format from the rules (CHANGE line, then "
               "the complete revised program in one ```python block), or NO_CHANGE."]
     return "\n".join(lines)
+
+
+# --------------------------------------------- edit feedback (docs/FEEDBACK_PLAN.md)
+FEEDBACK_RULE = ("Use these attempts: do not repeat a rejected change. If its feature was right "
+                 "but the size or position was off, try a different size or the other "
+                 "direction; otherwise fix a different difference.")
+_MOSTLY = {"extra": "mostly EXTRA material (blue in the residual image)",
+           "missing": "mostly MISSING material (red in the residual image)",
+           "depth": "mostly surfaces at the wrong depth"}
+
+
+def _reason_text(e):
+    """One line: why the attempt ended the way it did (only what the arm may see)."""
+    out, why = e["outcome"], e.get("reason")
+    if out == "failed":
+        err = (e.get("error") or "").strip().splitlines()[-3:]
+        return "FAILED TO BUILD — " + " / ".join(l.strip() for l in err)[:300]
+    if out == "repeat_blocked":
+        return f"NOT BUILT — the same program as your attempt in round {e.get('repeat_of')}"
+    if out == "rolled_back":
+        rounds = ", ".join(str(x) for x in e.get("rolled") or [])
+        how = "you reverted to it" if e.get("reverted") else \
+            f"the branch (attempts in rounds {rounds}) never beat it"
+        return (f"ROLLED BACK to the program committed in round {e.get('anchor_round')} — {how}; "
+                "the current program below is that one again")
+    head = {"rejected": "REJECTED", "kept": "KEPT",
+            "tentative": "KEPT TENTATIVELY"}[out]
+    g = e.get("gain")
+    if out == "tentative":
+        what = f"view {e['worst_view']} lost {-e['worst_view_drop']:.3f} IoU" \
+            if why == "view_drop" else f"geometric score {g:+.4f}"
+        return (f"{head} — compared with the last committed program (round "
+                f"{e.get('anchor_round')}): {what}, so it was not committed but became a "
+                "tentative branch")
+    if why == "gain":
+        return f"{head} — the geometric score fell by {-g:.4f} (an edit is kept only if it " \
+               f"rises by more than {e['min_gain']:g})"
+    if why == "view_drop":
+        return (f"{head} — the overall score rose by {g:.4f}, but view {e['worst_view']} lost "
+                f"{-e['worst_view_drop']:.3f} IoU (more than the {e['max_view_drop']:g} allowed): "
+                "it fixed one view and broke another")
+    if why == "inconclusive":
+        return (f"{head} — it changed the geometric score by less than {e['min_gain']:g}: "
+                "the edit had almost no visible effect (no real change of shape, or a change "
+                "no camera sees)")
+    if why == "judge":
+        return f"{head} — the visual reviewer preferred the previous version: {e.get('judge')}"
+    if why == "gate_off":
+        verdict = "would have kept it" if e.get("geo_keep") else "would have rejected it"
+        return f"{head} (every edit is kept in this run) — the geometric check {verdict}; " \
+               f"score change {g:+.4f}"
+    return head                                   # e.g. the oracle arm: no reason given
+
+
+def _delta_table(delta, signal):
+    mask, depth = signal in ("both", "mask"), signal in ("both", "depth")
+    cols = (["IoU", "missing px", "extra px"] if mask else []) + (["depth MAE"] if depth else [])
+    rows = [f"{'view':10s}" + "".join(f"{c:16s}" for c in cols)]
+    for v, m in delta["views"].items():
+        cells = []
+        if mask:
+            cells += [f"{m['iou'][0]:.3f} → {m['iou'][1]:.3f}",
+                      f"{m['missing'][0]} → {m['missing'][1]}",
+                      f"{m['extra'][0]} → {m['extra'][1]}"]
+        if depth:
+            a, b = m["depth"]
+            cells.append("n/a" if a is None or b is None else f"{a:.2f} → {b:.2f}")
+        rows.append(f"{v:10s}" + "".join(f"{c:16s}" for c in cells).rstrip())
+    return rows
+
+
+def feedback_block(attempts, history, signal="both", effect_image=None):
+    """The edit-feedback text (FEEDBACK_PLAN 3.1): the attempts since the last kept edit
+    (newest last, already capped by the caller) and a one-line history of every round.
+    `effect_image` = the image number of the latest attempt's edit-effect grid, or None."""
+    lines = []
+    if attempts:
+        if any(e["outcome"] in ("tentative", "rolled_back") for e in attempts):
+            lines.append("Attempts since the last committed program (round "
+                         f"{attempts[-1].get('anchor_round')}); per-view numbers compare each "
+                         "attempt with that committed program:")
+        elif all(e["outcome"] != "kept" for e in attempts):
+            lines.append("Previous attempts from this same program (none was kept; the program "
+                         "below is unchanged):")
+        else:
+            lines.append("What your last edit did:")
+        for e in attempts:
+            change = e.get("change") or "(no CHANGE line)"
+            lines += ["", f"Attempt in round {e['round']} — you said: "
+                          f"\"{e.get('tag') or '?'} - {change}\""]
+            if e.get("diff"):
+                lines.append("  diff (- removed, + added):")
+                lines += ["    " + l for l in e["diff"]]
+            lines.append("  result: " + _reason_text(e))
+            if e.get("delta"):
+                lines += ["  " + l for l in _delta_table(e["delta"], signal)]
+                d = e["delta"]
+                unit = "lower depth error" if signal == "depth" else "IoU"
+                if d["worst_change"] < -5e-4:          # nothing to point at for a no-op edit
+                    lines.append(f"  worst: {d['worst_view']} {unit} {d['worst_change']:+.3f}, "
+                                 f"{_MOSTLY[d['mostly']]}")
+        if effect_image:
+            lines += ["", f"Image {effect_image} shows what the attempt in round "
+                          f"{attempts[-1]['round']} changed, view by view: GREEN = pixels it "
+                          "fixed, RED = pixels it broke, GREY = right before and after, pale = "
+                          "wrong before and after."]
+        lines += ["", FEEDBACK_RULE]
+    if history:
+        lines += ["", "Round history so far:"] + [f"- {h}" for h in history]
+    return "\n".join(lines) if lines else None
+
+
+def branch_text(branch_rounds, anchor_round, rounds_left, diff):
+    """`--patience`: the current program is an uncommitted branch (ABLATION_PLAN F)."""
+    lines = [f"Your edit in round {branch_rounds[-1]} did not beat the last committed program "
+             f"(round {anchor_round}): it lowered the geometric score or broke a view. It is kept "
+             f"TENTATIVELY for {rounds_left} more round(s): your next edit is committed only if "
+             f"it beats round {anchor_round}'s program, otherwise the branch is rolled back. "
+             "Continue in this direction only if you believe it leads to a better shape; "
+             "otherwise revert it."]
+    if diff:
+        lines += [f"The branch so far, vs round {anchor_round}'s program (- removed, + added):"]
+        lines += ["    " + l for l in diff]
+    return "\n".join(lines)
+
+
+def repeat_prompt(round_):
+    return (f"That program is the same as your attempt in round {round_}, which was not kept "
+            "(see the previous attempts above), so it was not built. Propose a different "
+            "change: reply with a CHANGE line and the complete revised program in one "
+            "```python block.")
 
 
 def repair_prompt(error):
