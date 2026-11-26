@@ -2,9 +2,11 @@
 
 data/<dataset>/<split>/ids.txt
                        images/<id>/rgb/<view>.(png|jpg)   4 views (+ mask/, depth.npz for synthetic renders)
-                       poses/<id>.json                    deepcad, fusion360 (rendered); realcad test50 (VGGT, image-only)
+                       poses/<id>.json                    deepcad, fusion360 (rendered); realcad test50 (VGGT, image-only),
+                                                          realcad test50_gt (GT CAD fitted to the photos, oracle)
                        meshes/<id>.stl                    hidden ground truth
-datasets: deepcad, realcad, fusion360;  splits: dev, test (+ realcad test50: mask/, depth.npz, poses from the photos)
+datasets: deepcad, realcad, fusion360;  splits: dev, test (+ realcad test50: mask/, depth.npz, poses from the photos;
+          test50_gt: the same parts with GT-CAD depth.npz and poses, all 4 views; test50_gt95: its well-fitted parts)
 """
 import sys
 from pathlib import Path
@@ -22,9 +24,10 @@ SPEC = {"deepcad": dict(views=TABLE, ext="png", poses=True),
 def main():
     bad = 0
     for ds, spec in SPEC.items():
-        for split in [s for s in ("dev", "test", "test50") if (HERE / ds / s / "ids.txt").exists()]:
+        for split in [s for s in ("dev", "test", "test50", "test50_gt", "test50_gt95") if (HERE / ds / s / "ids.txt").exists()]:
             root = HERE / ds / split
             image_only = ds == "realcad" and split == "test50"   # masks + VGGT depth/poses, some views may be empty
+            gt_fit = ds == "realcad" and split.startswith("test50_gt")   # SAM masks, GT-CAD depth + poses, every view
             ids = [l.strip() for l in (root / "ids.txt").read_text().split() if l.strip()]
             parts = [i.split("/")[-1] for i in ids]
             miss = {"images": 0, "masks": 0, "depth": 0, "poses": 0, "meshes": 0}
@@ -32,7 +35,7 @@ def main():
                 im = root / "images" / p
                 if not all((im / "rgb" / f"{v}.{spec['ext']}").exists() for v in spec["views"]):
                     miss["images"] += 1
-                if spec["poses"] or image_only:
+                if spec["poses"] or image_only or gt_fit:
                     if not all((im / "mask" / f"{v}.png").exists() for v in spec["views"]):
                         miss["masks"] += 1
                     d = im / "depth.npz"
@@ -42,7 +45,7 @@ def main():
                         miss["poses"] += 1
                 if not (root / "meshes" / f"{p}.stl").exists():
                     miss["meshes"] += 1
-            if not spec["poses"] and not image_only:
+            if not spec["poses"] and not image_only and not gt_fit:
                 miss.pop("masks"), miss.pop("depth"), miss.pop("poses")
             ok = not any(miss.values())
             bad += not ok

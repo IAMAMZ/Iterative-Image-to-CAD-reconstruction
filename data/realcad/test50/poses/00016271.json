@@ -1,6 +1,6 @@
 {
  "id": "00016271",
- "split": "test",
+ "split": "test50",
  "source": "VGGT-1B on the 4 photos cut out by their SAM 3 masks (no CAD, no GT)",
  "frame": "object frame from the prediction: +Z = axis the part was turned about (table normal, camera above), +X = towards the first kept camera, origin = bbox centre of the fused point cloud, unit bounding sphere; c2w = OpenGL camera-to-world; K in pixels of the 1024x768 photo; depth.npz = z along the view axis in object units, 0 = no depth",
  "image_size": [
