@@ -187,9 +187,34 @@ VIEW_DESC = {   # rig.py cameras, in grid order
 GRID_POS = ("top-left", "top-right", "bottom-left", "bottom-right")
 
 
-def views_text(views=None):
+PHOTO_NOTE = ("Reconstructions are rendered from exactly these cameras as grey shaded solids. "
+              "Ignore the table, background, colour and texture of the photos: only the shape "
+              "is compared.")
+
+
+def photo_views_text(desc: dict, views=None):
+    """views_text for a target with its own photo cameras (RealCAD; data/realcad_targets.py
+    stores `desc` = {view: where the camera is, in the part's axes} in info.json "view_desc")."""
+    views = list(desc) if views is None else list(views)
+    if len(views) == 1:
+        v = views[0]
+        return (f'The picture is a PHOTO of the real part lying on a table, cropped around the '
+                f'part, taken by one calibrated camera "{v}". In the part\'s own axes (the X, Y, '
+                f"Z your CadQuery program uses) the camera is {desc[v]}. "
+                + PHOTO_NOTE.replace("these cameras", "this camera"))
+    lines = [f"The picture is a 2x2 grid of {len(views)} PHOTOS of the real part lying on a "
+             "table, each cropped around the part. The part was turned on the table between "
+             "photos. In the part's own axes (the X, Y, Z your CadQuery program uses) the "
+             "cameras are:"]
+    lines += [f'- {p} "{v}": {desc[v]}' for p, v in zip(GRID_POS, views)]
+    return "\n".join(lines + [PHOTO_NOTE])
+
+
+def views_text(views=None, desc=None):
     """How the pictures are laid out: the 2x2 grid of all 4 cameras, or a single camera
-    (ablation `--views worst`)."""
+    (ablation `--views worst`). desc: the target's own camera descriptions (photo targets)."""
+    if desc:
+        return photo_views_text(desc, views)
     views = list(VIEW_DESC) if views is None else list(views)
     if len(views) == 1:
         v = views[0]
@@ -218,8 +243,8 @@ def bbox_text(lo, hi, one_view=False):
             f"Its exact position does not matter; only shape and size are compared.")
 
 
-def initial_prompt(lo, hi):
-    return (f"Here is the target part.\n{VIEWS_TEXT}\n\n{bbox_text(lo, hi)}\n\n"
+def initial_prompt(lo, hi, view_desc=None):
+    return (f"Here is the target part.\n{views_text(desc=view_desc)}\n\n{bbox_text(lo, hi)}\n\n"
             "Look at the main body first (plate, block, L-shape, cylinder, steps), then "
             "holes, slots, cut-outs and fillets. Write a CadQuery program that rebuilds it. "
             "Start your reply with `CHANGE: structural - first version`.")
@@ -247,22 +272,31 @@ RESIDUAL_TEXT = {
                "target does not.",
     "depth": "the depth error where both cover the pixel: pale = correct, dark red/purple = "
              "surface at the wrong depth (wrong thickness or height).",
+    "signed": "the outline AND the signed depth error for the same {views}, on a GREY "
+              "background. LIGHT RED = material the target has but we are MISSING; LIGHT BLUE "
+              "= EXTRA material we have but the target does not. Where both have material: "
+              "WHITE = our surface is at the right depth; ORANGE = our surface is BEHIND the "
+              "target's (farther from that camera: material is missing in front, e.g. a wall "
+              "too thin or a face set too far back); PURPLE = our surface is IN FRONT of the "
+              "target's (closer to that camera: extra material in front, e.g. a wall too "
+              "thick). Darker = larger error; full colour at about 5% of the part's size.",
 }
 
 
 def refine_prompt(program, lo, hi, cand_size=None, *, n_images=2, residual_table=None,
                   detail=False, kernel=None, qa_feedback=None, gsolver=None,
                   residual_images=("overlay", "depth"), views=None, detail_kind="residual",
-                  feedback=None, branch=None):
+                  feedback=None, branch=None, view_desc=None):
     """The edit request. Which evidence goes in is decided by the arm (see refine.ARMS) and
     the ablation flags: `residual_images` lists the residual grids sent (images 3, 4, ...),
-    `views` the cameras shown (None = all 4)."""
-    nv = len(VIEW_DESC) if views is None else len(views)
+    `views` the cameras shown (None = all 4). view_desc: the target's own camera
+    descriptions (photo targets; None = the fixed rig's)."""
+    nv = len(view_desc or VIEW_DESC) if views is None else len(views)
     cams = "camera" if nv == 1 else f"{nv} cameras"
     lines = []
     if n_images:
         lines += ["Image 1 is the TARGET part. Image 2 is our CURRENT reconstruction, rendered "
-                  f"by the same {cams}.", views_text(views)]
+                  f"by the same {cams}.", views_text(views, view_desc)]
     lines += ["", bbox_text(lo, hi, one_view=views is not None and len(views) == 1)]
     if cand_size is not None:
         lines.append("The current reconstruction's bounding box is "

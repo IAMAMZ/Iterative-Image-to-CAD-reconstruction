@@ -5,7 +5,8 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from compare import BOTH, DEPTH_CAP, EXTRA, MISSING, compare, overlay_image, view_metrics
+from compare import (BOTH, DEPTH_CAP, EXTRA, MISSING, SIGNED_BG, SIGNED_EXTRA, SIGNED_MISSING,
+                     SIGNED_UNKNOWN, compare, overlay_image, signed_depth_image, view_metrics)
 from generate_solid import generate
 from rig import load_rig
 
@@ -83,6 +84,27 @@ def test_overlay_colours():
     assert tuple(img[0, 0]) == MISSING    # target only -> red
     assert tuple(img[0, 5]) == EXTRA      # candidate only -> blue
     assert tuple(img[0, 3]) == BOTH
+
+
+
+def test_signed_depth_colours():
+    """Grey background, light red/blue outline, white where the depth is right, orange where
+    the candidate surface is behind the target's, purple where it is in front."""
+    mt, dt = square(0, 4, 0, 4, depth=3.0)
+    mc, dc = square(0, 4, 2, 6, depth=3.0)
+    dc[0, 2] = 3.0 + DEPTH_CAP          # behind (farther from the camera), full colour
+    dc[1, 2] = 3.0 - DEPTH_CAP          # in front, full colour
+    dt[3, 3] = 0.0                      # target depth unknown inside its mask (photo targets)
+    img = signed_depth_image(mt, dt, mc, dc)
+    assert tuple(img[9, 9]) == SIGNED_BG
+    assert tuple(img[2, 0]) == SIGNED_MISSING
+    assert tuple(img[2, 5]) == SIGNED_EXTRA
+    assert tuple(img[2, 3]) == (255, 255, 255)          # right depth
+    assert tuple(img[3, 3]) == SIGNED_UNKNOWN
+    r, g, b = (int(c) for c in img[0, 2])
+    assert r > g > b                                    # orange
+    r, g, b = (int(c) for c in img[1, 2])
+    assert b > g and r > g                              # purple
 
 
 # ------------------------------------------------------------ real parts end to end

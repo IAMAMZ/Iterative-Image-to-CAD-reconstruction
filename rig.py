@@ -82,6 +82,24 @@ def load_rig(path=RIG_PATH):
     return json.loads(Path(path).read_text())
 
 
+def target_rig_path(target_dir) -> Path:
+    """Where a target keeps its own cameras (RealCAD photos: one rig per part)."""
+    import layout
+    return layout.internal(Path(target_dir), "rig.json")
+
+
+def load_rig_for(target_dir=None) -> dict:
+    """The target's own rig if it has one (<target>/internal/rig.json), else rig.json."""
+    if target_dir is not None and target_rig_path(target_dir).exists():
+        return load_rig(target_rig_path(target_dir))
+    return load_rig()
+
+
+def cam_K(cam: dict, rig: dict):
+    """Pixel intrinsics of one camera: its own K if it has one, else the rig's."""
+    return cam.get("K", rig["K"])
+
+
 def normalize(mesh, center=None, scale=None):
     """Return (normalised copy, center, scale) with  x_norm = (x - center) * scale.
 
@@ -103,7 +121,8 @@ def normalize(mesh, center=None, scale=None):
 def render_rig(renderer, mesh, rig):
     """Render a *normalised* mesh from every rig camera -> {name: (rgb, depth, mask)}."""
     yfov = math.radians(rig["yfov_deg"])
-    return {c["name"]: renderer.render_pose(mesh, c["pose_c2w"], rig["znear"], rig["zfar"], yfov)
+    return {c["name"]: renderer.render_pose(mesh, c["pose_c2w"], rig["znear"], rig["zfar"], yfov,
+                                            K=c.get("K"))
             for c in rig["cameras"]}
 
 

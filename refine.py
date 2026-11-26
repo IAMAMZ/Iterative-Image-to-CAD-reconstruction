@@ -69,7 +69,7 @@ import layout
 import progress
 import report
 import sandbox
-from rig import load_rig
+from rig import load_rig_for
 from summarize_runs import normalize_program
 from view_weights import measure_bbox, view_weights
 
@@ -119,14 +119,18 @@ def grid(paths, labels, tile=256) -> bytes:
 
 
 def render_grid(d: Path, labels=None, views=None):
-    views = views or GRID_VIEWS
+    views = views or layout.grid_views(d)
     return grid([layout.render(d, v) for v in views], labels or list(views))
 
 
 def diff_grid(d: Path, kind, labels=None, views=None):
     """kind: "_overlay" or "_depth_err" (compare.py's images of candidate dir d)."""
-    views = views or GRID_VIEWS
+    views = views or layout.grid_views(d)
     return grid([layout.diff(d, v, kind) for v in views], labels or list(views))
+
+
+DETAIL_LABEL = {"_overlay": "residual", "_depth_err": "depth error",
+                "_depth_signed": "signed depth error"}
 
 
 def detail_strip(target_dir: Path, cand_dir: Path, weights=None, tile=256, margin=24,
@@ -152,7 +156,7 @@ def detail_strip(target_dir: Path, cand_dir: Path, weights=None, tile=256, margi
     top, left = int(np.clip(cy - side // 2, 0, max(h - side, 0))), int(np.clip(cx - side // 2, 0, max(w - side, 0)))
     crop = (left, top, min(left + side, w), min(top + side, h))
     srcs = [(layout.render(target_dir, v), "target"), (layout.render(cand_dir, v), "current"),
-            (layout.diff(cand_dir, v, kind), "residual" if kind == "_overlay" else "depth error")]
+            (layout.diff(cand_dir, v, kind), DETAIL_LABEL[kind])]
     sheet = Image.new("RGB", (3 * tile, tile), (255, 255, 255))
     for i, (p, lab) in enumerate(srcs):
         im = Image.open(p).convert("RGB").crop(crop).resize((tile, tile), Image.NEAREST)
@@ -174,7 +178,9 @@ def build(src: str, cand_dir: Path, target_dir: Path, center, sandboxed=False):
            "--out", str(cand_dir), "--like", str(target_dir),
            "--center-at", *[f"{c:.6f}" for c in center]]
     if sandboxed:
-        cmd = sandbox.wrap(cmd, writable=[cand_dir], readonly=[layout.info(target_dir)])
+        ro = [layout.info(target_dir)] + [p for p in [layout.internal(target_dir, "rig.json")]
+                                          if p.exists()]       # photo targets: own cameras
+        cmd = sandbox.wrap(cmd, writable=[cand_dir], readonly=ro)
     try:
         p = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=BUILD_TIMEOUT)
     except subprocess.TimeoutExpired:
@@ -214,8 +220,11 @@ def gsolver_table(target_dir: Path, cand_dir: Path) -> str:
 
 # ------------------------------------------------------------------ agent
 class Agent:
-    def __init__(self, model, think, repairs, backend=vlm.DEFAULT_BACKEND, sandboxed=False):
+    def __init__(self, model, think, repairs, backend=vlm.DEFAULT_BACKEND, sandboxed=False,
+                 view_desc=None):
         self.model, self.think, self.repairs, self.backend = model, think, repairs, backend
+        self.view_desc = view_desc            # photo targets: their own cameras (info.json)
+        self.views_text = vlm.views_text(desc=view_desc)
         self.sandboxed = sandboxed
         self.llm_seconds = 0.0
         self.calls = 0
@@ -280,7 +289,7 @@ class Agent:
         -> (keep_new, details)"""
         new_is_b = rng.random() < 0.5
         a, b = (cur_img, new_img) if new_is_b else (new_img, cur_img)
-        prompt = vlm.VLM_JUDGE.format(views=vlm.VIEWS_TEXT)
+        prompt = vlm.VLM_JUDGE.format(views=self.views_text)
         text, _ = self.ask([{"role": "user", "content": prompt, "images": [target_img, a, b]}])
         pick = vlm.parse_judgement(text)
         keep_new = pick == ("B" if new_is_b else "A")
@@ -290,13 +299,13 @@ class Agent:
     # --- verification questions (CADCodeVerify)
     def questions(self, target_img):
         text, _ = self.ask([{"role": "user", "images": [target_img],
-                             "content": vlm.QUESTIONS_PROMPT.format(views=vlm.VIEWS_TEXT)}])
+                             "content": vlm.QUESTIONS_PROMPT.format(views=self.views_text)}])
         return vlm.parse_questions(text), text
 
     def answer(self, questions, img):
         qtxt = "\n".join(f"{i}. {q}" for i, q in enumerate(questions, 1))
         text, _ = self.ask([{"role": "user", "images": [img],
-                             "content": vlm.ANSWER_PROMPT.format(views=vlm.VIEWS_TEXT,
+                             "content": vlm.ANSWER_PROMPT.format(views=self.views_text,
                                                                  questions=qtxt)}])
         return vlm.parse_answers(text, len(questions)), text
 
@@ -328,7 +337,7 @@ def initial(agent, target_dir, out, lo, hi, center, target_img):
     meta = d / layout.INTERNAL / "init.json"
     if layout.info(d).exists() and meta.exists():
         return json.loads(meta.read_text())["ok"]
-    status, attempts, tr, _ = agent.write_program(vlm.initial_prompt(lo, hi), [target_img], d,
+    status, attempts, tr, _ = agent.write_program(vlm.initial_prompt(lo, hi, agent.view_desc), [target_img], d,
                                                   target_dir, center)
     meta.parent.mkdir(parents=True, exist_ok=True)
     meta.write_text(json.dumps({"ok": status == "ok", "attempts": attempts,
@@ -432,7 +441,7 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
     run_dir.mkdir(parents=True, exist_ok=True)
     for old in run_dir.glob("round_*"):        # a rerun of this arm starts from scratch
         shutil.rmtree(old)
-    (run_dir / "final").unlink(missing_ok=True)
+    _unlink_dir_link(run_dir / "final")
     results = run_dir / "log.jsonl"
     results.unlink(missing_ok=True)
     t_start = time.time()
@@ -450,7 +459,7 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
 
     w = weights if opts.weights and views is None else None   # one view: nothing to cross-check
     cur = score(target_dir, part_out / "init", w, views, sig)
-    log({"round": 0, "status": "ok", "accepted": True, "views": views or list(GRID_VIEWS),
+    log({"round": 0, "status": "ok", "accepted": True, "views": views or list(layout.grid_views(target_dir)),
          "mean_iou": cur["report"]["mean_iou"],
          "w_iou": cur["w_iou"], "depth_mae": cur["report"]["mean_depth_mae"],
          "geo_score": cur["geo_score"], **cur["e3d"]})
@@ -493,8 +502,14 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
         images = [target_img, cur_img]
         table, detail, kinds = None, False, []
         if spec["residuals"] and opts.residuals:
-            gviews = views or GRID_VIEWS
-            if opts.residual_images:              # only the grids of the active signal
+            gviews = views or layout.grid_views(target_dir)
+            if opts.residual_images and opts.residual_view == "signed":
+                # one grid: outline + signed depth error (compare.signed_depth_image)
+                labels = None if sig == "depth" else [
+                    f"{v}  IoU {cur['report']['views'][v]['iou']:.3f}" for v in gviews]
+                images.append(diff_grid(cur["dir"], "_depth_signed", labels, views))
+                kinds.append("signed")
+            elif opts.residual_images:            # only the grids of the active signal
                 if sig in ("both", "mask"):
                     labels = [f"{v}  IoU {cur['report']['views'][v]['iou']:.3f}" for v in gviews]
                     images.append(diff_grid(cur["dir"], "_overlay", labels, views))
@@ -503,8 +518,9 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
                     images.append(diff_grid(cur["dir"], "_depth_err", views=views))
                     kinds.append("depth")
             if opts.detail:
-                strip, dview = detail_strip(target_dir, cur["dir"], w, views=views,
-                                            kind="_depth_err" if sig == "depth" else "_overlay")
+                zoom = ("_depth_signed" if opts.residual_view == "signed"
+                        else "_depth_err" if sig == "depth" else "_overlay")
+                strip, dview = detail_strip(target_dir, cur["dir"], w, views=views, kind=zoom)
                 if strip:
                     images.append(strip)
                     detail = True
@@ -525,7 +541,7 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
                     and shown[-1].get("effect_dir")):
                 ed = shown[-1]["effect_dir"]
                 cnt = json.loads((layout.diff_dir(ed) / "effect.json").read_text())
-                gv = views or GRID_VIEWS
+                gv = views or layout.grid_views(target_dir)
                 images.append(diff_grid(ed, "_effect", [
                     f"{v}  fixed {cnt[v]['fixed']} px, broke {cnt[v]['broke']} px" for v in gv],
                     views=views))
@@ -540,8 +556,8 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
             vlm.qa_text(qa["questions"], qa["answers"], only_failed=True) + "\n" + qa["feedback"],
             gsolver=gsolver_table(target_dir, cur["dir"]) if spec["gsolver"] else None,
             residual_images=kinds, views=views,
-            detail_kind="depth error" if sig == "depth" else "residual", feedback=fb_text,
-            branch=branch)
+            detail_kind=DETAIL_LABEL[zoom] if detail else "residual", feedback=fb_text,
+            branch=branch, view_desc=agent.view_desc)
         status, n_tries, tr, (tag, why) = agent.write_program(
             msg, images, rd, target_dir, center, allow_no_change=True, tried=tried)
         row.update(status=status, attempts=n_tries, repairs_used=n_tries - 1,
@@ -657,7 +673,7 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
                 entry.update(round=r, tag=tag, change=why,
                              diff=None if new_src is None else diff_lines(cur_src_before, new_src),
                              norm=None if new_src is None else normalize_program(new_src))
-                if (rd / layout.DIFF / f"{(views or GRID_VIEWS)[0]}_effect.png").exists():
+                if (rd / layout.DIFF / f"{(views or layout.grid_views(target_dir))[0]}_effect.png").exists():
                     entry["effect_dir"] = rd
                 if fb_geo and entry.get("gain") is not None:
                     hist += f", geometric score {entry['gain']:+.4f}"
@@ -678,8 +694,7 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
     else:
         stop = "rounds"
     cur = br.anchor                       # never an uncommitted branch
-    os.symlink(os.path.relpath(cur["dir"], run_dir), run_dir / "final",
-               target_is_directory=True)
+    _link_dir(cur["dir"], run_dir / "final")
     final = {"part": target_dir.name, "arm": arm, "stop": stop, "rounds_run": r,
              "final_dir": str(cur["dir"]), "mean_iou": cur["report"]["mean_iou"],
              "w_iou": cur["w_iou"], **cur["e3d"], "patience": br.k,
@@ -690,6 +705,26 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
              **_usage_delta(u0, agent.usage())}
     (run_dir / "result.json").write_text(json.dumps(final, indent=2, default=str))
     return final
+
+
+def _unlink_dir_link(link: Path):
+    """Remove a directory symlink or Windows junction (never the folder it points to)."""
+    if link.is_symlink():
+        link.unlink()
+    elif link.is_dir():                     # a junction: rmdir drops the link only
+        os.rmdir(link)
+
+
+def _link_dir(target: Path, link: Path):
+    """<arm>/final -> the round it ended with. Relative symlink; on Windows without the
+    symlink privilege (no Developer Mode / admin), a directory junction instead."""
+    try:
+        os.symlink(os.path.relpath(target, link.parent), link, target_is_directory=True)
+    except OSError:
+        if sys.platform != "win32":
+            raise
+        import _winapi
+        _winapi.CreateJunction(str(Path(target).resolve()), str(link))
 
 
 def _label_round(rd: Path, label: str) -> Path:
@@ -760,6 +795,11 @@ def main(argv=None):
                     help="what the geometric check uses, for both the agent's evidence and the "
                          "keep decision: silhouette + depth (both), silhouette only (mask) or "
                          "depth error only (depth; no per-view IoU guard)")
+    ap.add_argument("--residual-view", default="split", choices=["split", "signed"],
+                    help="geo/hybrid residual images: split = silhouette residual + |depth "
+                         "error| grids (default); signed = one grid with the outline and the "
+                         "SIGNED depth error (which way each surface is off). Only changes what "
+                         "the agent sees; the keep decision is the same")
     ap.add_argument("--views", default="all", choices=["all", "worst"],
                     help="worst: use only the view where the round-0 program is most wrong, for "
                          "the agent's images and table and for the check (weights off)")
@@ -794,6 +834,9 @@ def main(argv=None):
                                      for a in arms):
         ap.error("--views worst is for the geo and oracle arms (the questions and the judge "
                  "assume the 4-view grid)")
+    if args.residual_view == "signed" and args.geo_signal == "mask":
+        ap.error("--residual-view signed shows the depth error; it needs --geo-signal both or "
+                 "depth")
     if args.patience < 0:
         ap.error("--patience must be >= 0")
     if args.patience and (args.gate == "off" or any(ARMS[a]["accept"] not in ("geo", "oracle")
@@ -810,7 +853,6 @@ def main(argv=None):
             args.model = vlm.default_model(args.backend)
         except RuntimeError as e:
             ap.error(str(e))
-    rig = load_rig()
     targets = [t for t in args.targets if layout.is_rendered(t)]
     if args.out is None:
         name = args.name or f"{'-'.join(arms) if len(arms) < 4 else args.arm}_{args.model}"
@@ -828,13 +870,15 @@ def main(argv=None):
         for target in targets:
             part_out = args.out / "parts" / target.name
             (part_out / layout.INTERNAL).mkdir(parents=True, exist_ok=True)
+            rig = load_rig_for(target)        # photo targets bring their own cameras
             lo, hi = measure_bbox(target, rig)
             center = (lo + hi) / 2
             target_img = render_grid(target)
             weights = view_weights(target, rig)
             (part_out / layout.INTERNAL / "view_weights.json").write_text(
                 json.dumps(weights, indent=2))
-            agent = Agent(args.model, args.think, args.repairs, args.backend, args.sandbox)
+            agent = Agent(args.model, args.think, args.repairs, args.backend, args.sandbox,
+                          json.loads(layout.info(target).read_text()).get("view_desc"))
             print(f"{target.name}: measured bbox {np.round(hi - lo, 1).tolist()} units",
                   flush=True)
             try:

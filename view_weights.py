@@ -25,7 +25,7 @@ import numpy as np
 from scipy import ndimage
 
 import layout
-from rig import load_rig
+from rig import cam_K, load_rig_for
 
 # clean renders give c = 1.000 exactly; a 25 px shift or 0.15 depth bias of one view gives
 # c ~ 0.65-0.92 for that view only (measured on Fusion360 parts), so map 0.6..0.98 -> 0..1
@@ -82,7 +82,7 @@ def measure_bbox(target_dir: Path, rig: dict, views=None):
     center = np.array(info["normalization"]["center"])
     scale = info["normalization"]["scale"]
     depth = np.load(layout.depth(target_dir))
-    pts = np.concatenate([backproject(depth[c["name"]], c, rig["K"])
+    pts = np.concatenate([backproject(depth[c["name"]], c, cam_K(c, rig))
                           for c in rig["cameras"] if c["name"] in depth.files
                           and (views is None or c["name"] in views)])
     pts = pts / scale + center                              # normalised -> target units
@@ -97,7 +97,7 @@ def consistency(depths: dict, rig: dict, seed=0) -> dict:
     names = list(cams)
     pts, near = {}, {}
     for n in names:
-        p = backproject(depths[n], cams[n], rig["K"])
+        p = backproject(depths[n], cams[n], cam_K(cams[n], rig))
         if len(p) > MAX_POINTS:
             p = p[rng.choice(len(p), MAX_POINTS, replace=False)]
         pts[n] = p
@@ -107,7 +107,8 @@ def consistency(depths: dict, rig: dict, seed=0) -> dict:
     for v in names:
         for u in names:
             if u != v and len(pts[v]):
-                rej[v, u] = _rejected(pts[v], depths[u], near[u], cams[u], rig["K"])
+                rej[v, u] = _rejected(pts[v], depths[u], near[u], cams[u],
+                                     cam_K(cams[u], rig))
     out = {}
     for v in names:
         pair = []
@@ -132,7 +133,7 @@ def view_weights(target_dir: Path, rig: dict | None = None, cache=True) -> dict:
     f = layout.internal(target_dir, CACHE)
     if cache and f.exists():
         return json.loads(f.read_text())["weights"]
-    rig = rig or load_rig()
+    rig = rig or load_rig_for(target_dir)
     depth = np.load(layout.depth(target_dir))
     cons = consistency({k: depth[k] for k in depth.files}, rig)
     w = to_weights(cons)

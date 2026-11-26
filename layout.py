@@ -11,6 +11,7 @@
 Readers fall back to the older flat layout (everything at the top of <dir>), so archived
 runs and targets built before this layout still load.
 """
+import json
 from pathlib import Path
 
 RENDERS, DIFF, INTERNAL = "renders", "diff", "internal"
@@ -27,9 +28,18 @@ LEGACY_GRID = ("front", "right", "top", "iso_fr")   # agent grid of the 8-camera
 
 def grid_views(d: Path | None = None) -> tuple:
     """The views the agent sees and the pages show: every rig camera, in grid order. A
-    folder rendered with the old 8-camera rig gets that rig's 4 grid views instead."""
+    folder rendered with the old 8-camera rig gets that rig's 4 grid views instead. A folder
+    with its own cameras (photo targets, and candidates rendered with them) uses its own:
+    info.json "grid_views", else its first 4 "views"."""
     from rig import load_rig
     names = tuple(c["name"] for c in load_rig()["cameras"])
+    if d is not None and info(d).exists():
+        inf = json.loads(info(d).read_text())
+        if inf.get("grid_views"):
+            return tuple(inf["grid_views"])
+        own = inf.get("views") or []
+        if own and names[0] not in own and "front" not in own:
+            return tuple(own[:4])
     if d is not None and not render(d, names[0]).exists() and render(d, "front").exists():
         return LEGACY_GRID
     return names

@@ -78,17 +78,24 @@ class CQRenderer:
                                 zfar=dist + 2 * radius, color=color, bg=bg)
 
     def render_pose(self, mesh, pose, znear, zfar, yfov=None,
-                    color=(0.55, 0.62, 0.72), bg=(0.92, 0.92, 0.92)):
-        """Render a trimesh from an explicit camera-to-world pose (OpenGL convention)."""
+                    color=(0.55, 0.62, 0.72), bg=(0.92, 0.92, 0.92), K=None):
+        """Render a trimesh from an explicit camera-to-world pose (OpenGL convention).
+        K: optional 3x3 OpenCV pixel intrinsics (off-centre principal point allowed, e.g. a
+        cropped photo); overrides yfov."""
         pose = np.asarray(pose, dtype=np.float64)
         scene = pyrender.Scene(bg_color=(*bg, 1.0), ambient_light=(0.3, 0.3, 0.3))
         mat = pyrender.MetallicRoughnessMaterial(
             baseColorFactor=(*color, 1.0), metallicFactor=0.0, roughnessFactor=0.7)
         scene.add(pyrender.Mesh.from_trimesh(mesh, material=mat, smooth=False))
 
-        cam = pyrender.PerspectiveCamera(
-            yfov=yfov or self.yfov, aspectRatio=self.width / self.height,
-            znear=znear, zfar=zfar)
+        if K is not None:
+            K = np.asarray(K, dtype=np.float64)
+            cam = pyrender.IntrinsicsCamera(fx=K[0, 0], fy=K[1, 1], cx=K[0, 2], cy=K[1, 2],
+                                            znear=znear, zfar=zfar)
+        else:
+            cam = pyrender.PerspectiveCamera(
+                yfov=yfov or self.yfov, aspectRatio=self.width / self.height,
+                znear=znear, zfar=zfar)
         scene.add(cam, pose=pose)
         scene.add(pyrender.DirectionalLight(intensity=1.2), pose=pose)  # headlight
         dist = 0.5 * (znear + zfar)
