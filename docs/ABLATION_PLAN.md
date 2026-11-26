@@ -29,7 +29,7 @@ This file is the shared design. Both runbooks depend on §3 (setup) being done f
 | gate | on: edit kept if weighted score gain > 0.001 and no trusted view loses > 0.05 IoU | `--gate on` (default) |
 | patience | off | `--patience 0` (default) |
 | rounds | 6 | `--rounds 6` |
-| sandbox | on (bubblewrap; does not change scores) | `--sandbox` |
+| sandbox | on where available (bubblewrap, Linux only; does not change scores). Off on macOS | `--sandbox` |
 
 Note that `refine.py` defaults differ from `main` in three places: `--arm` defaults to four
 arms, `--rounds` to 4, and with no `--init` Gemini writes round 0. Always pass all three.
@@ -80,9 +80,13 @@ Each config is `main` plus the flags shown. The **owner** column says which runb
 ### Notes per config
 
 - **`main_s1`.** `--seed` is not sent to Gemini; it only seeds the local RNG. So this is simply
-  a rerun of `main`, and because A runs `main` and B runs `main_s1`, it also covers any
-  difference between the two machines. An ablation delta smaller than the `main` vs `main_s1`
-  difference is not a finding.
+  a rerun of `main`. An ablation delta smaller than the `main` vs `main_s1` difference is not
+  a finding.
+- **Two machines, two references.** A runs on Linux and B on macOS. Renders (EGL vs macOS
+  OpenGL) and CAD tessellation can differ slightly between them, which moves scores a little.
+  So each config is compared with the reference **from its own machine**: A's configs vs
+  `main`, B's configs vs `main_s1`. `main` vs `main_s1` then measures chance plus the machine
+  difference together.
 - **`depth_only`.** `depth_err` is computed over the union of the two silhouettes and charges
   `DEPTH_CAP` where only one shape covers a pixel, so it still carries outline information.
   This is deliberate, since depth MAE on the overlap alone can be lowered by shrinking the part.
@@ -137,16 +141,20 @@ the files. Data under `data/generated/` and `runs/` is git-ignored.
    regenerating them:
 
    ```
-   tar czf ablation_inputs.tgz data/generated/targets/fusion360 data/generated/init/cadrille_rl
+   tar czf ablation_inputs.tgz data/generated/targets/fusion360 data/generated/init/cadrille_rl \
+       data/generated/targets/fusion360_tuning data/generated/init/cadrille_rl_tuning
    ```
 
+   The tuning folders are for B's `signed_resid` pilot.
 3. **Same code and model.** Both are on the same `main` commit, run `uv sync`, and use the
    same `VERTEX_MODEL` and `VERTEX_PRICE_*_PER_M` in `.env`. Each person may use their own
    Vertex project, since rate limits are per project.
 
-4. **Cross-check.** After B's first run has round 0, compare its `iou3d` at round 0 with A's
-   `main` round 0 for the same parts. They must match exactly. If they don't, stop and find the
-   difference (library versions, inputs) before going on.
+4. **Cross-check.** After B's first run has round 0, compare its round-0 `iou3d` and
+   `geo_score` with A's `main` round 0 for the same parts (`log.jsonl`, the `round: 0` row).
+   The round-0 program is the same file on both sides, so they should agree to within about
+   0.01. Small differences are expected from the two platforms. A larger gap means a different
+   input or library version: stop and find it before going on.
 
 The 36 targets as shell arguments (bash), used by both runbooks:
 
@@ -199,7 +207,8 @@ before starting the rest.
   - one row per config: median/mean 3D IoU (`iou3d`, `iou3d_cad`), CD, gain over round 0,
     `final` and `best_geo`, kept-precision, harmful-accept rate, invalid-edit rate, tokens, $,
     minutes;
-  - the **paired difference vs `main`** per part: mean Δ IoU with a bootstrap 95% CI (10 000
+  - the **paired difference vs the same machine's reference** per part (A's configs vs
+    `main`, B's vs `main_s1`): mean Δ IoU with a bootstrap 95% CI (10 000
     resamples over parts), a Wilcoxon signed-rank p-value, and wins/ties/losses;
   - the `main` vs `main_s1` difference as the noise floor in the same table;
   - Δ per stratum (low/mid/high start IoU);
