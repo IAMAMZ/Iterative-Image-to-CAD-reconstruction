@@ -14,11 +14,20 @@ writes  data/generated/targets/realcad_<split>/<id>/  laid out like a generate_s
           renders/v<k>_depth.png  preview of the depth map
           internal/depth.npz      the split's depth, same crop (normalised units; 0 = unknown)
           internal/info.json      frame, views, where each camera is (view_desc, for the prompts)
-          gt.stl                  the true shape in mm, for offline scoring only
+          gt.stl                  the true shape in the target's units, for offline scoring only
 
-Frame: the split's poses are in "CAD axes; p = (p_cad - centre) * scale". The meshes are in
-metres; targets are in mm (centre * 1000, scale / 1000), so the agent works in mm and the
-normalised frame (cameras, depth) is unchanged.
+Frames (detected from poses/<id>.json):
+  * GT-fit splits (test50_gt, test50_gt95): "CAD axes; p = (p_cad - centre) * scale". The meshes
+    are in metres; targets are in mm (centre * 1000, scale / 1000), so the agent works in mm and
+    the normalised frame (cameras, depth) is unchanged.
+  * image-only splits (test50: VGGT cameras and depth): the object frame VGGT predicted (+Z =
+    table normal, unit bounding sphere), with no metric scale. Targets use VGGT_RADIUS units per
+    normalised unit (the part is ~100 units across); the agent never sees anything from the GT.
+    gt.stl is the GT mesh moved into that frame by a similarity fitted on the CAMERAS only
+    (rotation from the per-view rotations, scale and shift from the camera centres) against the
+    GT-fit cameras of the same photos (--gt-poses, default data/realcad/<split>_gt/poses), as in
+    data/eval_realcad_recon.py. It is for offline scoring only, and its 3D IoU also contains
+    VGGT's camera error.
 Crop: per view, a square around the SAM mask's bounding box (+ --pad on each side), resized
 to --size px; K is shifted and scaled with it (pixel-edge convention, as the poses use:
 cx = W/2 is the image centre). Uses only the mask, never the GT, to place the crop.
@@ -43,6 +52,35 @@ from generate_solid import depth_preview  # noqa: E402
 
 DEFAULT_SPLIT = ROOT / "data" / "realcad" / "test50_gt95"
 MM_PER_M = 1000.0
+VGGT_RADIUS = 50.0     # target units per normalised unit in VGGT-frame targets
+
+
+def _proj_rot(M):
+    U, _, Vt = np.linalg.svd(M)
+    D = np.diag([1.0, 1.0, np.sign(np.linalg.det(U @ Vt))])
+    return U @ D @ Vt
+
+
+def camera_similarity(ref_views: dict, pred_views: dict):
+    """(s, R, t) with x_pred = s R x_ref + t, fitted on the cameras the two sets share:
+    R from the per-view rotations, s and t from the camera centres (least squares).
+    -> (s, R, t, report)"""
+    keys = [k for k in ref_views if k in pred_views]
+    Pr = [np.asarray(ref_views[k]["c2w"], float) for k in keys]
+    Pp = [np.asarray(pred_views[k]["c2w"], float) for k in keys]
+    R = _proj_rot(sum(b[:3, :3] @ a[:3, :3].T for a, b in zip(Pr, Pp)))
+    Cr = np.array([a[:3, 3] for a in Pr])
+    Cp = np.array([b[:3, 3] for b in Pp])
+    mr, mp = Cr.mean(0), Cp.mean(0)
+    A = (Cr - mr) @ R.T
+    s = float(((Cp - mp) * A).sum() / max((A * A).sum(), 1e-12))
+    t = mp - s * R @ mr
+    res = Cp - (s * Cr @ R.T + t)
+    cos = [(np.trace(R @ a[:3, :3] @ b[:3, :3].T) - 1) / 2 for a, b in zip(Pr, Pp)]
+    return s, R, t, {"views": keys, "scale": s,
+                     "centre_rms": float(np.sqrt((res ** 2).sum(1).mean())),
+                     "rot_err_deg": [round(float(np.degrees(np.arccos(np.clip(c, -1, 1)))), 2)
+                                     for c in cos]}
 
 
 # ------------------------------------------------------------------ geometry
@@ -88,11 +126,14 @@ def view_desc(cam) -> str:
 
 
 # ------------------------------------------------------------------ build
-def build_target(part: str, split: Path, out_root: Path, size=512, pad=0.3) -> dict:
+def build_target(part: str, split: Path, out_root: Path, size=512, pad=0.3,
+                 gt_poses: Path | None = None) -> dict:
     pose = json.loads((split / "poses" / f"{part}.json").read_text())
     img_dir = split / "images" / part
     depth_src = np.load(img_dir / "depth.npz")
-    keys = sorted(pose["views"], key=int)
+    keys = sorted((k for k in pose["views"] if k in depth_src.files
+                   and (img_dir / "mask" / f"{k}.png").exists()), key=int)
+    gt_frame = "centre" in pose and "scale" in pose     # else an image-only (VGGT) frame
 
     out = out_root / part
     rd, idir = out / layout.RENDERS, out / layout.INTERNAL
@@ -131,19 +172,38 @@ def build_target(part: str, split: Path, out_root: Path, size=512, pad=0.3) -> d
            "K": K0, "cameras": cams}
     (idir / "rig.json").write_text(json.dumps(rig, indent=2) + "\n")
 
-    mesh = trimesh.load(split / "meshes" / f"{part}.stl", force="mesh")
-    mesh.apply_scale(MM_PER_M)
-    mesh.export(out / "gt.stl")
+    mesh = trimesh.load(split / "meshes" / f"{part}.stl", force="mesh")    # metres, CAD axes
+    align = None
+    if gt_frame:
+        mesh.apply_scale(MM_PER_M)
+        units = "mm"
+        norm = {"center": (np.asarray(pose["centre"]) * MM_PER_M).tolist(),
+                "scale": float(pose["scale"]) / MM_PER_M}
+    else:
+        units = f"VGGT object units (bounding sphere radius {VGGT_RADIUS:g}; not mm)"
+        norm = {"center": [0.0, 0.0, 0.0], "scale": 1.0 / VGGT_RADIUS}
+        ref_f = None if gt_poses is None else gt_poses / f"{part}.json"
+        if ref_f is not None and ref_f.exists():            # offline scoring only
+            ref = json.loads(ref_f.read_text())
+            s, R, t, align = camera_similarity(ref["views"], pose["views"])
+            v = (np.asarray(mesh.vertices) - np.asarray(ref["centre"])) * float(ref["scale"])
+            mesh.vertices = (s * v @ R.T + t) * VGGT_RADIUS
+            align["from"] = str(ref_f)
+        else:
+            mesh = None
+    if mesh is not None:
+        mesh.export(out / "gt.stl")
     names = [c["name"] for c in cams]
-    info = {"source": f"realcad/{split.name}", "part": part, "units": "mm",
-            "normalization": {"center": (np.asarray(pose["centre"]) * MM_PER_M).tolist(),
-                              "scale": float(pose["scale"]) / MM_PER_M},
+    info = {"source": f"realcad/{split.name}", "part": part, "units": units,
+            "normalization": norm,
             "views": names, "grid_views": names[:4], "mask_source": "png",
             "view_desc": {c["name"]: view_desc(c) for c in cams[:4]},
-            "bbox_min": mesh.bounds[0].tolist(), "bbox_max": mesh.bounds[1].tolist(),
             "crop": crops, "crop_size": size, "crop_pad": pad,
             "uses_ground_truth": "GT CAD" in pose.get("source", ""),
-            "gt_watertight": bool(mesh.is_watertight)}
+            "gt_alignment": align}
+    if mesh is not None:
+        info.update(bbox_min=mesh.bounds[0].tolist(), bbox_max=mesh.bounds[1].tolist(),
+                    gt_watertight=bool(mesh.is_watertight))
     (idir / "info.json").write_text(json.dumps(info, indent=2) + "\n")
     return info
 
@@ -162,7 +222,11 @@ def main():
     ap.add_argument("--size", type=int, default=512, help="crop size in px")
     ap.add_argument("--pad", type=float, default=0.3, help="crop margin, x the part's size per side")
     ap.add_argument("--force", action="store_true", help="rebuild targets that already exist")
+    ap.add_argument("--gt-poses", type=Path, default=None,
+                    help="image-only splits: GT-fit poses of the same photos, used only to put "
+                         "gt.stl in the target frame (default data/realcad/<split>_gt/poses)")
     args = ap.parse_args()
+    gt_poses = args.gt_poses or args.split.parent / f"{args.split.name}_gt" / "poses"
     out = args.out or ROOT / "data" / "generated" / "targets" / f"realcad_{args.split.name}"
     parts = args.ids or read_ids(args.split)[:args.limit]
     done = failed = 0
@@ -170,7 +234,8 @@ def main():
         if layout.info(out / p).exists() and not args.force:
             continue
         try:
-            build_target(p, args.split, out, args.size, args.pad)
+            build_target(p, args.split, out, args.size, args.pad,
+                         gt_poses if gt_poses.exists() else None)
             done += 1
         except Exception as e:  # keep going; report at the end
             failed += 1
