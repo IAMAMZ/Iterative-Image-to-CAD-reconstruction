@@ -24,7 +24,7 @@ from PIL import Image
 import layout
 from cq_render import CQRenderer, to_trimesh
 from op_checker import IllegalOperation, OpTrace, format_step
-from rig import load_rig, normalize, render_rig
+from rig import load_rig, load_rig_for, normalize, render_rig
 
 # files a run writes; removed first so a failed run never leaves stale results behind
 OUTPUTS = ("solid.step", "solid.stl")
@@ -167,7 +167,9 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("program", type=Path, help="CadQuery .py file defining `result`")
     ap.add_argument("--out", type=Path, default=None, help="default: runs/_scratch/<program name>")
-    ap.add_argument("--rig", type=Path, default=None, help="camera rig json (default: rig.json)")
+    ap.add_argument("--rig", type=Path, default=None,
+                    help="camera rig json (default: the --like target's own rig if it has one, "
+                         "else rig.json)")
     ap.add_argument("--like", type=Path, default=None,
                     help="output dir of a target part: render in the target's frame "
                          "(same centre and scale) so the two can be compared with compare.py")
@@ -178,7 +180,8 @@ def main():
     out = args.out or Path("runs") / "_scratch" / args.program.stem
     norm = json.loads(layout.info(args.like).read_text())["normalization"] if args.like else None
     try:
-        info = generate(args.program, out, load_rig(args.rig) if args.rig else load_rig(), norm,
+        rig = load_rig(args.rig) if args.rig else load_rig_for(args.like)  # photo targets: own cameras
+        info = generate(args.program, out, rig, norm,
                         args.center_at)
     except Exception as e:
         if args.traceback:

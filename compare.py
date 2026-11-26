@@ -65,15 +65,19 @@ def view_metrics(mask_t, depth_t, mask_c, depth_c, mm_per_unit=1.0):
         "target_px": int(mask_t.sum()),
         "candidate_px": int(mask_c.sum()),
     }
-    n_union, n_inter = int(union.sum()), int(inter.sum())
-    if n_inter:
-        err = np.abs(depth_c[inter] - depth_t[inter]).astype(np.float64)
+    # photo targets (mask_source png): the target depth may be unknown (0) inside its mask;
+    # such pixels count for the silhouette but are left out of every depth number
+    known = inter & (depth_t > 0) & (depth_c > 0)
+    n_union, n_inter, n_known = int(union.sum()), int(inter.sum()), int(known.sum())
+    if n_known:
+        err = np.abs(depth_c[known] - depth_t[known]).astype(np.float64)
         capped = float(np.minimum(err, DEPTH_CAP).sum())
     else:
         capped = 0.0
     # union-based, capped: a pixel only one shape covers counts as a full DEPTH_CAP error
-    m["depth_err"] = (capped + DEPTH_CAP * (n_union - n_inter)) / n_union if n_union else 0.0
-    if n_inter:
+    n_scored = n_union - (n_inter - n_known)
+    m["depth_err"] = (capped + DEPTH_CAP * (n_union - n_inter)) / n_scored if n_scored else 0.0
+    if n_known:
         m.update(depth_mae=float(err.mean()), depth_rmse=float(np.sqrt((err ** 2).mean())),
                  depth_p95=float(np.percentile(err, 95)))
     else:  # nothing in common: depth error is undefined
@@ -148,7 +152,7 @@ def depth_error_image(mask_t, depth_t, mask_c, depth_c, vmax):
     # dim the red/blue so the heatmap is what stands out
     for sel, col in ((mask_t & ~mask_c, MISSING), (mask_c & ~mask_t, EXTRA)):
         img[sel] = (np.array(col) * 0.35 + np.array(BG) * 0.65).astype(np.uint8)
-    inter = mask_t & mask_c
+    inter = mask_t & mask_c & (depth_t > 0) & (depth_c > 0)
     img[inter] = colormap(np.abs(depth_c[inter] - depth_t[inter]) / vmax)
     return img
 
@@ -182,10 +186,17 @@ def _legend(width, vmax, mm_per_unit):
 
 # ------------------------------------------------------------------ io
 def load_views(run_dir: Path):
-    """-> ({view: (mask, depth)}, info) from a generate_solid.py output directory."""
+    """-> ({view: (mask, depth)}, info) from a generate_solid.py output directory.
+    The silhouette is where the depth map is set, unless info.json has
+    "mask_source": "png" (photo targets, data/realcad_targets.py): then it is
+    renders/<view>_mask.png and the depth may cover only part of it."""
     info = json.loads(layout.info(run_dir).read_text())
     depth = np.load(layout.depth(run_dir))
-    views = {v: (depth[v] > 0, depth[v]) for v in info["views"]}
+    if info.get("mask_source") == "png":
+        views = {v: (np.asarray(Image.open(layout.render(run_dir, v, "_mask")).convert("L")) > 127,
+                     depth[v]) for v in info["views"]}
+    else:
+        views = {v: (depth[v] > 0, depth[v]) for v in info["views"]}
     return views, info
 
 
