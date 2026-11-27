@@ -122,6 +122,18 @@ def test_chat_retries_rate_limits_only(env):
         vertex_ai.chat(MESSAGES, None, False, 0.4, 0, 0, 60)
 
 
+def test_chat_retries_dropped_connections(env):
+    env.setattr(vertex_ai.time, "sleep", lambda s: None)
+    ReadTimeout = type("ReadTimeout", (Exception,), {})
+    ConnectError = type("ConnectError", (Exception,), {})
+    models = install(env, ReadTimeout("slow"), ConnectError("wifi"), fake_response(text="ok"))
+    assert vertex_ai.chat(MESSAGES, None, False, 0.4, 0, 0, 60)[0] == "ok"
+    assert len(models.calls) == 3
+    install(env, ValueError("a bug, not the network"))
+    with pytest.raises(ValueError):
+        vertex_ai.chat(MESSAGES, None, False, 0.4, 0, 0, 60)
+
+
 def test_vlm_dispatches_to_vertex_by_default(env):
     install(env, fake_response(text="NO_CHANGE"))
     assert vlm.DEFAULT_BACKEND == "vertex"

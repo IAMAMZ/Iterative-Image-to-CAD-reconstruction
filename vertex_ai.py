@@ -15,14 +15,18 @@ Authentication is Application Default Credentials; run once in a terminal:
     gcloud auth application-default login
 """
 import os
+import random
 import time
 from pathlib import Path
 
 ENV_FILE = Path(__file__).resolve().parent / ".env"
 DEFAULT_LOCATION = "global"
 DEFAULT_MAX_OUTPUT_TOKENS = 32768
-RETRIES = 4          # on 429 / 5xx, with exponential backoff
+RETRIES = 8          # on 429 / 5xx / network errors: waits 5, 10, 20, 40, then 60 s (~6 min)
 RETRY_STATUS = {429, 500, 502, 503, 504}
+# transport failures carry no HTTP status; matched by exception class name (httpx, SDK)
+NETWORK_ERRORS = ("Timeout", "Connect", "RemoteProtocol", "ReadError", "WriteError",
+                  "NetworkError")
 EMPTY_RETRIES = 2    # re-ask when the reply has no text (e.g. a hallucinated function_call)
 EMPTY_PLACEHOLDER = "(empty reply)"
 
@@ -131,14 +135,25 @@ def _text(resp) -> str:
     return "".join(p.text for p in parts if getattr(p, "text", None) and not getattr(p, "thought", False))
 
 
+def _retryable(exc) -> bool:
+    """Rate limits and server errors (by status), or a dropped connection / timeout."""
+    status = _status(exc)
+    if status in RETRY_STATUS:
+        return True
+    return status is None and any(k in type(exc).__name__ for k in NETWORK_ERRORS)
+
+
 def _generate(client, model, contents, gen_cfg):
     for attempt in range(RETRIES + 1):
         try:
             return client.models.generate_content(model=model, contents=contents, config=gen_cfg)
         except Exception as e:  # noqa: BLE001 - SDK raises several error types
-            if _status(e) not in RETRY_STATUS or attempt == RETRIES:
+            if not _retryable(e) or attempt == RETRIES:
                 raise
-            time.sleep(min(60, 2 ** attempt * 5))
+            wait = min(60, 2 ** attempt * 5) * random.uniform(0.8, 1.2)  # jitter: parallel
+            print(f"  [vertex] {_status(e) or type(e).__name__}: retry {attempt + 1}/{RETRIES} "
+                  f"in {wait:.0f}s", flush=True)                       # runs don't sync up
+            time.sleep(wait)
 
 
 def chat(messages, model, think, temperature, num_ctx, max_tokens, deadline):

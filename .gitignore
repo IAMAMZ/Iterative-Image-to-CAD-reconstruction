@@ -28,3 +28,6 @@ pdfs/
 
 # local secrets / per-user config
 .env
+
+# run_b.sh lane logs
+logs/
