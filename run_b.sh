@@ -7,6 +7,10 @@
 #   LANES=2 bash run_b.sh      # gentler on the machine and on Vertex
 #   bash run_b.sh secondary    # no_detail, no_kernel, signed_resid
 #   DRY=1 bash run_b.sh        # print each lane's commands (targets left out), start nothing
+# Test knobs (for a cheap end-to-end check, not for real runs):
+#   LIMIT=2 EXTRA="--backend echo --rounds 1" PREFIX=smoke- bash run_b.sh
+#   LIMIT = first N parts only; EXTRA = flags appended last (they win); PREFIX = run-name
+#   prefix, so test folders never match check_runs.py's runs/*_abl_* glob.
 #
 # Progress:  uv run python check_runs.py          (or --watch 600)
 # Logs:      logs/run_b_lane<N>.log
@@ -19,6 +23,7 @@ T=()
 while IFS= read -r p; do [ -n "$p" ] && T+=("data/generated/targets/fusion360/$p"); done \
     < data/fusion360/ablation.txt
 [ "${#T[@]}" -eq 36 ] || { echo "expected 36 ablation parts, got ${#T[@]}"; exit 1; }
+[ -n "${LIMIT:-}" ] && T=("${T[@]:0:$LIMIT}")
 for p in "${T[@]}"; do [ -d "$p" ] || { echo "missing target $p (unpack A's inputs)"; exit 1; }; done
 grep -q '^GOOGLE_CLOUD_PROJECT=..*' .env || { echo "set GOOGLE_CLOUD_PROJECT in .env"; exit 1; }
 
@@ -44,9 +49,10 @@ for ((lane = 0; lane < LANES; lane++)); do
   cmds=""
   for ((i = lane; i < ${#CONFIGS[@]}; i += LANES)); do
     id=${CONFIGS[$i]%%|*}; flags=${CONFIGS[$i]#*|}
-    cmds+="echo \"=== abl_$id start \$(date)\"; "
-    cmds+="uv run python refine.py ${T[*]} $flags --rounds 6 --name abl_$id; "
-    cmds+="echo \"=== abl_$id end \$(date)\"; "
+    name="${PREFIX:-}abl_$id"
+    cmds+="echo \"=== $name start \$(date)\"; "
+    cmds+="uv run python refine.py ${T[*]} $flags --rounds 6 ${EXTRA:-} --name $name; "
+    cmds+="echo \"=== $name end \$(date)\"; "
   done
   [ -z "$cmds" ] && continue
   if [ -n "${DRY:-}" ]; then echo "lane $((lane + 1)): $cmds" | sed 's|data/generated/targets/fusion360/[^ ]* ||g'; continue; fi
