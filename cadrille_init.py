@@ -14,6 +14,12 @@ convert
     the orientation and the shape. The fitted scale is appended as visible code, so the
     agent sees it and can keep or change it. Uses only the target views, never the GT.
     Disable with --no-placement (ablation).
+  * --orient (photo targets): also searches the 24 axis-aligned rotations, because photos
+    fix no frame and cadrille's canonical frame need not be the target's (fit_placement).
+    The rotation is appended as visible code too; kept only if it beats cadrille's own
+    orientation. Still GT-free. --programs points at other cadrille outputs (e.g. RealCAD):
+      uv run python cadrille_init.py convert --orient --programs cadrille/work_dirs/realcad_rl_test50/py \\
+          --targets data/generated/targets/realcad_test50_gt95 --out data/generated/init/cadrille_rl_realcad
   * copies cadrille's own scores (cadrille protocol: bbox-normalised IoU / CD) to
     scores.json, and logs parts whose cadrille program does not build (invalid rate, IR).
 
@@ -28,6 +34,7 @@ split
   split, as CADPrompt does). Writes the list plus stage1_meta.json with each part's strata.
 """
 import argparse
+import itertools
 import json
 import math
 import random
@@ -67,9 +74,43 @@ def to_refine_program(src: str) -> str:
     return src + "result = r\n"
 
 
-def placement_code(scale: float) -> str:
-    return (f"{PLACEMENT_MARK} isotropic scale fitted to the target views "
-            f"(orientation unchanged)\nresult = cq.Workplane(obj=result.val().scale({scale:.4f}))\n")
+def placement_code(scale: float, turns=(0, 0, 0)) -> str:
+    """Visible placement code. `turns` = quarter turns about the world X, then Y, then Z axis
+    (see cube_rotations); the solid is re-centred on the target when it is built."""
+    if not any(turns):
+        return (f"{PLACEMENT_MARK} isotropic scale fitted to the target views "
+                f"(orientation unchanged)\n"
+                f"result = cq.Workplane(obj=result.val().scale({scale:.4f}))\n")
+    shape = "result.val()"
+    for axis, k in zip(("1, 0, 0", "0, 1, 0", "0, 0, 1"), turns):
+        if k % 4:
+            shape += f".rotate(cq.Vector(0, 0, 0), cq.Vector({axis}), {90 * (k % 4)})"
+    return (f"{PLACEMENT_MARK} rotation and isotropic scale fitted to the target views\n"
+            f"result = cq.Workplane(obj={shape}.scale({scale:.4f}))\n")
+
+
+# ------------------------------------------------------------------ orientation
+def _quarter_turn(axis: int, k: int) -> np.ndarray:
+    """Rotation matrix of k quarter turns (counter-clockwise, right hand) about axis 0/1/2."""
+    c, s = [1, 0, -1, 0][k % 4], [0, 1, 0, -1][k % 4]
+    i, j = [(1, 2), (2, 0), (0, 1)][axis]
+    R = np.eye(3, dtype=int)
+    R[i, i], R[i, j], R[j, i], R[j, j] = c, -s, s, c
+    return R
+
+
+def cube_rotations():
+    """The 24 rotations that map the axes onto the axes, as [(R, (kx, ky, kz))] with
+    R = Rz^kz @ Ry^ky @ Rx^kx (turn about X first) and the fewest quarter turns; identity
+    first. cadrille writes its solid in a canonical frame, but photos fix no frame, so the
+    solid may sit in the target frame under any of these (as eval_realcad.py's 'aligned'
+    score assumes)."""
+    seen = {}
+    for t in sorted(itertools.product(range(4), repeat=3), key=lambda t: (sum(t), t)):
+        R = _quarter_turn(2, t[2]) @ _quarter_turn(1, t[1]) @ _quarter_turn(0, t[0])
+        seen.setdefault(R.tobytes(), (R, t))
+    assert len(seen) == 24
+    return list(seen.values())
 
 
 # ------------------------------------------------------------------ placement
@@ -120,6 +161,56 @@ def fit_scale(mesh, target_dir: Path, rig: dict, weights=None, lo=0.7, hi=1.4, i
         return float(round(s, 4)), f(s), f(1.0)
 
 
+def _rotated(mesh, R):
+    m = mesh.copy()
+    T = np.eye(4)
+    T[:3, :3] = R
+    m.apply_transform(T)
+    return m
+
+
+def fit_placement(mesh, target_dir: Path, rig: dict, weights=None, top=3, min_gain=1e-3):
+    """Rotation (one of the 24 cube rotations) and isotropic scale maximising the weighted
+    geometric score; GT-free (target views and their depth only).
+
+    1. every rotation, at the scale that matches the target's measured box (median ratio of
+       the extents), scored by rendering it with the target's cameras
+    2. the `top` best rotations, plus the identity, get the full scale fit (0.7-1.4 x that)
+    3. a rotation other than the identity is chosen only if it beats the identity's best
+       score by `min_gain` (symmetric parts: ties keep cadrille's own orientation)
+    -> {"turns", "R", "scale", "score", "score_identity", "score_unplaced", "coarse"}"""
+    from compare import load_views
+    from cq_render import CQRenderer
+    from geo_check import geo_score
+    tv, tinfo = load_views(target_dir)
+    norm = tinfo["normalization"]
+    blo, bhi = measure_bbox(target_dir, rig)
+    center, size = (blo + bhi) / 2, np.maximum(bhi - blo, 1e-9)
+    rots = cube_rotations()
+    coarse = []
+    with CQRenderer(rig["width"], rig["height"]) as r:
+        for R, turns in rots:
+            m = _rotated(mesh, R)
+            s0 = float(np.median(size / np.maximum(m.extents, 1e-9)))
+            m.apply_scale(s0)
+            coarse.append((geo_score(_render_metrics(m, target_dir, rig, r, norm, center, tv),
+                                     weights), s0, R, turns))
+    order = sorted(range(len(rots)), key=lambda i: -coarse[i][0])
+    fits = {}
+    for i in dict.fromkeys([0] + order[:top]):      # identity always, then the best few
+        _, s0, R, turns = coarse[i]
+        s, fs, _ = fit_scale(_rotated(mesh, R), target_dir, rig, weights,
+                             lo=0.7 * s0, hi=1.4 * s0)
+        fits[i] = (fs, s)
+    best = max(fits, key=lambda i: fits[i][0])
+    if best != 0 and fits[best][0] <= fits[0][0] + min_gain:
+        best = 0
+    _, unplaced, _ = fit_scale(mesh, target_dir, rig, weights, lo=1.0, hi=1.0, iters=0)
+    return {"turns": rots[best][1], "R": rots[best][0].tolist(), "scale": fits[best][1],
+            "score": fits[best][0], "score_identity": fits[0][0], "score_unplaced": unplaced,
+            "coarse": {"".join(map(str, t)): round(c, 4) for c, _, _, t in coarse}}
+
+
 # ------------------------------------------------------------------ commands
 def build_mesh(src: str, work: Path, sandboxed=False):
     """Run a program through generate_solid.py (crash safe; optionally in the bwrap sandbox,
@@ -137,20 +228,22 @@ def build_mesh(src: str, work: Path, sandboxed=False):
 
 
 def convert(args):
-    from rig import load_rig
-    src_dir = cadrille_run(args.tag) / "py"
+    from rig import load_rig_for
+    src_dir = args.programs or cadrille_run(args.tag) / "py"
     if not src_dir.is_dir():          # SFT outputs were moved to the git-ignored archive/
         raise SystemExit(f"{src_dir} not found: only the RL outputs are in the repo "
-                         "(SFT is archived, see archive/MANIFEST.jsonl); use --tag rl")
+                         "(SFT is archived, see archive/MANIFEST.jsonl); use --tag rl, or "
+                         "--programs <dir of cadrille .py files>")
     out = args.out or ROOT / "data" / "generated" / "init" / f"cadrille_{args.tag}"
     out.mkdir(parents=True, exist_ok=True)
-    scores = {r["id"]: r for r in json.loads(
-        (cadrille_run(args.tag) / "scores.json").read_text())}
+    sf = src_dir.parent / "scores.json"     # cadrille's own scores, when it has them
+    scores = {r["id"]: r for r in json.loads(sf.read_text())} if sf.exists() else {}
     parts = [p.name for p in sorted(args.targets.iterdir()) if layout.info(p).exists()]
     parts = parts[:args.limit]
-    rig = load_rig()
-    log = {"tag": args.tag, "placement": not args.no_placement, "parts": {}}
+    log = {"tag": args.tag, "programs": str(src_dir), "placement": not args.no_placement,
+           "orient": args.orient, "parts": {}}
     for part in parts:
+        rig = load_rig_for(args.targets / part)     # photo targets bring their own cameras
         rec = {"cadrille": scores.get(part)}
         f = src_dir / f"{part}.py"
         if not f.exists():
@@ -161,7 +254,19 @@ def convert(args):
             if err:
                 rec["error"] = err             # invalid cadrille program (counts towards IR)
             else:
-                if not args.no_placement:
+                if args.orient:
+                    w = view_weights(args.targets / part, rig)
+                    fit = fit_placement(mesh, args.targets / part, rig, w)
+                    turned = any(fit["turns"])
+                    apply = (turned or abs(fit["scale"] - 1) > 0.005) and \
+                        fit["score"] > fit["score_unplaced"] + 1e-3
+                    rec.update(turns=list(fit["turns"]) if apply else [0, 0, 0],
+                               scale=fit["scale"] if apply else 1.0,
+                               score_fitted=fit["score"], score_identity=fit["score_identity"],
+                               score_unscaled=fit["score_unplaced"], coarse=fit["coarse"])
+                    if apply:
+                        src += placement_code(fit["scale"], fit["turns"])
+                elif not args.no_placement:
                     w = view_weights(args.targets / part, rig)
                     s, fs, f1 = fit_scale(mesh, args.targets / part, rig, w)
                     apply = abs(s - 1) > 0.005 and fs > f1 + 1e-3
@@ -173,7 +278,8 @@ def convert(args):
             shutil.rmtree(out / "_work" / part, ignore_errors=True)
         log["parts"][part] = rec
         msg = rec.get("error", "").splitlines()[-1:] if "error" in rec else \
-            [f"ok, scale {rec.get('scale', 1.0):.3f}"]
+            [f"ok, scale {rec.get('scale', 1.0):.3f}"
+             + (f", turns {rec['turns']}" if any(rec.get("turns", [])) else "")]
         print(f"{part}: {msg[0] if msg else 'failed'}", flush=True)
     shutil.rmtree(out / "_work", ignore_errors=True)
     (out / "init_log.json").write_text(json.dumps(log, indent=1))
@@ -247,6 +353,12 @@ def main():
     c.add_argument("--out", type=Path, default=None)
     c.add_argument("--limit", type=int, default=None)
     c.add_argument("--no-placement", action="store_true")
+    c.add_argument("--orient", action="store_true",
+                   help="also search the 24 axis-aligned rotations (photo targets, whose "
+                        "frame need not be cadrille's); implies placement")
+    c.add_argument("--programs", type=Path, default=None,
+                   help="dir of cadrille <part>.py programs (default: the Fusion360 test "
+                        "run of --tag), e.g. cadrille/work_dirs/realcad_rl_test50/py")
     c.add_argument("--sandbox", action="store_true",
                    help="build the programs inside a bubblewrap sandbox (Linux only)")
     args = ap.parse_args()
