@@ -151,7 +151,7 @@ pulled). `--backend echo` replaces the model with a fake agent for dry runs.
    2. question arms: answer the questions on the current candidate; otherwise ask for feedback
       on the No/Unclear ones. All "Yes" → stop (`all_questions_yes`) in `vlm`/`gsolver`
       (CADCodeVerify). Arms that also see the geometric evidence (`hybrid`) stop only if the
-      weighted silhouette IoU is ≥ `ALL_YES_IOU` (0.98) too; otherwise they continue without
+      geo score (silhouette and depth) is ≥ `ALL_YES_GEO` (0.98) too; otherwise they continue without
       question feedback (`qa_all_yes_continued`);
    3. collect evidence: target grid + candidate grid, and for residual arms the overlay grid,
       depth-error grid, zoomed detail strip and the weighted residual table;

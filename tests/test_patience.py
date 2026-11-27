@@ -13,6 +13,25 @@ from refine import Branch
 ROOT = Path(__file__).resolve().parents[1]
 
 
+@pytest.fixture(autouse=True)
+def _echo_always_edits(monkeypatch):
+    """The echo agent answers NO_CHANGE ~10% of the time, seeded by the prompt text, which
+    ends the run; these tests script the keep decisions per round, so every round must edit.
+    Re-ask with a salted prompt until it edits (prompt wording changes then can't break it)."""
+    import vlm
+    real = vlm._echo
+
+    def echo(messages, *a):
+        for salt in range(20):
+            msgs = messages if not salt else [*messages[:-1], {**messages[-1], "content":
+                                                               messages[-1]["content"] + " " * salt}]
+            text, stats = real(msgs, *a)
+            if text.strip() != "NO_CHANGE":
+                break
+        return text, stats
+    monkeypatch.setitem(vlm.BACKENDS, "echo", echo)
+
+
 # ------------------------------------------------------------------ state machine
 def test_patience_zero_is_plain_keep_reject():
     b = Branch(0, "A")

@@ -81,6 +81,8 @@ def test_all_yes_stop_rule():
     assert refine.stops_on_all_yes(refine.ARMS["vlm"], 0.5)           # CADCodeVerify: always
     assert not refine.stops_on_all_yes(refine.ARMS["hybrid"], 0.80)   # geometry disagrees
     assert refine.stops_on_all_yes(refine.ARMS["hybrid"], 0.99)       # both agree
+    # 125152 (tuning): silhouette IoU 0.994 but wrong depth -> geo score 0.960, keep going
+    assert not refine.stops_on_all_yes(refine.ARMS["hybrid"], 0.960)
 
 
 # ---------------------------------------------------------------- ablation flags

@@ -79,8 +79,8 @@ GRID_VIEWS = layout.grid_views()   # the 4 rig cameras, 2x2 grid order
 BUILD_TIMEOUT = 180  # seconds; model-written code can be pathological
 BENEFIT = 0.005      # 3D IoU change that counts as a real improvement / harm (offline label)
 TEMPERATURE = 1.0    # Gemini 3's recommended setting
-ALL_YES_IOU = 0.98   # arms with geometric evidence only stop on "all questions Yes" when the
-                     # weighted silhouette IoU is already this good
+ALL_YES_GEO = 0.98   # arms with geometric evidence only stop on "all questions Yes" when the
+                     # geo score (silhouette and depth) is already this good
 FB_ATTEMPTS = 3      # edit feedback: attempts shown (since the last kept edit)
 FB_HISTORY = 8       # edit feedback: round-history lines shown
 FB_DIFF_LINES = 30   # edit feedback: diff lines per attempt
@@ -345,11 +345,12 @@ def initial(agent, target_dir, out, lo, hi, center, target_img):
     return status == "ok"
 
 
-def stops_on_all_yes(spec, w_iou):
+def stops_on_all_yes(spec, geo):
     """CADCodeVerify stops when every verification question is answered Yes. Arms that also
-    see the geometric evidence only stop when that evidence agrees (high weighted IoU):
-    a small VLM easily answers vague questions Yes while a view is clearly wrong."""
-    return not spec["residuals"] or (w_iou is not None and w_iou >= ALL_YES_IOU)
+    see the geometric evidence only stop when that evidence agrees (high geo score): a VLM
+    easily answers vague questions Yes while a view is clearly wrong. The geo score includes
+    depth, so a matching outline with the wrong thickness does not stop the run."""
+    return not spec["residuals"] or (geo is not None and geo >= ALL_YES_GEO)
 
 
 def verdict_of(before, after):
@@ -486,7 +487,7 @@ def refine_part(agent, arm, target_dir, part_out, opts, lo, hi, center, target_i
             qa = {"questions": questions, "answers": ans, "reply": raw}
             row["qa_yes"] = sum(a == "yes" for a in ans)
             row["qa_n"] = len(ans)
-            if all(a == "yes" for a in ans) and stops_on_all_yes(spec, cur["w_iou"]):
+            if all(a == "yes" for a in ans) and stops_on_all_yes(spec, cur["geo_score"]):
                 stop = "all_questions_yes"
                 (rd / "conversation.json").write_text(json.dumps({"qa": qa}, indent=2))
                 log({**row, "dir": _label_round(rd, "stopped").name, "status": "stopped", "accepted": False, "stop": stop,
