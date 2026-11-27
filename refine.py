@@ -755,6 +755,11 @@ def prepare_init(args, agent, target, part_out, lo, hi, center, target_img):
         err = f"no starting program {f}"
     else:
         err = build(f.read_text(), d, target, center, args.sandbox)
+        if err is not None:  # these programs built when the inputs were made, so a failure here
+            print(f"  first program failed to build ({err.splitlines()[-1][:120]}); "
+                  "retrying once", flush=True)       # is likely transient (a loaded machine)
+            time.sleep(10)
+            err = build(f.read_text(), d, target, center, args.sandbox)
     meta.parent.mkdir(parents=True, exist_ok=True)
     meta.write_text(json.dumps({"ok": err is None, "error": err, "source": str(f)}))
     return err is None
