@@ -6,7 +6,8 @@ import numpy as np
 import pytest
 import trimesh
 
-from cadrille_init import fit_scale, placement_code, to_refine_program
+from cadrille_init import (cube_rotations, fit_placement, fit_scale, placement_code,
+                           to_refine_program)
 from compare import compare
 from conftest import PART
 from eval3d import evaluate
@@ -77,6 +78,54 @@ def test_fit_scale_recovers_a_known_scale(f360_target):
     s, fitted, unscaled = fit_scale(small, f360_target, load_rig())
     assert s == pytest.approx(1.25, rel=0.02)
     assert fitted > unscaled
+
+
+def test_cube_rotations_are_the_24_proper_ones():
+    rots = cube_rotations()
+    assert len(rots) == 24 and rots[0][1] == (0, 0, 0)
+    assert np.array_equal(rots[0][0], np.eye(3))
+    for R, _ in rots:
+        assert round(np.linalg.det(R)) == 1 and np.array_equal(R @ R.T, np.eye(3))
+
+
+@pytest.mark.parametrize("i", [1, 5, 13, 23])
+def test_rotation_code_turns_the_solid_like_its_matrix(i):
+    """The CadQuery placement code rotates the solid exactly as the matrix fit_placement
+    scored (an asymmetric L-shape, so a wrong turn moves its centre of mass)."""
+    import cadquery as cq
+    R, turns = cube_rotations()[i]
+    base = ("import cadquery as cq\n"
+            "r = cq.Workplane().box(60, 30, 10).union("
+            "cq.Workplane().box(10, 10, 40).translate((25, 10, 20)))\nresult = r\n")
+    env = {}
+    exec(base, env)
+    c0 = np.array(env["result"].val().Center().toTuple())
+    env = {}
+    exec(base + placement_code(1.0, turns), env)
+    c1 = np.array(env["result"].val().Center().toTuple())
+    assert np.allclose(c1, R @ c0, atol=1e-6), (turns, c0, c1)
+
+
+def test_fit_placement_undoes_a_wrong_rotation(f360_target):
+    gt = trimesh.load(f360_target / "gt.stl")
+    rig = load_rig()
+    R_wrong = cube_rotations()[7][0]
+    turned = gt.copy()
+    T = np.eye(4)
+    T[:3, :3] = R_wrong
+    turned.apply_transform(T)
+    fit = fit_placement(turned, f360_target, rig)
+    assert fit["turns"] != (0, 0, 0)
+    assert fit["score"] > fit["score_identity"] + 0.05         # clearly better than as given
+    assert fit["score"] > 0.95                                   # about as good as the GT itself
+    assert fit["scale"] == pytest.approx(1.0, abs=0.02)
+
+
+def test_fit_placement_keeps_a_correct_orientation(f360_target):
+    gt = trimesh.load(f360_target / "gt.stl")
+    fit = fit_placement(gt, f360_target, load_rig())
+    assert fit["turns"] == (0, 0, 0)
+    assert fit["scale"] == pytest.approx(1.0, abs=0.02)
 
 
 def test_tuning_set_is_disjoint_from_the_evaluation_split():
