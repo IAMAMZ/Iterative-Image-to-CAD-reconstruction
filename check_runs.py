@@ -2,11 +2,13 @@
 
     uv run python check_runs.py                      # every runs/*_abl_* folder
     uv run python check_runs.py --watch 600          # repeat every 10 min
+    uv run python check_runs.py --watch 600 --notify # + a macOS notification on changes
     uv run python check_runs.py --glob 'runs/*_pilot*' --parts data/fusion360/tuning.txt
 
 Per config (a run folder plus its `_part2`, `_part3` ... folders) it prints
   * parts finished out of the expected list (--parts, default the 36 ablation parts)
-  * whether the run is still writing (log.txt touched in the last --stale minutes)
+  * its state: running (log.txt touched in the last --stale minutes), finished, paused
+    (stopped cleanly with parts left, e.g. after a batch) or STOPPED (parts crashed/skipped)
   * parts skipped (first program did not build), crashed, or never started
   * Vertex retries seen (rate limits / dropped connections), and crashes
   * dollars spent so far (every logged round, finished or not) and the projected total
@@ -108,7 +110,8 @@ def rerun_command(cfg: dict, parts, name: str) -> str:
     return shlex.join(cmd + ["--name", name])
 
 
-def check(args) -> list[str]:
+def check(args) -> tuple[list[str], dict]:
+    """-> (report lines, {config: status}) for the run folders matching args.glob."""
     expected = [l.strip() for l in args.parts.read_text().splitlines() if l.strip()]
     groups = defaultdict(list)
     for f in sorted(ROOT.glob(args.glob)):
@@ -116,8 +119,8 @@ def check(args) -> list[str]:
             m = PART_RE.match(run_name(f))
             groups[m["base"]].append(f)
     if not groups:
-        return [f"no run folders match {args.glob}"]
-    out, total_spent, total_proj = [], 0.0, 0.0
+        return [f"no run folders match {args.glob}"], {}
+    out, total_spent, total_proj, status = [], 0.0, 0.0, {}
     head = (f"{'config':22s} {'done':>7s} {'state':8s} {'skip':>4s} {'crash':>5s} "
             f"{'retry':>5s} {'spent':>7s} {'$/part':>7s} {'proj.':>7s}  note")
     out += [head, "-" * len(head)]
@@ -151,13 +154,14 @@ def check(args) -> list[str]:
                          key=lambda p: best[p][2])     # oldest activity first
         absent = [p for p in expected if best[p][0] == "absent"]
         running = time.time() - newest < args.stale * 60
-        state = "finished" if len(done) == len(expected) else "running" if running else "STOPPED"
+        crashed = started[:-1] if running else started   # the newest one may still be running
+        state = ("finished" if len(done) == len(expected) else "running" if running
+                 else "STOPPED" if crashed or skipped else "paused")  # paused: a batch ended cleanly
         per_part = sum(best[p][1] for p in done) / len(done) if done else 0.0
         proj = spent + per_part * (len(expected) - len(done)) if done else 0.0
         note = []
         if running and started:
             note.append(f"working on {started[-1]}")
-        crashed = started[:-1] if running else started   # the newest one may still be running
         if done and proj > args.budget:
             note.append(f"OVER BUDGET: projected ${proj:.0f} > ${args.budget:.0f}")
         if retries >= args.retry_warn:
@@ -165,6 +169,9 @@ def check(args) -> list[str]:
         out.append(f"{base:22s} {len(done):3d}/{len(expected):<3d} {state:8s} {len(skipped):4d} "
                    f"{len(crashed):5d} {retries:5d} {spent:7.2f} {per_part:7.2f} "
                    f"{proj:7.2f}  {'; '.join(note)}")
+        status[base] = {"state": state, "over": bool(done and proj > args.budget),
+                        "retries": retries >= args.retry_warn, "done": len(done),
+                        "proj": proj, "missing": len(skipped) + len(crashed)}
         total_spent += spent
         total_proj += proj if done else spent
         missing = skipped + crashed + ([] if running else absent)
@@ -176,7 +183,35 @@ def check(args) -> list[str]:
                f"{'':7s} {total_proj:7.2f}")
     for base, missing, cmd in todo:
         out += ["", f"{base}: {len(missing)} part(s) to rerun: {' '.join(missing)}", f"  {cmd}"]
-    return out
+    return out, status
+
+
+def alerts(prev: dict, cur: dict) -> list[str]:
+    """What changed for the worse (or finished) since the last check. On the first check
+    (prev empty) only problems are reported."""
+    msgs = []
+    for base, s in cur.items():
+        p = prev.get(base, {})
+        if s["state"] != p.get("state") and s["state"] in ("STOPPED", "paused", "finished") \
+                and (p or s["state"] == "STOPPED"):
+            what = {"STOPPED": f"stopped with {s['missing']} part(s) crashed or skipped",
+                    "paused": f"batch done ({s['done']} parts), nothing broken",
+                    "finished": "finished"}[s["state"]]
+            msgs.append(f"{base}: {what}")
+        if s["over"] and not p.get("over"):
+            msgs.append(f"{base}: projected ${s['proj']:.0f}, over budget")
+        if s["retries"] and not p.get("retries"):
+            msgs.append(f"{base}: many Vertex retries (rate limits or network)")
+    return msgs
+
+
+def notify(msgs: list[str]) -> None:
+    """macOS desktop notification (silently skipped elsewhere)."""
+    import subprocess
+    text = "; ".join(msgs)[:240].replace('"', "'")
+    subprocess.run(["osascript", "-e", f'display notification "{text}" with title '
+                    f'"Ablation runs" sound name "Glass"'], check=False,
+                   capture_output=True)
 
 
 def main(argv=None):
@@ -192,9 +227,20 @@ def main(argv=None):
                     help="warn when a config has seen this many Vertex retries")
     ap.add_argument("--watch", type=float, default=None, metavar="SECONDS",
                     help="repeat every SECONDS")
+    ap.add_argument("--notify", action="store_true",
+                    help="macOS notification when a config stops, pauses, finishes, goes over "
+                         "budget or sees many retries (use with --watch)")
     args = ap.parse_args(argv)
+    prev = {}
     while True:
-        print(time.strftime("%Y-%m-%d %H:%M"), "\n" + "\n".join(check(args)), flush=True)
+        lines, status = check(args)
+        print(time.strftime("%Y-%m-%d %H:%M"), "\n" + "\n".join(lines), flush=True)
+        msgs = alerts(prev, status)
+        if msgs:
+            print("ALERT: " + "; ".join(msgs), flush=True)
+            if args.notify:
+                notify(msgs)
+        prev = status
         if not args.watch:
             break
         time.sleep(args.watch)

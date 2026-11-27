@@ -7,6 +7,11 @@
 #   LANES=2 bash run_b.sh      # gentler on the machine and on Vertex
 #   bash run_b.sh secondary    # no_detail, no_kernel, signed_resid
 #   DRY=1 bash run_b.sh        # print each lane's commands (targets left out), start nothing
+#
+# Staged (recommended): every config on 6 parts first (one per stratum), check cost and
+# behaviour with check_runs.py, then the other 30 as _part2 (check_runs.py merges them):
+#   PARTS=data/fusion360/ablation_batch1.txt bash run_b.sh
+#   PARTS=data/fusion360/ablation_batch2.txt SUFFIX=_part2 bash run_b.sh
 # Test knobs (for a cheap end-to-end check, not for real runs):
 #   LIMIT=2 EXTRA="--backend echo --rounds 1" PREFIX=smoke- bash run_b.sh
 #   LIMIT = first N parts only; EXTRA = flags appended last (they win); PREFIX = run-name
@@ -23,6 +28,13 @@ T=()
 while IFS= read -r p; do [ -n "$p" ] && T+=("data/generated/targets/fusion360/$p"); done \
     < data/fusion360/ablation.txt
 [ "${#T[@]}" -eq 36 ] || { echo "expected 36 ablation parts, got ${#T[@]}"; exit 1; }
+if [ -n "${PARTS:-}" ]; then  # a subset of the 36, e.g. one batch
+  ALL=" ${T[*]} "; T=()
+  while IFS= read -r p; do [ -z "$p" ] && continue
+    q="data/generated/targets/fusion360/$p"
+    case "$ALL" in *" $q "*) T+=("$q") ;; *) echo "$p is not in ablation.txt"; exit 1 ;; esac
+  done < "$PARTS"
+fi
 [ -n "${LIMIT:-}" ] && T=("${T[@]:0:$LIMIT}")
 for p in "${T[@]}"; do [ -d "$p" ] || { echo "missing target $p (unpack A's inputs)"; exit 1; }; done
 grep -q '^GOOGLE_CLOUD_PROJECT=..*' .env || { echo "set GOOGLE_CLOUD_PROJECT in .env"; exit 1; }
@@ -49,7 +61,7 @@ for ((lane = 0; lane < LANES; lane++)); do
   cmds=""
   for ((i = lane; i < ${#CONFIGS[@]}; i += LANES)); do
     id=${CONFIGS[$i]%%|*}; flags=${CONFIGS[$i]#*|}
-    name="${PREFIX:-}abl_$id"
+    name="${PREFIX:-}abl_$id${SUFFIX:-}"
     cmds+="echo \"=== $name start \$(date)\"; "
     cmds+="uv run python refine.py ${T[*]} $flags --rounds 6 ${EXTRA:-} --name $name; "
     cmds+="echo \"=== $name end \$(date)\"; "
